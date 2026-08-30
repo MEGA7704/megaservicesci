@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mega-services-sarl-u",
+  "compatibility_date": "2026-08-28",
+  "pages_build_output_dir": "./public",
+  "kv_namespaces": [
+    { "binding": "SITE_MEGA_KV", "id": "79497d597c514f0192d069ef65054ae8" }
+  ],
+  "d1_databases": [
+    { "binding": "SITE_MEGA_D1", "database_name": "site-mega-d1", "database_id": "831b511f-acc3-41e6-b404-1cb64e67508b" }
+  ]
+}

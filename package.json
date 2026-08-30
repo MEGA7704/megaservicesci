@@ -1,0 +1,14 @@
+{
+  "name": "mega-services-sarl-u",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "wrangler pages dev public --kv SITE_MEGA_KV --d1 SITE_MEGA_D1",
+    "deploy": "wrangler pages deploy public --project-name mega-services-sarl-u",
+    "db:local": "wrangler d1 migrations apply site-mega-d1 --local",
+    "db:remote": "wrangler d1 migrations apply site-mega-d1 --remote"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
