@@ -23,18 +23,20 @@
     </form>
   </section>
 </main>
+<footer id="site-footer"></footer>
 <script src="/assets/app.js"></script>
 <script>
 MEGA.mount('');
 const state=document.getElementById('setupState');
+const withTimeout=(p,ms=8000)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT')),ms))]);
 (async()=>{
   try{
-    await MEGA.api('/api/session');
+    await withTimeout(MEGA.api('/api/session'));
     location.href='/admin.html';
     return;
   }catch{}
   try{
-    const s=await MEGA.api('/api/setup-status');
+    const s=await withTimeout(MEGA.api('/api/setup-status'));
     if(s.adminExists){
       state.className='notice';
       state.textContent='Administration active. Connectez-vous avec votre compte administrateur.';
@@ -45,9 +47,9 @@ const state=document.getElementById('setupState');
       state.className='notice error';
       state.innerHTML='<b>Première connexion à finaliser.</b><br>Dans Cloudflare → votre projet → Paramètres → Variables et secrets, ajoutez le secret <code>ADMIN_BOOTSTRAP_PASSWORD</code>. Aucun terminal ni migration D1 n’est nécessaire.';
     }
-  }catch{
+  }catch(err){
     state.className='notice error';
-    state.textContent='Impossible de vérifier la configuration. Vérifiez que les liaisons D1 et KV du projet sont actives.';
+    state.innerHTML='<b>Connexion serveur indisponible.</b><br>Vérifiez dans Cloudflare que le binding D1 <code>SITE_MEGA_D1</code>, le binding KV <code>SITE_MEGA_KV</code> et le secret <code>ADMIN_BOOTSTRAP_PASSWORD</code> sont bien configurés, puis redéployez le projet.';
   }
 })();
 

@@ -100,3 +100,10 @@ Le fichier `_worker.js` se trouve volontairement dans `public/` afin d'utiliser 
 
 ## Diagnostic serveur
 `GET /api/setup-status` retourne uniquement l'état de préparation : base prête, existence du compte administrateur et présence ou non du secret. Aucune valeur secrète n'est jamais renvoyée.
+
+
+## V5 - Correctif connexion administration
+- Correction du blocage sur « Vérification de l’espace administrateur… ».
+- Le composant de navigation ne plante plus lorsqu’un footer manque.
+- Ajout du footer à `connexion.html`.
+- Ajout d’un délai d’attente et d’un diagnostic clair si D1/KV/secret ne répondent pas.
