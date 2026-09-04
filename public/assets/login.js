@@ -62,7 +62,7 @@ form.addEventListener('submit',async e=>{
       D1_BINDING_MISSING:'La base D1 SITE_MEGA_D1 n’est pas connectée au projet Cloudflare.',
       KV_BINDING_MISSING:'Le KV SITE_MEGA_KV n’est pas connecté au projet Cloudflare.'
     };
-    showMessage(d.message||map[d.error]||'Impossible de se connecter. Vérifiez la configuration Cloudflare.');
+    showMessage(d.message||map[d.error]||('Impossible de se connecter.'+(d.code?' Code : '+d.code:'')));
   }finally{
     submit.disabled=false;
     submit.textContent='Se connecter à l’administration';

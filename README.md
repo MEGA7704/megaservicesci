@@ -23,3 +23,11 @@ Variable facultative :
 - `ADMIN_EMAIL` → adresse du compte principal. Si absente, le serveur utilise l’adresse d’administration prévue par le projet.
 
 Après ajout ou modification d’un secret/binding, redéployez le projet.
+
+
+## V7 — correction connexion administrateur
+- PBKDF2 ramené à 100 000 itérations pour éviter un dépassement de temps CPU au premier bootstrap Cloudflare.
+- Création du compte principal en deux écritures D1 contrôlées.
+- Nettoyage automatique si l'écriture des identifiants échoue.
+- Retour d'un code de diagnostic serveur non sensible en cas d'erreur.
+- Aucun mot de passe ni secret n'est envoyé dans l'URL ou inclus dans le dépôt.

@@ -1,5 +1,5 @@
 const SESSION_TTL = 60 * 60 * 8;
-const PBKDF2_ITERATIONS = 210000;
+const PBKDF2_ITERATIONS = 100000;
 const SESSION_COOKIE = '__Host-mega_session';
 const enc = new TextEncoder();
 
@@ -16,7 +16,7 @@ async function ensureSchema(env) {
     if (marker === 'ready') return;
     const ddl = [
       `CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY,email TEXT NOT NULL UNIQUE COLLATE NOCASE,display_name TEXT NOT NULL,role TEXT NOT NULL DEFAULT 'admin' CHECK (role IN ('admin','editor')),active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),created_at TEXT NOT NULL,updated_at TEXT NOT NULL)`,
-      `CREATE TABLE IF NOT EXISTS user_credentials (user_id TEXT PRIMARY KEY,password_hash TEXT NOT NULL,salt TEXT NOT NULL,iterations INTEGER NOT NULL DEFAULT 210000,password_version INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE)`,
+      `CREATE TABLE IF NOT EXISTS user_credentials (user_id TEXT PRIMARY KEY,password_hash TEXT NOT NULL,salt TEXT NOT NULL,iterations INTEGER NOT NULL DEFAULT 100000,password_version INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE)`,
       `CREATE TABLE IF NOT EXISTS contact_messages (id TEXT PRIMARY KEY,name TEXT NOT NULL,email TEXT,phone TEXT,subject TEXT,message TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new','read','archived')),created_at TEXT NOT NULL)`,
       `CREATE TABLE IF NOT EXISTS site_content (key TEXT PRIMARY KEY,value_json TEXT NOT NULL,updated_at TEXT NOT NULL,updated_by TEXT)`,
       `CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT,actor_user_id TEXT,action TEXT NOT NULL,target_type TEXT,target_id TEXT,ip TEXT,user_agent TEXT,details_json TEXT,created_at TEXT NOT NULL)`,
@@ -149,10 +149,13 @@ async function login(req, env) {
     valid = timingSafeStringEqual(String(password), String(env.ADMIN_BOOTSTRAP_PASSWORD));
     if (valid) {
       const id = crypto.randomUUID(), t=now(), hp=await hashPassword(password);
-      await env.SITE_MEGA_D1.batch([
-        env.SITE_MEGA_D1.prepare(`INSERT INTO users(id,email,display_name,role,active,created_at,updated_at) VALUES(?,?,?,?,1,?,?)`).bind(id,normalized,'Administrateur MEGA','admin',t,t),
-        env.SITE_MEGA_D1.prepare(`INSERT INTO user_credentials(user_id,password_hash,salt,iterations,password_version,updated_at) VALUES(?,?,?,?,1,?)`).bind(id,hp.hash,hp.salt,hp.iterations,t)
-      ]);
+      await env.SITE_MEGA_D1.prepare(`INSERT INTO users(id,email,display_name,role,active,created_at,updated_at) VALUES(?,?,?,?,1,?,?)`).bind(id,normalized,'Administrateur MEGA','admin',t,t).run();
+      try {
+        await env.SITE_MEGA_D1.prepare(`INSERT INTO user_credentials(user_id,password_hash,salt,iterations,password_version,updated_at) VALUES(?,?,?,?,1,?)`).bind(id,hp.hash,hp.salt,hp.iterations,t).run();
+      } catch (credErr) {
+        await env.SITE_MEGA_D1.prepare(`DELETE FROM users WHERE id=?`).bind(id).run();
+        throw credErr;
+      }
       row = { id, email:normalized, display_name:'Administrateur MEGA', role:'admin', active:1 };
       await audit(env,req,id,'ADMIN_BOOTSTRAPPED','user',id,{});
     }
@@ -331,7 +334,12 @@ export default {
       if(code==='D1_BINDING_MISSING') return json({error:'SERVER_CONFIG',code,message:'Le binding D1 SITE_MEGA_D1 est absent.'},503);
       if(code==='KV_BINDING_MISSING') return json({error:'SERVER_CONFIG',code,message:'Le binding KV SITE_MEGA_KV est absent.'},503);
       if(code==='JSON_REQUIRED') return json({error:'JSON_REQUIRED',message:'Requête invalide.'},415);
-      return json({error:'SERVER_ERROR',message:'Erreur interne du serveur.'},500);
+      const raw = String(e?.message || e || 'SERVER_ERROR');
+      const safeCode =
+        raw.includes('D1') ? 'D1_OPERATION_FAILED' :
+        raw.includes('PBKDF2') || raw.includes('deriveBits') ? 'PASSWORD_DERIVATION_FAILED' :
+        raw.includes('KV') ? 'KV_OPERATION_FAILED' : 'SERVER_OPERATION_FAILED';
+      return json({error:'SERVER_ERROR',code:safeCode,message:'Erreur serveur pendant la connexion. Code : '+safeCode},500);
     }
   }
 };
