@@ -1,79 +1,102 @@
-# MEGA SERVICES SARL U — Cloudflare Pages + GitHub
+# MEGA SERVICES SARL U — V4 Cloudflare Pages + GitHub
 
-Projet statique multi-pages avec backend sécurisé dans `public/_worker.js`.
+Cette V4 supprime l'obligation d'exécuter manuellement les migrations D1. Le Worker initialise automatiquement les tables nécessaires lors du premier appel API.
 
-## Pages
-- `/` Accueil
-- `/a-propos.html`
-- `/services.html`
-- `/realisations.html`
-- `/contact.html`
+## Pages publiques
+- `/` — Accueil
+- `/a-propos.html` — À propos
+- `/services.html` — Nos services
+- `/realisations.html` — Nos réalisations
+- `/recrutement.html` — Nous recrutons : offres + formulaire de candidature
+- `/contact.html` — Contact
 - Boutique externe : `https://globalmarketci.pages.dev/#boutique/mega-services-sarl-u`
-- `/connexion.html` (administration)
-- `/admin.html` (espace administration)
+- `/connexion.html` — Espace administrateur
+- `/admin.html` — Tableau de bord sécurisé
 
-## Bindings Cloudflare
-Le fichier `wrangler.jsonc` contient déjà :
-- KV binding `SITE_MEGA_KV` → namespace `site-mega-kv` / ID `79497d597c514f0192d069ef65054ae8`
-- D1 binding `SITE_MEGA_D1` → base `site-mega-d1` / ID `831b511f-acc3-41e6-b404-1cb64e67508b`
+## Bindings Cloudflare déjà préparés
+`wrangler.jsonc` contient :
+- `SITE_MEGA_KV` → ID `79497d597c514f0192d069ef65054ae8`
+- `SITE_MEGA_D1` → base `site-mega-d1`, ID `831b511f-acc3-41e6-b404-1cb64e67508b`
+
+Dans Cloudflare Pages, vérifiez simplement que ces deux bindings sont bien attachés au projet de production.
+
+## V4 — création automatique des tables
+`public/_worker.js` exécute au premier démarrage des `CREATE TABLE IF NOT EXISTS` pour :
+- `users`
+- `user_credentials`
+- `contact_messages`
+- `site_content`
+- `audit_log`
+- `jobs`
+- `job_applications`
+- les index nécessaires
+
+Un marqueur de version est ensuite enregistré dans KV. Aucun terminal et aucune commande `wrangler d1 migrations apply` ne sont nécessaires pour la V4.
+
+Les fichiers `migrations/` sont conservés uniquement comme documentation et sauvegarde du schéma.
+
+## Accès administrateur — première connexion
+L'adresse administrateur par défaut est :
+
+`mega@services.local`
+
+Le mot de passe administrateur n'est volontairement PAS présent dans GitHub, le ZIP, le HTML ou le JavaScript navigateur.
+
+### Une seule configuration à faire dans Cloudflare
+Dans le tableau de bord Cloudflare :
+
+1. Ouvrez votre projet Pages `megaservicesci`.
+2. Allez dans **Paramètres / Settings → Variables et secrets**.
+3. Ajoutez une variable chiffrée / secret nommée exactement :
+   `ADMIN_BOOTSTRAP_PASSWORD`
+4. Comme valeur, saisissez votre mot de passe administrateur secret.
+5. Enregistrez puis redéployez le projet si Cloudflare le demande.
+6. Ouvrez `https://megaservicesci.pages.dev/connexion.html`.
+7. Utilisez `mega@services.local` et le mot de passe secret.
+
+À la toute première connexion, le Worker crée automatiquement le compte administrateur et stocke uniquement un hash PBKDF2 et son sel dans D1. Le mot de passe en clair ne va jamais dans D1.
+
+La page `/connexion.html` affiche désormais un diagnostic clair :
+- administration déjà active ;
+- première connexion prête ;
+- secret Cloudflare manquant ;
+- problème de liaison D1/KV.
 
 ## Sécurité
-- `POST /api/login` véritable route serveur.
-- Vérification des mots de passe uniquement dans `public/_worker.js`.
-- PBKDF2-SHA-256 avec sel aléatoire et 210 000 itérations.
-- Aucun hash ni sel envoyé au navigateur.
-- Identifiants stockés dans `user_credentials`, séparés des données générales `users`.
-- Sessions aléatoires stockées dans KV.
-- Cookie `__Host-mega_session`: HttpOnly, Secure, SameSite=Lax.
-- `/api/load` et `/api/save` exigent une session valide.
-- Écritures authentifiées protégées par `X-CSRF-Token` et contrôle d’origine.
-- Modification/réinitialisation de mot de passe → incrément d’un `auth:epoch` KV qui invalide toutes les sessions.
-- Création, modification, activation/désactivation et suppression des comptes contrôlées côté serveur.
-- Journal des actions sensibles dans D1 (`audit_log`).
-- Limitation des tentatives de connexion et des formulaires de contact via KV.
+- véritable `POST /api/login` côté serveur ;
+- PBKDF2-SHA-256, 210 000 itérations ;
+- aucun hash ni sel envoyé au navigateur ;
+- credentials séparés dans `user_credentials` ;
+- sessions aléatoires stockées dans KV ;
+- cookie `__Host-mega_session`, `HttpOnly`, `Secure`, `SameSite=Lax` ;
+- `/api/load` et `/api/save` protégés par session ;
+- CSRF obligatoire pour les écritures authentifiées ;
+- contrôle d'origine ;
+- invalidation globale des sessions après réinitialisation de mot de passe ;
+- gestion serveur des comptes, offres, candidatures et messages ;
+- journal des actions sensibles dans D1 ;
+- limitation des tentatives de connexion et des formulaires publics via KV.
 
-## IMPORTANT — le mot de passe administrateur n’est pas dans le dépôt
-Le mot de passe fourni ne doit jamais être ajouté à GitHub, `wrangler.jsonc`, JavaScript client ou migration SQL.
+## Administration
+Après connexion, `/admin.html` permet de gérer :
+- messages reçus ;
+- candidatures ;
+- offres d'emploi ;
+- activation/désactivation des offres ;
+- création/modification/suppression des comptes administratifs ;
+- activation/désactivation des comptes ;
+- assistance et réinitialisation de mot de passe ;
+- contenu structuré du site ;
+- journal de sécurité.
 
-Configurez les secrets directement dans Cloudflare Pages > Settings > Variables and Secrets :
-- `ADMIN_EMAIL` = `mega@services.local`
-- `ADMIN_BOOTSTRAP_PASSWORD` = votre mot de passe administrateur secret
-- `SESSION_SECRET` = une chaîne aléatoire longue (réservée aux évolutions de sécurité)
+## Déploiement GitHub / Cloudflare Pages
+Configuration recommandée :
+- Branche : `main`
+- Framework : `Aucun`
+- Commande de build : vide
+- Répertoire de sortie : `public`
 
-Avec Wrangler, selon votre mode de déploiement, ajoutez ces valeurs comme secrets/variables dans le projet Pages via le Dashboard Cloudflare. Ne commitez jamais `.dev.vars`.
+Le fichier `_worker.js` se trouve volontairement dans `public/` afin d'utiliser le mode avancé Cloudflare Pages.
 
-## Première installation
-1. Créer/ouvrir le projet Cloudflare Pages `mega-services-sarl-u` et connecter le dépôt GitHub.
-2. Vérifier les bindings D1/KV dans Cloudflare ou conserver `wrangler.jsonc` comme source de configuration.
-3. Installer : `npm install`
-4. Appliquer les migrations : `npx wrangler d1 migrations apply site-mega-d1 --remote`
-5. Définir `ADMIN_EMAIL` et `ADMIN_BOOTSTRAP_PASSWORD` comme secrets/variables Cloudflare.
-6. Déployer le dossier `public`.
-7. Ouvrir `/connexion.html` et effectuer la première connexion. Si aucun administrateur n’existe encore, le Worker crée le compte primaire et enregistre seulement un hash PBKDF2 + sel dans D1.
-
-## Mot de passe perdu
-Pour un utilisateur secondaire, un administrateur connecté ouvre `Utilisateurs > Réinitialiser` et attribue un mot de passe temporaire. Toutes les sessions sont immédiatement invalidées après la réinitialisation.
-
-Pour le compte administrateur principal si aucun autre administrateur n’est disponible : changez `ADMIN_BOOTSTRAP_PASSWORD` dans les secrets Cloudflare et, si nécessaire, supprimez uniquement la ligne de credential correspondante dans D1 avant une connexion de récupération contrôlée. Ne publiez jamais la valeur du secret.
-
-## GitHub Actions
-`.github/workflows/deploy.yml` prévoit un déploiement sur push `main`. Ajoutez dans les secrets GitHub :
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
-
-## Remarque
-Le formulaire Contact enregistre les messages dans D1 et ils apparaissent dans l’espace administrateur. Aucun service e-mail externe n’est requis.
-
-## Mise à jour V3 — Recrutement et espace administrateur
-
-Cette version ajoute une page publique `public/recrutement.html`, accessible depuis le menu **Nous recrutons**. Elle affiche automatiquement les offres actives enregistrées dans D1 et transmet les candidatures à l'espace administrateur.
-
-L'espace administrateur est disponible via le bouton **Espace administrateur** du menu public. Après authentification, la connexion redirige vers `/admin.html`. Le tableau de bord comporte désormais les sections **Candidatures** et **Offres d'emploi**.
-
-Avant le premier déploiement de cette version sur une base D1 déjà existante, exécuter la migration :
-
-```bash
-npx wrangler d1 migrations apply site-mega-d1 --remote
-```
-
-Cette commande applique notamment `migrations/0002_recruitment.sql`, qui crée les tables `jobs` et `job_applications`.
+## Diagnostic serveur
+`GET /api/setup-status` retourne uniquement l'état de préparation : base prête, existence du compte administrateur et présence ou non du secret. Aucune valeur secrète n'est jamais renvoyée.

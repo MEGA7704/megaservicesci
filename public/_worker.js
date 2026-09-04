@@ -3,6 +3,53 @@ const PBKDF2_ITERATIONS = 210000;
 const SESSION_COOKIE = '__Host-mega_session';
 const enc = new TextEncoder();
 
+const SCHEMA_VERSION = 'v4-auto-schema-1';
+let schemaReadyPromise = null;
+
+async function ensureSchema(env) {
+  if (schemaReadyPromise) return schemaReadyPromise;
+  schemaReadyPromise = (async () => {
+    if (!env.SITE_MEGA_D1) throw new Error('D1_BINDING_MISSING');
+    if (!env.SITE_MEGA_KV) throw new Error('KV_BINDING_MISSING');
+    const markerKey = `schema:${SCHEMA_VERSION}`;
+    const marker = await env.SITE_MEGA_KV.get(markerKey);
+    if (marker === 'ready') return;
+    const ddl = [
+      `CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY,email TEXT NOT NULL UNIQUE COLLATE NOCASE,display_name TEXT NOT NULL,role TEXT NOT NULL DEFAULT 'admin' CHECK (role IN ('admin','editor')),active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),created_at TEXT NOT NULL,updated_at TEXT NOT NULL)`,
+      `CREATE TABLE IF NOT EXISTS user_credentials (user_id TEXT PRIMARY KEY,password_hash TEXT NOT NULL,salt TEXT NOT NULL,iterations INTEGER NOT NULL DEFAULT 210000,password_version INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE)`,
+      `CREATE TABLE IF NOT EXISTS contact_messages (id TEXT PRIMARY KEY,name TEXT NOT NULL,email TEXT,phone TEXT,subject TEXT,message TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new','read','archived')),created_at TEXT NOT NULL)`,
+      `CREATE TABLE IF NOT EXISTS site_content (key TEXT PRIMARY KEY,value_json TEXT NOT NULL,updated_at TEXT NOT NULL,updated_by TEXT)`,
+      `CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT,actor_user_id TEXT,action TEXT NOT NULL,target_type TEXT,target_id TEXT,ip TEXT,user_agent TEXT,details_json TEXT,created_at TEXT NOT NULL)`,
+      `CREATE TABLE IF NOT EXISTS jobs (id TEXT PRIMARY KEY,title TEXT NOT NULL,location TEXT NOT NULL DEFAULT 'Diabo',contract_type TEXT NOT NULL DEFAULT 'À définir',description TEXT NOT NULL,requirements TEXT,active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0,1)),created_at TEXT NOT NULL,updated_at TEXT NOT NULL,created_by TEXT)`,
+      `CREATE TABLE IF NOT EXISTS job_applications (id TEXT PRIMARY KEY,job_id TEXT,full_name TEXT NOT NULL,phone TEXT NOT NULL,email TEXT,locality TEXT,position_sought TEXT,education TEXT,experience TEXT,skills TEXT,cv_url TEXT,message TEXT,status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new','reviewed','shortlisted','rejected','archived')),created_at TEXT NOT NULL,FOREIGN KEY(job_id) REFERENCES jobs(id) ON DELETE SET NULL)`,
+      `CREATE INDEX IF NOT EXISTS idx_contact_status_created ON contact_messages(status, created_at DESC)`,
+      `CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at DESC)`,
+      `CREATE INDEX IF NOT EXISTS idx_users_active ON users(active)`,
+      `CREATE INDEX IF NOT EXISTS idx_jobs_active_created ON jobs(active, created_at DESC)`,
+      `CREATE INDEX IF NOT EXISTS idx_applications_status_created ON job_applications(status, created_at DESC)`,
+      `CREATE INDEX IF NOT EXISTS idx_applications_job ON job_applications(job_id)`
+    ];
+    await env.SITE_MEGA_D1.batch(ddl.map(sql => env.SITE_MEGA_D1.prepare(sql)));
+    if (!await env.SITE_MEGA_KV.get('auth:epoch')) await env.SITE_MEGA_KV.put('auth:epoch','1');
+    await env.SITE_MEGA_KV.put(markerKey, 'ready');
+  })().catch(err => { schemaReadyPromise = null; throw err; });
+  return schemaReadyPromise;
+}
+
+async function setupStatus(env) {
+  await ensureSchema(env);
+  const email = (env.ADMIN_EMAIL || 'mega@services.local').trim().toLowerCase();
+  const admin = await env.SITE_MEGA_D1.prepare(`SELECT id,email,active FROM users WHERE email=? AND role='admin'`).bind(email).first();
+  return json({
+    ok: true,
+    databaseReady: true,
+    adminEmail: email,
+    adminExists: !!admin,
+    adminActive: !!admin?.active,
+    bootstrapSecretConfigured: !!env.ADMIN_BOOTSTRAP_PASSWORD
+  });
+}
+
 const json = (data, status = 200, headers = {}) => new Response(JSON.stringify(data), {
   status,
   headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...headers }
@@ -114,6 +161,9 @@ async function login(req, env) {
     valid = await verifyPassword(password,row);
   }
   if (!valid) {
+    if (!row && normalized === (env.ADMIN_EMAIL || 'mega@services.local').trim().toLowerCase() && !env.ADMIN_BOOTSTRAP_PASSWORD) {
+      return json({ error:'ADMIN_SETUP_REQUIRED', message:'Le compte administrateur n’est pas encore initialisé. Ajoutez le secret Cloudflare ADMIN_BOOTSTRAP_PASSWORD puis reconnectez-vous.' },503);
+    }
     await env.SITE_MEGA_KV.put(lockKey,String(attempts+1),{expirationTtl:900});
     await audit(env,req,row?.id||null,'LOGIN_FAILED','user',row?.id||null,{email:normalized});
     return json({ error:'INVALID_CREDENTIALS' },401);
@@ -258,6 +308,8 @@ export default {
   async fetch(req, env) {
     const url=new URL(req.url);
     try {
+      if (url.pathname.startsWith('/api/')) await ensureSchema(env);
+      if(url.pathname==='/api/setup-status'&&req.method==='GET') return await setupStatus(env);
       if(url.pathname==='/api/login'&&req.method==='POST') return await login(req,env);
       if(url.pathname==='/api/session'&&req.method==='GET') return await sessionInfo(req,env);
       if(url.pathname==='/api/logout'&&req.method==='POST') return await logout(req,env);

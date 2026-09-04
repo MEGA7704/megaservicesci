@@ -1,1 +1,72 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Connexion administration — MEGA Services SARL U</title><link rel="stylesheet" href="/assets/style.css"></head><body><header id="site-header"></header><main class="login-wrap"><section class="login-card"><div class="brand"><span class="mark">M</span><span><strong>MEGA</strong><small>Administration</small></span></div><h1>Connexion</h1><p style="color:var(--muted)">Accès réservé aux utilisateurs autorisés.</p><form id="loginForm"><div class="field"><label>E-mail</label><input name="email" type="email" autocomplete="username" required></div><div class="field"><label>Mot de passe</label><input name="password" type="password" autocomplete="current-password" required></div><button class="btn btn-primary" style="width:100%">Se connecter</button><button type="button" id="forgot" class="btn" style="width:100%;margin-top:9px">Mot de passe oublié ?</button><div id="msg" style="margin-top:12px"></div></form></section></main><script src="/assets/app.js"></script><script>MEGA.mount('');(async()=>{try{await MEGA.api('/api/session');location.href='/admin.html'}catch{}})();document.getElementById('loginForm').addEventListener('submit',async e=>{e.preventDefault();const d=Object.fromEntries(new FormData(e.target).entries()),m=document.getElementById('msg');try{await MEGA.api('/api/login',{method:'POST',body:JSON.stringify(d)});location.href='/admin.html'}catch(err){m.className='notice error';m.textContent=err.data?.message||'Identifiants incorrects.'}});document.getElementById('forgot').onclick=()=>{const m=document.getElementById('msg');m.className='notice';m.textContent="Demandez à un administrateur autorisé de réinitialiser votre mot de passe. Pour le compte administrateur principal, utilisez la procédure sécurisée Cloudflare décrite dans le README du projet."}</script></body></html>
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Espace administrateur — MEGA Services SARL U</title>
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main class="login-wrap">
+  <section class="login-card">
+    <div class="brand"><span class="mark">M</span><span><strong>MEGA</strong><small>Administration</small></span></div>
+    <h1>Espace administrateur</h1>
+    <p style="color:var(--muted)">Accès réservé aux utilisateurs autorisés.</p>
+    <div id="setupState" class="notice" style="margin:12px 0">Vérification de l’espace administrateur…</div>
+    <form id="loginForm">
+      <div class="field"><label>E-mail</label><input name="email" type="email" value="mega@services.local" autocomplete="username" required></div>
+      <div class="field"><label>Mot de passe</label><input name="password" type="password" autocomplete="current-password" required></div>
+      <button class="btn btn-primary" style="width:100%">Se connecter à l’administration</button>
+      <button type="button" id="forgot" class="btn" style="width:100%;margin-top:9px">Mot de passe oublié ?</button>
+      <div id="msg" style="margin-top:12px"></div>
+    </form>
+  </section>
+</main>
+<script src="/assets/app.js"></script>
+<script>
+MEGA.mount('');
+const state=document.getElementById('setupState');
+(async()=>{
+  try{
+    await MEGA.api('/api/session');
+    location.href='/admin.html';
+    return;
+  }catch{}
+  try{
+    const s=await MEGA.api('/api/setup-status');
+    if(s.adminExists){
+      state.className='notice';
+      state.textContent='Administration active. Connectez-vous avec votre compte administrateur.';
+    }else if(s.bootstrapSecretConfigured){
+      state.className='notice';
+      state.textContent='Première connexion prête : utilisez l’e-mail administrateur et le mot de passe secret configuré dans Cloudflare.';
+    }else{
+      state.className='notice error';
+      state.innerHTML='<b>Première connexion à finaliser.</b><br>Dans Cloudflare → votre projet → Paramètres → Variables et secrets, ajoutez le secret <code>ADMIN_BOOTSTRAP_PASSWORD</code>. Aucun terminal ni migration D1 n’est nécessaire.';
+    }
+  }catch{
+    state.className='notice error';
+    state.textContent='Impossible de vérifier la configuration. Vérifiez que les liaisons D1 et KV du projet sont actives.';
+  }
+})();
+
+document.getElementById('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const d=Object.fromEntries(new FormData(e.target).entries()),m=document.getElementById('msg');
+  try{
+    await MEGA.api('/api/login',{method:'POST',body:JSON.stringify(d)});
+    location.href='/admin.html';
+  }catch(err){
+    m.className='notice error';
+    m.textContent=err.data?.message||'Identifiants incorrects.';
+  }
+});
+document.getElementById('forgot').onclick=()=>{
+  const m=document.getElementById('msg');
+  m.className='notice';
+  m.textContent="Si un autre administrateur existe, il peut réinitialiser votre mot de passe depuis Utilisateurs. Pour le compte principal avant la toute première connexion, modifiez le secret ADMIN_BOOTSTRAP_PASSWORD dans Cloudflare.";
+};
+</script>
+</body>
+</html>
