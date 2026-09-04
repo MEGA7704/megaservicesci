@@ -9,8 +9,8 @@ let schemaReadyPromise = null;
 async function ensureSchema(env) {
   if (schemaReadyPromise) return schemaReadyPromise;
   schemaReadyPromise = (async () => {
-    if (!env.SITE_MEGA_D1) throw new Error('D1_BINDING_MISSING');
-    if (!env.SITE_MEGA_KV) throw new Error('KV_BINDING_MISSING');
+    if (!env.SITE_MEGA_D1) { const e=new Error('D1_BINDING_MISSING'); e.code='D1_BINDING_MISSING'; throw e; }
+    if (!env.SITE_MEGA_KV) { const e=new Error('KV_BINDING_MISSING'); e.code='KV_BINDING_MISSING'; throw e; }
     const markerKey = `schema:${SCHEMA_VERSION}`;
     const marker = await env.SITE_MEGA_KV.get(markerKey);
     if (marker === 'ready') return;
@@ -43,7 +43,6 @@ async function setupStatus(env) {
   return json({
     ok: true,
     databaseReady: true,
-    adminEmail: email,
     adminExists: !!admin,
     adminActive: !!admin?.active,
     bootstrapSecretConfigured: !!env.ADMIN_BOOTSTRAP_PASSWORD
@@ -327,7 +326,12 @@ export default {
       if(url.pathname.startsWith('/api/')) return json({error:'NOT_FOUND'},404);
       return env.ASSETS.fetch(req);
     } catch(e) {
-      console.error(e); return json({error:'SERVER_ERROR'},500);
+      console.error(e);
+      const code=e?.code||e?.message||'SERVER_ERROR';
+      if(code==='D1_BINDING_MISSING') return json({error:'SERVER_CONFIG',code,message:'Le binding D1 SITE_MEGA_D1 est absent.'},503);
+      if(code==='KV_BINDING_MISSING') return json({error:'SERVER_CONFIG',code,message:'Le binding KV SITE_MEGA_KV est absent.'},503);
+      if(code==='JSON_REQUIRED') return json({error:'JSON_REQUIRED',message:'Requête invalide.'},415);
+      return json({error:'SERVER_ERROR',message:'Erreur interne du serveur.'},500);
     }
   }
 };
