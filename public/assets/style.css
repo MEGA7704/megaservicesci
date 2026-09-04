@@ -187,3 +187,63 @@
   .real-sites-grid{grid-template-columns:1fr;gap:20px}
   .site-title-row{align-items:center}
 }
+
+
+/* V12 — Nos réalisations pleine largeur, 4 cartes sur une ligne */
+.realisations-full{
+  width:100%;
+  max-width:none !important;
+  margin:0 !important;
+  padding:28px 24px 42px !important;
+  box-sizing:border-box;
+}
+.realisations-full .real-sites-grid{
+  width:100%;
+  max-width:none;
+  margin:0;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:18px;
+  padding:0;
+}
+.realisations-full .real-site-card{
+  min-width:0;
+  border-radius:18px;
+}
+.realisations-full .site-shot-wrap{
+  aspect-ratio:16/10;
+}
+.realisations-full .real-site-body{
+  padding:18px 18px 22px;
+}
+.realisations-full .site-title-row h2{
+  font-size:18px;
+  line-height:1.15;
+}
+.realisations-full .real-site-body p{
+  font-size:14px;
+  line-height:1.5;
+  min-height:64px;
+}
+.realisations-full .poster-btn{
+  width:100%;
+  box-sizing:border-box;
+}
+.realisations-full .browser-bar{
+  display:none !important;
+}
+
+/* Responsive */
+@media(max-width:1180px){
+  .realisations-full .real-sites-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+@media(max-width:680px){
+  .realisations-full{
+    padding:20px 14px 30px !important;
+  }
+  .realisations-full .real-sites-grid{
+    grid-template-columns:1fr;
+  }
+}

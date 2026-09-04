@@ -56,3 +56,10 @@ Galerie de 4 posters professionnels : GLOBAL MARKET, GLOBAL EMPLOI CI, GLOBAL BA
 ## V11 — Réalisations avec images réelles
 La page Nos réalisations utilise maintenant de véritables captures visuelles des sites publiés.
 Les miniatures sont chargées via un service de capture de page web et se mettent à jour avec les sites en ligne.
+
+
+## V12 — Nos réalisations pleine page
+- Section Nos réalisations en pleine largeur.
+- 4 cartes affichées sur une seule ligne sur desktop.
+- Suppression des entêtes de cartes type navigateur contenant les URLs.
+- Conservation des images réelles des sites, des descriptions et des boutons de visite.
