@@ -51,3 +51,8 @@ Après ajout ou modification d’un secret/binding, redéployez le projet.
 
 ## V10 — Nos réalisations
 Galerie de 4 posters professionnels : GLOBAL MARKET, GLOBAL EMPLOI CI, GLOBAL BANK CI et GLOBAL BT CI, avec liens externes.
+
+
+## V11 — Réalisations avec images réelles
+La page Nos réalisations utilise maintenant de véritables captures visuelles des sites publiés.
+Les miniatures sont chargées via un service de capture de page web et se mettent à jour avec les sites en ligne.
