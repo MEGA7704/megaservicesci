@@ -24,36 +24,49 @@
     </div>
     <div id="jobsGrid" class="jobs-grid"><div class="panel">Chargement des offres...</div></div>
 
-    <div class="recruit-form-wrap">
-      <div class="recruit-form-intro">
+    <div class="recruit-cta-panel">
+      <div>
         <div class="eyebrow">CANDIDATURE</div>
-        <h2>Demande d’emploi</h2>
-        <p>Remplissez le formulaire avec des informations exactes. Votre candidature sera transmise directement à l’espace administrateur de MEGA Services SARL U.</p>
-        <div class="recruit-points">
-          <span>✓ Candidature enregistrée de façon sécurisée</span>
-          <span>✓ Étude par l’administration</span>
-          <span>✓ Possibilité de candidature spontanée</span>
-        </div>
+        <h2>Vous souhaitez rejoindre MEGA Services ?</h2>
+        <p>Déposez votre demande d’emploi en quelques minutes. Vous pouvez postuler à une offre disponible ou envoyer une candidature spontanée.</p>
       </div>
-      <form id="applicationForm" class="panel recruit-form">
-        <div class="form-grid">
-          <div class="field"><label>Nom et prénoms *</label><input name="fullName" maxlength="120" required></div>
-          <div class="field"><label>Téléphone *</label><input name="phone" maxlength="60" required></div>
-          <div class="field"><label>E-mail</label><input name="email" type="email" maxlength="180"></div>
-          <div class="field"><label>Localité</label><input name="locality" maxlength="120" placeholder="Ex. Diabo, Bouaké..."></div>
-          <div class="field form-span"><label>Offre concernée</label><select name="jobId" id="jobSelect"><option value="">Candidature spontanée</option></select></div>
-          <div class="field form-span"><label>Poste recherché</label><input name="positionSought" maxlength="160" placeholder="Ex. Assistant informatique, agent commercial..."></div>
-          <div class="field"><label>Niveau d’étude / formation</label><textarea name="education" maxlength="1200"></textarea></div>
-          <div class="field"><label>Expérience professionnelle</label><textarea name="experience" maxlength="1800"></textarea></div>
-          <div class="field form-span"><label>Compétences principales</label><textarea name="skills" maxlength="1800"></textarea></div>
-          <div class="field form-span"><label>Lien vers CV ou portfolio (facultatif)</label><input name="cvUrl" type="url" maxlength="500" placeholder="https://..."></div>
-          <div class="field form-span"><label>Message / motivation</label><textarea name="message" maxlength="2500" placeholder="Présentez brièvement votre motivation."></textarea></div>
-          <div class="hp-field" aria-hidden="true"><label>Site web</label><input name="website" tabindex="-1" autocomplete="off"></div>
+      <button class="btn btn-primary" id="openApplicationModal" type="button">Déposer ma candidature →</button>
+    </div>
+
+    <div class="application-modal" id="applicationModal" aria-hidden="true">
+      <div class="application-modal-backdrop" data-close-modal></div>
+      <div class="application-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="applicationModalTitle">
+        <button class="application-modal-close" type="button" aria-label="Fermer" data-close-modal>×</button>
+        <div class="application-modal-head">
+          <div class="eyebrow">CANDIDATURE</div>
+          <h2 id="applicationModalTitle">Demande d’emploi</h2>
+          <p>Remplissez le formulaire avec des informations exactes. Votre candidature sera transmise directement à l’espace administrateur de MEGA Services SARL U.</p>
+          <div class="recruit-points">
+            <span>✓ Candidature enregistrée de façon sécurisée</span>
+            <span>✓ Étude par l’administration</span>
+            <span>✓ Possibilité de candidature spontanée</span>
+          </div>
         </div>
-        <label class="consent-line"><input type="checkbox" required> J’accepte que les informations fournies soient utilisées pour l’étude de ma candidature.</label>
-        <button class="btn btn-primary" type="submit">Envoyer ma candidature →</button>
-        <div id="applicationMsg" style="margin-top:14px"></div>
-      </form>
+        <form id="applicationForm" class="recruit-form">
+          <div class="form-grid">
+            <div class="field"><label>Nom et prénoms *</label><input name="fullName" maxlength="120" required></div>
+            <div class="field"><label>Téléphone *</label><input name="phone" maxlength="60" required></div>
+            <div class="field"><label>E-mail</label><input name="email" type="email" maxlength="180"></div>
+            <div class="field"><label>Localité</label><input name="locality" maxlength="120" placeholder="Ex. Diabo, Bouaké..."></div>
+            <div class="field form-span"><label>Offre concernée</label><select name="jobId" id="jobSelect"><option value="">Candidature spontanée</option></select></div>
+            <div class="field form-span"><label>Poste recherché</label><input name="positionSought" maxlength="160" placeholder="Ex. Assistant informatique, agent commercial..."></div>
+            <div class="field"><label>Niveau d’étude / formation</label><textarea name="education" maxlength="1200"></textarea></div>
+            <div class="field"><label>Expérience professionnelle</label><textarea name="experience" maxlength="1800"></textarea></div>
+            <div class="field form-span"><label>Compétences principales</label><textarea name="skills" maxlength="1800"></textarea></div>
+            <div class="field form-span"><label>Lien vers CV ou portfolio (facultatif)</label><input name="cvUrl" type="url" maxlength="500" placeholder="https://..."></div>
+            <div class="field form-span"><label>Message / motivation</label><textarea name="message" maxlength="2500" placeholder="Présentez brièvement votre motivation."></textarea></div>
+            <div class="hp-field" aria-hidden="true"><label>Site web</label><input name="website" tabindex="-1" autocomplete="off"></div>
+          </div>
+          <label class="consent-line"><input type="checkbox" required> J’accepte que les informations fournies soient utilisées pour l’étude de ma candidature.</label>
+          <button class="btn btn-primary" type="submit">Envoyer ma candidature →</button>
+          <div id="applicationMsg" style="margin-top:14px"></div>
+        </form>
+      </div>
     </div>
   </section>
 </main>
@@ -61,6 +74,19 @@
 <script src="/assets/app.js"></script>
 <script>
 MEGA.mount('recruit');
+const modal=document.getElementById('applicationModal');
+const openModal=(jobId='')=>{
+  const sel=document.getElementById('jobSelect');
+  if(sel) sel.value=jobId||'';
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+  document.body.classList.add('modal-open');
+  setTimeout(()=>document.querySelector('#applicationForm input[name=\"fullName\"]')?.focus(),60);
+};
+const closeModal=()=>{modal.classList.remove('open');modal.setAttribute('aria-hidden','true');document.body.classList.remove('modal-open')};
+document.getElementById('openApplicationModal').onclick=()=>openModal('');
+document.querySelectorAll('[data-close-modal]').forEach(el=>el.onclick=closeModal);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open'))closeModal()});
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 let jobs=[];
 async function loadJobs(){
@@ -70,13 +96,13 @@ async function loadJobs(){
     sel.innerHTML='<option value="">Candidature spontanée</option>'+jobs.map(j=>`<option value="${esc(j.id)}">${esc(j.title)} — ${esc(j.location)}</option>`).join('');
     if(!jobs.length){grid.innerHTML='<div class="empty-jobs"><div class="empty-job-icon">💼</div><h3>Aucune offre publiée actuellement</h3><p>Vous pouvez toutefois envoyer une candidature spontanée avec le formulaire ci-dessous.</p></div>';return}
     grid.innerHTML=jobs.map(j=>`<article class="job-card"><div class="job-card-top"><span class="job-badge">POSTE DISPONIBLE</span><span class="job-location">⌖ ${esc(j.location)}</span></div><h3>${esc(j.title)}</h3><div class="job-meta"><span>💼 ${esc(j.contract_type)}</span></div><p>${esc(j.description)}</p>${j.requirements?`<div class="job-requirements"><b>Profil recherché</b><p>${esc(j.requirements)}</p></div>`:''}<button class="btn btn-primary apply-job" data-job="${esc(j.id)}">Postuler à cette offre →</button></article>`).join('');
-    document.querySelectorAll('.apply-job').forEach(b=>b.onclick=()=>{sel.value=b.dataset.job;document.getElementById('applicationForm').scrollIntoView({behavior:'smooth',block:'start'})});
+    document.querySelectorAll('.apply-job').forEach(b=>b.onclick=()=>openModal(b.dataset.job));
   }catch{grid.innerHTML='<div class="notice error">Impossible de charger les offres pour le moment.</div>'}
 }
 document.getElementById('applicationForm').addEventListener('submit',async e=>{
   e.preventDefault(); const msg=document.getElementById('applicationMsg'); const body=Object.fromEntries(new FormData(e.target).entries());
   msg.className='notice';msg.textContent='Envoi en cours...';
-  try{await MEGA.api('/api/applications',{method:'POST',body:JSON.stringify(body)});e.target.reset();msg.className='notice';msg.textContent='Votre candidature a bien été envoyée. Merci pour votre intérêt envers MEGA Services SARL U.'}
+  try{await MEGA.api('/api/applications',{method:'POST',body:JSON.stringify(body)});e.target.reset();msg.className='notice';msg.textContent='Votre candidature a bien été envoyée. Merci pour votre intérêt envers MEGA Services SARL U.';setTimeout(closeModal,1800)}
   catch(err){msg.className='notice error';msg.textContent=err.status===429?'Trop de tentatives. Veuillez réessayer plus tard.':'Impossible d’envoyer la candidature. Vérifiez les informations saisies.'}
 });
 loadJobs();

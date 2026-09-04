@@ -31,3 +31,10 @@ Après ajout ou modification d’un secret/binding, redéployez le projet.
 - Nettoyage automatique si l'écriture des identifiants échoue.
 - Retour d'un code de diagnostic serveur non sensible en cas d'erreur.
 - Aucun mot de passe ni secret n'est envoyé dans l'URL ou inclus dans le dépôt.
+
+
+## V8 — formulaire de candidature en popup
+- La section « CANDIDATURE / Demande d’emploi » n’est plus affichée en permanence dans la page.
+- Un bouton « Déposer ma candidature » ouvre désormais le formulaire dans une fenêtre popup professionnelle.
+- Le bouton « Postuler à cette offre » ouvre le même popup avec l’offre correspondante déjà sélectionnée.
+- Fermeture possible par le bouton ×, clic sur l’arrière-plan ou touche Échap.
