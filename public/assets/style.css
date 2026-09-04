@@ -48,3 +48,23 @@
 
 /* V9 - coordonnées officielles + footer compact */
 .footer-compact{padding:24px 5vw 10px}.footer-grid-compact{gap:20px;align-items:start}.footer-compact h4{margin:0 0 8px;font-size:13px}.footer-compact p,.footer-compact a{font-size:12px;line-height:1.45;margin:3px 0}.footer-compact .brand .mark{width:40px;height:40px;font-size:20px;border-radius:11px}.footer-compact .brand strong{font-size:21px}.footer-compact .footer-tagline{margin-top:8px;max-width:260px}.footer-compact .copy{margin-top:14px;padding-top:10px;font-size:11px}.identity-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.identity-grid>div{background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:14px}.identity-grid b,.identity-grid span{display:block}.identity-grid b{font-size:12px;color:var(--green);margin-bottom:5px}.identity-grid span{font-size:14px;color:var(--ink)}@media(max-width:800px){.footer-grid-compact{grid-template-columns:1fr 1fr}.identity-grid{grid-template-columns:1fr 1fr}}@media(max-width:520px){.footer-compact{padding:20px 6vw 10px}.footer-grid-compact,.identity-grid{grid-template-columns:1fr}.footer-grid-compact{gap:14px}.footer-compact .copy{margin-top:10px}}
+
+/* V10 — Posters Nos réalisations */
+.mega-portfolio{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;padding:12px 0 34px}
+.mega-poster{background:#fff;border:1px solid #e7e9e8;border-radius:22px;overflow:hidden;box-shadow:0 14px 36px rgba(7,45,38,.10);transition:transform .22s ease,box-shadow .22s ease}
+.mega-poster:hover{transform:translateY(-5px);box-shadow:0 20px 44px rgba(7,45,38,.16)}
+.poster-screen{min-height:285px;padding:36px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;color:#fff}
+.poster-screen:after{content:"";position:absolute;width:240px;height:240px;border:1px solid rgba(255,255,255,.20);border-radius:50%;right:-60px;top:-75px;box-shadow:0 0 0 35px rgba(255,255,255,.04),0 0 0 70px rgba(255,255,255,.03)}
+.poster-screen.market{background:linear-gradient(135deg,#073f36,#0d725d)}
+.poster-screen.emploi{background:linear-gradient(135deg,#0b3d58,#167c91)}
+.poster-screen.bank{background:linear-gradient(135deg,#062f2d,#0b5c53)}
+.poster-screen.bt{background:linear-gradient(135deg,#4a3510,#a87317)}
+.poster-brand{font-size:clamp(25px,3vw,40px);font-weight:900;letter-spacing:.5px;position:relative;z-index:1}
+.poster-tag{margin-top:8px;color:#f0c75e;font-weight:700;position:relative;z-index:1}
+.poster-ui{display:flex;gap:8px;margin-top:28px;position:relative;z-index:1}
+.poster-ui span{display:block;height:8px;border-radius:20px;background:rgba(255,255,255,.82)}
+.poster-ui span:nth-child(1){width:46%}.poster-ui span:nth-child(2){width:25%;opacity:.65}.poster-ui span:nth-child(3){width:12%;background:#e7ad2f}
+.poster-body{padding:24px 26px 28px}.poster-body h2{margin:0 0 8px;color:#073f36}.poster-body p{min-height:52px;color:#58635f}
+.poster-btn{display:inline-flex;align-items:center;justify-content:center;background:#073f36;color:#fff!important;text-decoration:none;padding:11px 18px;border-radius:10px;font-weight:800;margin-top:8px}
+.poster-btn:hover{background:#b9821d}
+@media(max-width:760px){.mega-portfolio{grid-template-columns:1fr;gap:18px}.poster-screen{min-height:220px;padding:26px}.poster-body p{min-height:0}}

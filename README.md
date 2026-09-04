@@ -47,3 +47,7 @@ Après ajout ou modification d’un secret/binding, redéployez le projet.
 - Compte contribuable : 2039493 M
 - Siège social : Diabo
 - Footer réduit en hauteur et rendu plus compact.
+
+
+## V10 — Nos réalisations
+Galerie de 4 posters professionnels : GLOBAL MARKET, GLOBAL EMPLOI CI, GLOBAL BANK CI et GLOBAL BT CI, avec liens externes.
