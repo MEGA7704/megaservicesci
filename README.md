@@ -63,3 +63,17 @@ Pour le compte administrateur principal si aucun autre administrateur n’est di
 
 ## Remarque
 Le formulaire Contact enregistre les messages dans D1 et ils apparaissent dans l’espace administrateur. Aucun service e-mail externe n’est requis.
+
+## Mise à jour V3 — Recrutement et espace administrateur
+
+Cette version ajoute une page publique `public/recrutement.html`, accessible depuis le menu **Nous recrutons**. Elle affiche automatiquement les offres actives enregistrées dans D1 et transmet les candidatures à l'espace administrateur.
+
+L'espace administrateur est disponible via le bouton **Espace administrateur** du menu public. Après authentification, la connexion redirige vers `/admin.html`. Le tableau de bord comporte désormais les sections **Candidatures** et **Offres d'emploi**.
+
+Avant le premier déploiement de cette version sur une base D1 déjà existante, exécuter la migration :
+
+```bash
+npx wrangler d1 migrations apply site-mega-d1 --remote
+```
+
+Cette commande applique notamment `migrations/0002_recruitment.sql`, qui crée les tables `jobs` et `job_applications`.

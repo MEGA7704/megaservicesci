@@ -142,14 +142,16 @@ async function publicContact(req,env){
 }
 async function load(req,env){
   const a=await requireSession(req,env,false); if(a.error)return a.error;
-  const [content,contacts,users,audits]=await Promise.all([
+  const [content,contacts,users,audits,jobs,applications]=await Promise.all([
     env.SITE_MEGA_D1.prepare(`SELECT key,value_json,updated_at FROM site_content`).all(),
     env.SITE_MEGA_D1.prepare(`SELECT * FROM contact_messages ORDER BY created_at DESC LIMIT 200`).all(),
     env.SITE_MEGA_D1.prepare(`SELECT id,email,display_name,role,active,created_at,updated_at FROM users ORDER BY created_at DESC`).all(),
-    env.SITE_MEGA_D1.prepare(`SELECT id,actor_user_id,action,target_type,target_id,ip,details_json,created_at FROM audit_log ORDER BY id DESC LIMIT 200`).all()
+    env.SITE_MEGA_D1.prepare(`SELECT id,actor_user_id,action,target_type,target_id,ip,details_json,created_at FROM audit_log ORDER BY id DESC LIMIT 200`).all(),
+    env.SITE_MEGA_D1.prepare(`SELECT * FROM jobs ORDER BY active DESC, created_at DESC LIMIT 200`).all(),
+    env.SITE_MEGA_D1.prepare(`SELECT a.*,j.title AS job_title FROM job_applications a LEFT JOIN jobs j ON j.id=a.job_id ORDER BY a.created_at DESC LIMIT 500`).all()
   ]);
   const site={}; for(const r of content.results||[]) { try{site[r.key]=JSON.parse(r.value_json)}catch{site[r.key]=r.value_json} }
-  return json({site,contacts:contacts.results||[],users:users.results||[],audit:audits.results||[]});
+  return json({site,contacts:contacts.results||[],users:users.results||[],audit:audits.results||[],jobs:jobs.results||[],applications:applications.results||[]});
 }
 async function save(req,env){
   const a=await requireSession(req,env,true); if(a.error)return a.error;
@@ -200,6 +202,58 @@ async function contactAdmin(req,env,url){
   return json({error:'METHOD_NOT_ALLOWED'},405);
 }
 
+async function publicJobs(req,env){
+  const rows=await env.SITE_MEGA_D1.prepare(`SELECT id,title,location,contract_type,description,requirements,created_at FROM jobs WHERE active=1 ORDER BY created_at DESC LIMIT 100`).all();
+  return json({jobs:rows.results||[]});
+}
+async function publicApplication(req,env){
+  if(!sameOrigin(req)) return json({error:'ORIGIN_REJECTED'},403);
+  const b=await bodyJson(req); if(b.website) return json({ok:true});
+  const fullName=String(b.fullName||'').trim().slice(0,120), phone=String(b.phone||'').trim().slice(0,60), email=String(b.email||'').trim().slice(0,180), locality=String(b.locality||'').trim().slice(0,120), jobId=String(b.jobId||'').trim().slice(0,80), positionSought=String(b.positionSought||'').trim().slice(0,160), education=String(b.education||'').trim().slice(0,1200), experience=String(b.experience||'').trim().slice(0,1800), skills=String(b.skills||'').trim().slice(0,1800), cvUrl=String(b.cvUrl||'').trim().slice(0,500), message=String(b.message||'').trim().slice(0,2500);
+  if(!fullName||!phone) return json({error:'MISSING_FIELDS'},400);
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({error:'INVALID_EMAIL'},400);
+  if(cvUrl){ try{ const u=new URL(cvUrl); if(!['http:','https:'].includes(u.protocol)) throw new Error(); }catch{return json({error:'INVALID_CV_URL'},400)} }
+  let validJobId=null;
+  if(jobId){ const j=await env.SITE_MEGA_D1.prepare(`SELECT id FROM jobs WHERE id=? AND active=1`).bind(jobId).first(); if(j) validJobId=j.id; }
+  const rk=`application-rate:${clientIp(req)}`; const count=Number(await env.SITE_MEGA_KV.get(rk)||'0'); if(count>=4) return json({error:'RATE_LIMIT'},429);
+  await env.SITE_MEGA_KV.put(rk,String(count+1),{expirationTtl:3600});
+  const id=crypto.randomUUID();
+  await env.SITE_MEGA_D1.prepare(`INSERT INTO job_applications(id,job_id,full_name,phone,email,locality,position_sought,education,experience,skills,cv_url,message,status,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,'new',?)`).bind(id,validJobId,fullName,phone,email,locality,positionSought,education,experience,skills,cvUrl,message,now()).run();
+  await audit(env,req,null,'JOB_APPLICATION_CREATED','job_application',id,{jobId:validJobId,positionSought});
+  return json({ok:true,id},201);
+}
+async function jobsAdmin(req,env){
+  const write=req.method!=='GET'; const a=await requireSession(req,env,write); if(a.error)return a.error; const denied=requireAdmin(a); if(denied)return denied;
+  if(req.method==='GET'){ const rows=await env.SITE_MEGA_D1.prepare(`SELECT * FROM jobs ORDER BY active DESC,created_at DESC`).all(); return json({jobs:rows.results||[]}); }
+  const b=await bodyJson(req);
+  if(req.method==='POST'){
+    const title=String(b.title||'').trim().slice(0,180), location=String(b.location||'Diabo').trim().slice(0,120), contractType=String(b.contractType||'À définir').trim().slice(0,80), description=String(b.description||'').trim().slice(0,4000), requirements=String(b.requirements||'').trim().slice(0,4000), active=b.active===false?0:1;
+    if(!title||!description) return json({error:'INVALID_JOB_DATA'},400);
+    const id=crypto.randomUUID(),t=now(); await env.SITE_MEGA_D1.prepare(`INSERT INTO jobs(id,title,location,contract_type,description,requirements,active,created_at,updated_at,created_by) VALUES(?,?,?,?,?,?,?,?,?,?)`).bind(id,title,location,contractType,description,requirements,active,t,t,a.user.id).run();
+    await audit(env,req,a.user.id,'JOB_CREATED','job',id,{title,active}); return json({ok:true,id},201);
+  }
+  if(req.method==='PUT'){
+    const id=String(b.id||''); if(!id)return json({error:'ID_REQUIRED'},400);
+    const old=await env.SITE_MEGA_D1.prepare(`SELECT * FROM jobs WHERE id=?`).bind(id).first(); if(!old)return json({error:'NOT_FOUND'},404);
+    const title=String(b.title??old.title).trim().slice(0,180), location=String(b.location??old.location).trim().slice(0,120), contractType=String(b.contractType??old.contract_type).trim().slice(0,80), description=String(b.description??old.description).trim().slice(0,4000), requirements=String(b.requirements??old.requirements??'').trim().slice(0,4000), active=b.active===undefined?Number(old.active):(b.active?1:0);
+    if(!title||!description)return json({error:'INVALID_JOB_DATA'},400);
+    await env.SITE_MEGA_D1.prepare(`UPDATE jobs SET title=?,location=?,contract_type=?,description=?,requirements=?,active=?,updated_at=? WHERE id=?`).bind(title,location,contractType,description,requirements,active,now(),id).run();
+    await audit(env,req,a.user.id,'JOB_UPDATED','job',id,{title,active}); return json({ok:true});
+  }
+  if(req.method==='DELETE'){
+    const id=String(b.id||''); if(!id)return json({error:'ID_REQUIRED'},400); await env.SITE_MEGA_D1.prepare(`DELETE FROM jobs WHERE id=?`).bind(id).run(); await audit(env,req,a.user.id,'JOB_DELETED','job',id,{}); return json({ok:true});
+  }
+  return json({error:'METHOD_NOT_ALLOWED'},405);
+}
+async function applicationsAdmin(req,env,url){
+  const a=await requireSession(req,env,req.method!=='GET'); if(a.error)return a.error; const denied=requireAdmin(a); if(denied)return denied;
+  if(req.method==='GET'){ const rows=await env.SITE_MEGA_D1.prepare(`SELECT a.*,j.title AS job_title FROM job_applications a LEFT JOIN jobs j ON j.id=a.job_id ORDER BY a.created_at DESC LIMIT 500`).all(); return json({applications:rows.results||[]}); }
+  const id=url.pathname.split('/').pop();
+  if(req.method==='PUT'){ const b=await bodyJson(req); const status=['new','reviewed','shortlisted','rejected','archived'].includes(b.status)?b.status:'reviewed'; await env.SITE_MEGA_D1.prepare(`UPDATE job_applications SET status=? WHERE id=?`).bind(status,id).run(); await audit(env,req,a.user.id,'APPLICATION_STATUS_CHANGED','job_application',id,{status}); return json({ok:true}); }
+  if(req.method==='DELETE'){ await env.SITE_MEGA_D1.prepare(`DELETE FROM job_applications WHERE id=?`).bind(id).run(); await audit(env,req,a.user.id,'APPLICATION_DELETED','job_application',id,{}); return json({ok:true}); }
+  return json({error:'METHOD_NOT_ALLOWED'},405);
+}
+
 export default {
   async fetch(req, env) {
     const url=new URL(req.url);
@@ -208,10 +262,15 @@ export default {
       if(url.pathname==='/api/session'&&req.method==='GET') return await sessionInfo(req,env);
       if(url.pathname==='/api/logout'&&req.method==='POST') return await logout(req,env);
       if(url.pathname==='/api/contact'&&req.method==='POST') return await publicContact(req,env);
+      if(url.pathname==='/api/jobs'&&req.method==='GET') return await publicJobs(req,env);
+      if(url.pathname==='/api/applications'&&req.method==='POST') return await publicApplication(req,env);
       if(url.pathname==='/api/load'&&req.method==='GET') return await load(req,env);
       if(url.pathname==='/api/save'&&req.method==='POST') return await save(req,env);
       if(url.pathname==='/api/admin/users') return await usersApi(req,env);
       if(url.pathname==='/api/admin/reset-password'&&req.method==='POST') return await resetPassword(req,env);
+      if(url.pathname==='/api/admin/jobs') return await jobsAdmin(req,env);
+      if(url.pathname==='/api/admin/applications'&&req.method==='GET') return await applicationsAdmin(req,env,url);
+      if(url.pathname.startsWith('/api/admin/applications/')) return await applicationsAdmin(req,env,url);
       if(url.pathname.startsWith('/api/admin/contact/')) return await contactAdmin(req,env,url);
       if(url.pathname.startsWith('/api/')) return json({error:'NOT_FOUND'},404);
       return env.ASSETS.fetch(req);
