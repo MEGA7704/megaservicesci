@@ -69,3 +69,10 @@ Les miniatures sont chargées via un service de capture de page web et se metten
 - Bouton « Demander un devis » ajouté aux cartes Services informatiques, Création de sites vitrines, Impression & reprographie et Intermédiation & services administratifs.
 - Les boutons ouvrent Contact avec le service demandé dans l’URL.
 - Hero remplacé par un nouveau visuel informatique professionnel.
+
+## V14 — Refonte visuelle complète
+- Remplacement de l'ancienne page d'accueil par la nouvelle identité sombre rouge-magenta inspirée de la maquette validée.
+- Utilisation du nouveau hero avec l'équipe professionnelle.
+- Arrière-plan et identité visuelle harmonisés sur Accueil, À propos, Services, Réalisations, Recrutement, Contact, Connexion et Administration.
+- Conservation de toutes les fonctions Cloudflare D1/KV, authentification, recrutement, candidatures, contact et administration.
+- Menu, boutons, cartes, formulaires et footer redessinés dans le même style.
