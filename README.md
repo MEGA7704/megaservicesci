@@ -92,3 +92,13 @@ Les miniatures sont chargées via un service de capture de page web et se metten
 - Conservation d'un fond blanc propre pour les contenus.
 - Hero simplifié : bloc bleu nuit à gauche + photo bureau à droite.
 - Nouvelles icônes plus réalistes pour les 4 cartes de services de l'accueil.
+
+
+## V17 — Refonte de la page À propos
+- Nouvelle bannière premium bleu marine / blanc / doré.
+- Bloc branding MEGA SERVICES SARL U.
+- Cartes Notre mission / Notre vision.
+- Suppression complète de la section « Informations de l’entreprise ».
+- Nouvelle section Nos engagements avec 4 cartes.
+- Bannière finale « Ensemble pour un quotidien plus simple ».
+- Les autres pages, l’administration, D1/KV, recrutement et formulaires restent inchangés.
