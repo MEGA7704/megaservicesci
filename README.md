@@ -76,3 +76,11 @@ Les miniatures sont chargées via un service de capture de page web et se metten
 - Arrière-plan et identité visuelle harmonisés sur Accueil, À propos, Services, Réalisations, Recrutement, Contact, Connexion et Administration.
 - Conservation de toutes les fonctions Cloudflare D1/KV, authentification, recrutement, candidatures, contact et administration.
 - Menu, boutons, cartes, formulaires et footer redessinés dans le même style.
+
+
+## V15 — Nouveau design bleu nuit / or
+- Nouvelle page d'accueil inspirée de la maquette fournie : hero bureau, identité bleu nuit et or, CTA devis/boutique, statistiques et 4 cartes de services.
+- Nouveau header commun avec menu horizontal professionnel et bouton Connexion.
+- Design harmonisé sur Accueil, À propos, Nos services, Nos réalisations, Nous recrutons, Contact, Connexion et Administration.
+- Footer compact bleu nuit / or.
+- Les fonctionnalités existantes D1/KV, authentification, recrutement, contact, candidatures et administration sont conservées.
