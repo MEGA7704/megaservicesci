@@ -247,3 +247,6 @@
     grid-template-columns:1fr;
   }
 }
+
+/* V13 — Devis services + nouveau hero */
+.home-service-actions{display:grid;gap:7px;margin-top:9px}.home-service-actions .service-more{text-align:center;margin:0}.home-service-actions .service-quote{display:flex;align-items:center;justify-content:center;background:#dca51f;color:#102e28!important;border-radius:6px;padding:9px 7px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.02em}.home-service-actions .service-quote:hover{background:#075143;color:#fff!important}.home-hero-visual-new{background-image:linear-gradient(90deg,rgba(0,57,47,.12),rgba(0,0,0,.03)),url('https://www.goafricaonline.com/media/cache/resolve/w800/uploads/media/company_media/0002/60/61966c0ebc7df-way2call-abidjan-cote-ivoire2.jpg');background-position:center;background-size:cover}.home-hero-visual-new:after{content:'Solutions numériques • Assistance • Développement';position:absolute;right:24px;bottom:22px;background:rgba(0,55,45,.88);color:#fff;border-left:4px solid #e2aa24;border-radius:6px;padding:10px 14px;font-size:11px;font-weight:800;letter-spacing:.02em;z-index:2}@media(max-width:560px){.home-hero-visual-new:after{right:12px;bottom:12px;font-size:10px}}

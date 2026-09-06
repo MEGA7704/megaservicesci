@@ -63,3 +63,9 @@ Les miniatures sont chargées via un service de capture de page web et se metten
 - 4 cartes affichées sur une seule ligne sur desktop.
 - Suppression des entêtes de cartes type navigateur contenant les URLs.
 - Conservation des images réelles des sites, des descriptions et des boutons de visite.
+
+
+## V13 — Accueil
+- Bouton « Demander un devis » ajouté aux cartes Services informatiques, Création de sites vitrines, Impression & reprographie et Intermédiation & services administratifs.
+- Les boutons ouvrent Contact avec le service demandé dans l’URL.
+- Hero remplacé par un nouveau visuel informatique professionnel.
