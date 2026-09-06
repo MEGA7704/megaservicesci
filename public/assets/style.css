@@ -453,3 +453,113 @@ a{accent-color:var(--v15-gold)}
   .v15-stats{grid-template-columns:1fr}.v15-stats>div{border-right:0;border-bottom:1px solid #e2e8ee}
   .v15-home-service{grid-template-columns:60px 1fr;padding:17px}
 }
+
+
+/* =========================================================
+   V16 — arrière-plans supprimés + icônes réalistes
+   ========================================================= */
+html, body,
+body.v15-theme,
+body.home-page,
+.v15-home,
+main,
+.content,
+.content-full,
+.realisations-full{
+  background:#ffffff !important;
+  background-image:none !important;
+}
+
+body::before, body::after,
+main::before, main::after,
+.content::before, .content::after{
+  background:none !important;
+  background-image:none !important;
+}
+
+/* Supprime les arrière-plans décoratifs généraux des pages internes */
+.page-hero,
+.v15-footer,
+.v15-footer-row,
+.v15-footer-bottom{
+  background-image:none !important;
+}
+
+/* Hero : conserver seulement l'image à droite, sans fond décoratif plein site */
+.v15-hero{
+  background:#ffffff !important;
+}
+.v15-hero-left{
+  background:var(--v15-navy) !important;
+}
+.v15-hero-left:after{
+  display:none !important;
+}
+.v15-hero-right:before{
+  display:none !important;
+}
+.v15-right-note{
+  display:none !important;
+}
+
+/* Pages internes plus propres */
+.page-hero{
+  background:var(--v15-navy) !important;
+}
+.v15-footer{
+  background:var(--v15-navy-deep) !important;
+}
+
+/* Icônes réalistes et premium des cartes Accueil */
+.v16-card-icon{
+  width:70px;
+  height:70px;
+  border-radius:18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  background:linear-gradient(145deg,#ffffff,#e8eef4);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.95),
+    0 8px 18px rgba(5,47,87,.16);
+  border:1px solid #d8e1ea;
+  flex:0 0 70px;
+}
+.v15-dark-card .v16-card-icon{
+  background:linear-gradient(145deg,#ffffff,#dce7f1);
+}
+.v16-icon-main{
+  font-size:38px;
+  line-height:1;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.12));
+}
+.v16-icon-mini{
+  position:absolute;
+  right:-6px;
+  bottom:-6px;
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  font-size:15px;
+  background:linear-gradient(#ffdf79,#e9b348);
+  border:2px solid #fff;
+  box-shadow:0 4px 10px rgba(0,0,0,.18);
+}
+.v15-home-service{
+  align-items:center;
+}
+.v15-home-service h2{
+  font-weight:850;
+}
+
+/* Nettoyage de quelques overlays issus des versions précédentes */
+.v14-hero-overlay,
+.v15-hero-overlay,
+.shot-badge::before,
+.realisations-full::before,
+.realisations-full::after{
+  display:none !important;
+}

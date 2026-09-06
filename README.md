@@ -84,3 +84,11 @@ Les miniatures sont chargées via un service de capture de page web et se metten
 - Design harmonisé sur Accueil, À propos, Nos services, Nos réalisations, Nous recrutons, Contact, Connexion et Administration.
 - Footer compact bleu nuit / or.
 - Les fonctionnalités existantes D1/KV, authentification, recrutement, contact, candidatures et administration sont conservées.
+
+
+## V16 — Nettoyage visuel
+- Suppression du texte « Un service de qualité pour un meilleur demain ! ».
+- Suppression des arrière-plans décoratifs généraux du site.
+- Conservation d'un fond blanc propre pour les contenus.
+- Hero simplifié : bloc bleu nuit à gauche + photo bureau à droite.
+- Nouvelles icônes plus réalistes pour les 4 cartes de services de l'accueil.
