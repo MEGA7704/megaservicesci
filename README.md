@@ -157,3 +157,8 @@ Les miniatures sont chargées via un service de capture de page web et se metten
 - Chaque page conserve son propre titre, sous-titre et ses 3 valeurs.
 - La page d’accueil n’a pas été modifiée.
 - L’espace administrateur interne n’a pas été modifié.
+
+
+## V24 — Hero sans texte sur image
+- Suppression du texte décoratif « Des idées, des solutions durables » sur les images Hero.
+- Aucun autre contenu ou fonctionnement modifié.

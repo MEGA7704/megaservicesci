@@ -1824,3 +1824,6 @@ body .common-hero-v23 + .login-wrap{
   .common-hero-right-v23{min-height:210px}
   .common-hero-script-v23{font-size:19px;right:18px;bottom:22px}
 }
+
+/* V24: suppression de tout texte décoratif superposé aux images hero */
+.common-hero-script-v23,.real-v22-hand,.real-v21-script,.real-v20-script{display:none!important;}
