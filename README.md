@@ -102,3 +102,13 @@ Les miniatures sont chargées via un service de capture de page web et se metten
 - Nouvelle section Nos engagements avec 4 cartes.
 - Bannière finale « Ensemble pour un quotidien plus simple ».
 - Les autres pages, l’administration, D1/KV, recrutement et formulaires restent inchangés.
+
+
+## V18 — Refonte Nos réalisations
+- Page Nos réalisations reconstruite selon la maquette fournie.
+- Hero bleu marine avec bureau professionnel, valeurs et accroche.
+- 4 cartes sur une ligne sur grand écran.
+- Aperçus réels des quatre sites conservés.
+- Badges de secteur, statut En ligne et boutons Visiter le site.
+- Bannière finale Notre engagement.
+- Les fonctions du reste du site et de l'administration sont inchangées.
