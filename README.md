@@ -112,3 +112,10 @@ Les miniatures sont chargées via un service de capture de page web et se metten
 - Badges de secteur, statut En ligne et boutons Visiter le site.
 - Bannière finale Notre engagement.
 - Les fonctions du reste du site et de l'administration sont inchangées.
+
+
+## V19 — Hero Nos réalisations
+- Image du hero affichée entièrement avec `background-size: contain`.
+- Visuel de bureau sans personnage.
+- Suppression du texte décoratif superposé dans la zone image.
+- Aucun changement aux cartes, liens, D1/KV ou fonctions d'administration.

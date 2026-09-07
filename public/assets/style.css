@@ -974,3 +974,34 @@ main::before, main::after,
   .real-v18-cta{grid-template-columns:1fr;padding:25px 22px}
   .real-v18-contact{justify-self:start}
 }
+
+
+/* V19 — Hero Nos réalisations : image entière, sans personnage */
+.real-v18-hero-photo{
+  background-image:url('/assets/realisations-hero-office-no-person.png') !important;
+  background-repeat:no-repeat !important;
+  background-position:center center !important;
+  background-size:contain !important;
+  background-color:#063764 !important;
+  min-height:255px;
+}
+.real-v18-hero-photo::before,
+.real-v18-hero-photo::after{
+  display:none !important;
+  content:none !important;
+}
+.real-v18-hero-photo > *{
+  display:none !important;
+}
+@media(max-width:1100px){
+  .real-v18-hero-photo{
+    min-height:280px;
+    background-size:contain !important;
+  }
+}
+@media(max-width:650px){
+  .real-v18-hero-photo{
+    min-height:190px;
+    background-size:contain !important;
+  }
+}
