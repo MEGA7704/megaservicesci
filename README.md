@@ -128,3 +128,12 @@ Les miniatures sont chargées via un service de capture de page web et se metten
 - Badges de secteur et statut En ligne.
 - CTA final bleu marine / doré avec Fiabilité, Performance et Accompagnement.
 - Aucune modification des fonctions administrateur, D1/KV, recrutement ou contact.
+
+
+## V21 — Correction de présentation de Nos réalisations
+- Suppression de la duplication visuelle dans le hero.
+- Hero propre : texte à gauche, image bureau locale à droite.
+- Captures des 4 réalisations intégrées localement pour éviter les miniatures vides.
+- 4 cartes équilibrées et alignées sur une ligne sur desktop.
+- Hauteurs, marges, badges et CTA harmonisés.
+- Aucun changement à l'administration, D1/KV, recrutement ou formulaires.

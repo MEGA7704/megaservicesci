@@ -1309,3 +1309,103 @@ main::before, main::after,
   .real-v20-cta{grid-template-columns:1fr;padding:24px 22px}
   .real-v20-contact{justify-self:start}
 }
+
+
+/* =========================================================
+   V21 — Nos réalisations : correction de présentation
+   ========================================================= */
+.real-v21-main{width:100%;max-width:none;background:#f7f9fb!important;color:#0a2e59}
+.real-v21-hero{
+  min-height:278px;
+  display:grid;
+  grid-template-columns:52% 48%;
+  overflow:hidden;
+  background:#063663!important;
+}
+.real-v21-copy{
+  padding:35px 4.7% 27px;
+  color:#fff;
+  background:linear-gradient(110deg,#083f73,#063663)!important;
+}
+.real-v21-kicker{color:#ffd04b;font-size:13px;font-weight:900;letter-spacing:.17em}
+.real-v21-copy h1{margin:8px 0 8px;color:#fff!important;font-size:clamp(48px,4.8vw,68px);line-height:1}
+.real-v21-copy>p{margin:0;color:#f0f6fb;font-size:17px;max-width:720px}
+.real-v21-line{width:78px;height:3px;background:#f3bf3a;border-radius:5px;margin:18px 0}
+.real-v21-values{display:grid;grid-template-columns:repeat(3,1fr);max-width:770px}
+.real-v21-values>div{display:grid;grid-template-columns:38px 1fr;gap:10px;align-items:center;padding-right:18px;margin-right:18px;border-right:1px solid rgba(255,255,255,.32)}
+.real-v21-values>div:last-child{border-right:0}
+.real-v21-values span{font-size:26px}
+.real-v21-values b{display:block;color:#fff;font-size:13px}
+.real-v21-values small{display:block;margin-top:3px;color:#dfeaf4;font-size:12px}
+.real-v21-hero-image{
+  position:relative;
+  background:#0a467a url('/assets/realisations-hero-clean.jpg') center center/cover no-repeat!important;
+}
+.real-v21-hero-image::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,54,99,.13),rgba(0,0,0,.02))}
+.real-v21-script{position:absolute;right:38px;bottom:33px;color:#fff;font-family:cursive;font-style:italic;font-size:25px;line-height:1.2;text-align:center;transform:rotate(-5deg);text-shadow:0 2px 8px rgba(0,0,0,.4)}
+
+.real-v21-showcase{padding:16px 2.8% 28px;background:#f7f9fb!important}
+.real-v21-intro{text-align:center;margin-bottom:17px}
+.real-v21-overline{display:flex;align-items:center;justify-content:center;gap:27px;color:#c69010;font-size:10px;font-weight:900;letter-spacing:.16em}
+.real-v21-overline span{width:68px;height:1px;background:#e7b42f}
+.real-v21-intro h2{margin:5px 0 3px;color:#0a2e5b!important;font-size:20px}
+.real-v21-intro p{margin:0;color:#8493a5;font-size:12px}
+
+.real-v21-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.real-v21-card{
+  min-width:0;
+  padding:10px 10px 13px;
+  background:#fff;
+  border:1px solid #dce5ec;
+  border-radius:14px;
+  box-shadow:0 8px 22px rgba(7,44,79,.08);
+  transition:transform .22s ease,box-shadow .22s ease;
+}
+.real-v21-card:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(7,44,79,.13)}
+.real-v21-thumb{display:block;height:190px;overflow:hidden;border-radius:9px;background:#edf2f6}
+.real-v21-thumb img{width:100%;height:100%;object-fit:cover;object-position:center;display:block}
+.real-v21-tags{display:flex;align-items:center;justify-content:space-between;gap:7px;margin:10px 5px 8px}
+.real-v21-sector{padding:7px 12px;border-radius:999px;background:linear-gradient(#ffe486,#f0c64c);color:#102e50;font-size:10px;font-weight:900;white-space:nowrap}
+.real-v21-online{padding:7px 11px;border-radius:999px;background:#e1f6e9;color:#078841;font-size:10px;font-weight:900;white-space:nowrap}
+.real-v21-card h3{margin:3px 7px 5px;color:#0a2f5c!important;font-size:18px}
+.real-v21-card>p{min-height:52px;margin:0 7px 13px;color:#66798e;font-size:13px;line-height:1.42}
+.real-v21-btn{display:block;padding:12px 10px;text-align:center;border-radius:8px;background:linear-gradient(#ffdd72,#eab536);color:#102b47!important;text-decoration:none;font-weight:900}
+
+.real-v21-cta{
+  min-height:118px;
+  display:grid;
+  grid-template-columns:minmax(0,1.55fr) auto minmax(310px,.75fr);
+  gap:34px;
+  align-items:center;
+  padding:18px 4.5%;
+  background:linear-gradient(90deg,#063664,#064274 72%,#04315a)!important;
+  color:#fff;
+}
+.real-v21-cta-copy{border-left:5px solid #f0bf3b;padding-left:28px}
+.real-v21-cta-kicker{color:#ffd34f;font-size:10px;font-weight:900;letter-spacing:.16em}
+.real-v21-cta h2{margin:6px 0 2px;color:#fff!important;font-size:20px}
+.real-v21-cta p{margin:0;color:#dbe7f2;font-size:14px}
+.real-v21-contact{padding:13px 30px;border-radius:8px;background:linear-gradient(#ffdc72,#e9b437);color:#102a44!important;text-decoration:none;font-weight:900;white-space:nowrap}
+.real-v21-cta-values{display:grid;grid-template-columns:repeat(3,1fr)}
+.real-v21-cta-values>div{display:flex;flex-direction:column;align-items:center;gap:5px;padding:0 16px;border-left:1px solid rgba(255,255,255,.28)}
+.real-v21-cta-values span{font-size:24px}
+.real-v21-cta-values small{color:#fff;font-size:11px}
+
+@media(max-width:1150px){
+  .real-v21-hero{grid-template-columns:1fr}
+  .real-v21-hero-image{min-height:260px}
+  .real-v21-grid{grid-template-columns:repeat(2,1fr)}
+  .real-v21-cta{grid-template-columns:1fr auto}
+  .real-v21-cta-values{grid-column:1/-1}
+}
+@media(max-width:680px){
+  .real-v21-copy{padding:30px 22px}
+  .real-v21-copy h1{font-size:43px}
+  .real-v21-values{grid-template-columns:1fr;gap:12px}
+  .real-v21-values>div{border-right:0}
+  .real-v21-script{font-size:20px;right:20px}
+  .real-v21-grid{grid-template-columns:1fr}
+  .real-v21-overline span{display:none}
+  .real-v21-cta{grid-template-columns:1fr;padding:24px 22px}
+  .real-v21-contact{justify-self:start}
+}
