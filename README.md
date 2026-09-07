@@ -137,3 +137,15 @@ Les miniatures sont chargées via un service de capture de page web et se metten
 - 4 cartes équilibrées et alignées sur une ligne sur desktop.
 - Hauteurs, marges, badges et CTA harmonisés.
 - Aucun changement à l'administration, D1/KV, recrutement ou formulaires.
+
+
+## V22 — Correction finale de Nos réalisations
+- Palette strictement bleu marine / blanc / doré.
+- Hero corporate avec bureau premium sans personnage.
+- 3 engagements alignés sous le titre.
+- Introduction centrée avec traits dorés.
+- 4 cartes parfaitement alignées, mêmes hauteurs, fond blanc, ombres douces.
+- Visuels locaux stables pour les 4 projets.
+- Boutons dorés pleine largeur.
+- Bannière finale Notre engagement.
+- Aucun bordeaux, brun ou carte sombre.
