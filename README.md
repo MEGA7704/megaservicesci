@@ -119,3 +119,12 @@ Les miniatures sont chargées via un service de capture de page web et se metten
 - Visuel de bureau sans personnage.
 - Suppression du texte décoratif superposé dans la zone image.
 - Aucun changement aux cartes, liens, D1/KV ou fonctions d'administration.
+
+
+## V20 — Nos réalisations fidèle à la maquette
+- Hero bleu marine avec bureau moderne sans personnage.
+- Texte, hiérarchie, valeurs et ambiance visuelle alignés sur la maquette jointe.
+- 4 cartes premium sur une ligne en desktop avec captures réelles des sites.
+- Badges de secteur et statut En ligne.
+- CTA final bleu marine / doré avec Fiabilité, Performance et Accompagnement.
+- Aucune modification des fonctions administrateur, D1/KV, recrutement ou contact.

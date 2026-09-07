@@ -1005,3 +1005,307 @@ main::before, main::after,
     background-size:contain !important;
   }
 }
+
+
+/* =========================================================
+   V20 — Nos réalisations fidèle à la maquette de référence
+   ========================================================= */
+.real-v20-main{
+  width:100%;
+  max-width:none;
+  margin:0;
+  background:#f5f7fa!important;
+  color:#0a2c55;
+}
+.real-v20-hero{
+  min-height:275px;
+  display:grid;
+  grid-template-columns:50% 50%;
+  background:#05345f!important;
+  overflow:hidden;
+  border-bottom:1px solid #d8e1ea;
+}
+.real-v20-hero-left{
+  padding:34px 0 26px 4.6%;
+  color:#fff;
+  background:
+    radial-gradient(circle at 20% 40%,rgba(18,83,143,.30),transparent 34%),
+    linear-gradient(105deg,#063b6c,#05345f)!important;
+}
+.real-v20-kicker{
+  color:#ffd24d;
+  font-size:13px;
+  font-weight:900;
+  letter-spacing:.16em;
+}
+.real-v20-hero h1{
+  margin:7px 0 8px;
+  color:#fff!important;
+  font-size:clamp(46px,4.7vw,68px);
+  line-height:1;
+  letter-spacing:-.02em;
+}
+.real-v20-hero-left>p{
+  margin:0;
+  max-width:760px;
+  color:#f5f7fb;
+  font-size:17px;
+}
+.real-v20-line{
+  width:78px;
+  height:3px;
+  border-radius:5px;
+  background:#f2bd37;
+  margin:18px 0 19px;
+}
+.real-v20-values{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:0;
+  max-width:790px;
+}
+.real-v20-values>div{
+  display:grid;
+  grid-template-columns:38px 1fr;
+  gap:10px;
+  align-items:center;
+  min-height:55px;
+  padding-right:20px;
+  margin-right:20px;
+  border-right:1px solid rgba(255,255,255,.32);
+}
+.real-v20-values>div:last-child{border-right:0}
+.real-v20-vicon{
+  font-size:27px;
+  filter:grayscale(1) brightness(2.2) sepia(1) saturate(6);
+}
+.real-v20-values b{
+  display:block;
+  color:#fff;
+  font-size:13px;
+  line-height:1.2;
+}
+.real-v20-values small{
+  display:block;
+  margin-top:3px;
+  color:#e0eaf3;
+  font-size:12px;
+  line-height:1.25;
+}
+.real-v20-hero-right{
+  position:relative;
+  background:
+    linear-gradient(90deg,rgba(5,52,95,.12),rgba(1,25,46,.05)),
+    url('/assets/realisations-hero-office-no-person.png') center center/cover no-repeat!important;
+}
+.real-v20-script{
+  position:absolute;
+  right:38px;
+  bottom:38px;
+  color:#fff;
+  font-family:cursive;
+  font-size:26px;
+  line-height:1.25;
+  font-style:italic;
+  text-align:center;
+  transform:rotate(-5deg);
+  text-shadow:0 3px 10px rgba(0,0,0,.45);
+}
+
+.real-v20-showcase{
+  padding:16px 2.8% 28px;
+  background:#f6f8fa!important;
+}
+.real-v20-intro{
+  text-align:center;
+  margin-bottom:17px;
+}
+.real-v20-introline{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:28px;
+  color:#c99413;
+  font-size:10px;
+  letter-spacing:.16em;
+}
+.real-v20-introline span{
+  width:68px;
+  height:1px;
+  background:#e6b430;
+}
+.real-v20-intro h2{
+  margin:5px 0 3px;
+  font-size:19px;
+  color:#092e5c!important;
+}
+.real-v20-intro p{
+  margin:0;
+  color:#8291a4;
+  font-size:12px;
+}
+
+.real-v20-cards{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;
+}
+.real-v20-card{
+  min-width:0;
+  padding:9px 9px 12px;
+  background:#fff;
+  border:1px solid #dce5ec;
+  border-radius:13px;
+  box-shadow:0 8px 22px rgba(7,44,79,.07);
+  transition:transform .22s ease,box-shadow .22s ease;
+}
+.real-v20-card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 15px 35px rgba(7,44,79,.12);
+}
+.real-v20-thumb{
+  display:block;
+  height:188px;
+  overflow:hidden;
+  border-radius:9px;
+  background:#edf1f4;
+}
+.real-v20-thumb img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+  object-position:top center;
+}
+.real-v20-badges{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin:10px 5px 8px;
+}
+.real-v20-sector{
+  display:inline-flex;
+  align-items:center;
+  min-width:0;
+  padding:7px 12px;
+  border-radius:999px;
+  background:linear-gradient(#ffe586,#f0c94e);
+  color:#0b2b4d;
+  font-size:10px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.real-v20-status{
+  display:inline-flex;
+  align-items:center;
+  padding:7px 12px;
+  border-radius:999px;
+  background:#e3f7eb;
+  color:#05883e;
+  font-size:10px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.real-v20-card h3{
+  margin:2px 7px 4px;
+  color:#092f5c!important;
+  font-size:18px;
+}
+.real-v20-card>p{
+  min-height:51px;
+  margin:0 7px 12px;
+  color:#687b90;
+  font-size:13px;
+  line-height:1.42;
+}
+.real-v20-visit{
+  display:block;
+  text-align:center;
+  padding:12px 10px;
+  border-radius:8px;
+  background:linear-gradient(#ffdd73,#eab537);
+  color:#102b47!important;
+  text-decoration:none;
+  font-weight:900;
+}
+
+.real-v20-cta{
+  min-height:118px;
+  display:grid;
+  grid-template-columns:minmax(0,1.5fr) auto minmax(300px,.75fr);
+  gap:34px;
+  align-items:center;
+  padding:18px 4.5%;
+  background:linear-gradient(90deg,#063664,#064273 72%,#04315a)!important;
+  color:#fff;
+}
+.real-v20-cta-copy{
+  border-left:5px solid #f1bf39;
+  padding-left:27px;
+}
+.real-v20-cta-kicker{
+  color:#ffd34f;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.16em;
+}
+.real-v20-cta h2{
+  margin:6px 0 2px;
+  color:#fff!important;
+  font-size:20px;
+}
+.real-v20-cta p{
+  margin:0;
+  color:#dbe8f3;
+  font-size:14px;
+}
+.real-v20-contact{
+  padding:13px 30px;
+  border-radius:8px;
+  background:linear-gradient(#ffdc72,#e9b437);
+  color:#102a44!important;
+  text-decoration:none;
+  font-weight:900;
+  white-space:nowrap;
+}
+.real-v20-cta-values{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+}
+.real-v20-cta-values>div{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:5px;
+  padding:0 16px;
+  border-left:1px solid rgba(255,255,255,.28);
+}
+.real-v20-cta-values span{
+  font-size:25px;
+  filter:grayscale(1) brightness(2.2) sepia(1) saturate(5);
+}
+.real-v20-cta-values small{
+  color:#fff;
+  font-size:11px;
+}
+
+/* Responsive */
+@media(max-width:1150px){
+  .real-v20-cards{grid-template-columns:repeat(2,1fr)}
+  .real-v20-hero{grid-template-columns:1fr}
+  .real-v20-hero-right{min-height:260px}
+  .real-v20-cta{grid-template-columns:1fr auto}
+  .real-v20-cta-values{grid-column:1/-1}
+}
+@media(max-width:680px){
+  .real-v20-hero-left{padding:30px 22px}
+  .real-v20-hero h1{font-size:43px}
+  .real-v20-values{grid-template-columns:1fr;gap:12px}
+  .real-v20-values>div{border-right:0}
+  .real-v20-script{font-size:20px;right:20px}
+  .real-v20-cards{grid-template-columns:1fr}
+  .real-v20-introline span{display:none}
+  .real-v20-cta{grid-template-columns:1fr;padding:24px 22px}
+  .real-v20-contact{justify-self:start}
+}
