@@ -149,3 +149,11 @@ Les miniatures sont chargées via un service de capture de page web et se metten
 - Boutons dorés pleine largeur.
 - Bannière finale Notre engagement.
 - Aucun bordeaux, brun ou carte sombre.
+
+
+## V23 — Hero commun sur toutes les pages sauf Accueil
+- Nouveau hero bleu marine / doré commun appliqué à À propos, Nos services, Nos réalisations, Nous recrutons, Contact, Connexion et 404.
+- L’image de bureau premium sans personnage est commune à tous ces heroes.
+- Chaque page conserve son propre titre, sous-titre et ses 3 valeurs.
+- La page d’accueil n’a pas été modifiée.
+- L’espace administrateur interne n’a pas été modifié.

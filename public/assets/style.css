@@ -1707,3 +1707,120 @@ main::before, main::after,
   .real-v22-cta{grid-template-columns:1fr;padding:24px 22px}
   .real-v22-contact{justify-self:start}
 }
+
+
+/* =========================================================
+   V23 — Hero commun à toutes les pages sauf Accueil
+   ========================================================= */
+.common-hero-v23{
+  width:100%;
+  min-height:285px;
+  display:grid;
+  grid-template-columns:54% 46%;
+  overflow:hidden;
+  background:#052f57!important;
+  border-bottom:1px solid #d8e2eb;
+}
+.common-hero-left-v23{
+  padding:38px 5% 30px;
+  color:#fff;
+  background:
+    radial-gradient(circle at 18% 38%,rgba(20,89,151,.28),transparent 35%),
+    linear-gradient(110deg,#042d55 0%,#073b6d 100%)!important;
+}
+.common-hero-kicker-v23{
+  color:#f5c64a;
+  font-size:13px;
+  font-weight:900;
+  letter-spacing:.18em;
+}
+.common-hero-left-v23 h1{
+  margin:9px 0 9px;
+  color:#fff!important;
+  font-size:clamp(48px,5vw,70px);
+  line-height:1;
+  letter-spacing:-.025em;
+}
+.common-hero-left-v23>p{
+  max-width:780px;
+  margin:0;
+  color:#edf4fa;
+  font-size:18px;
+  line-height:1.45;
+}
+.common-hero-line-v23{
+  width:78px;
+  height:3px;
+  margin:18px 0 19px;
+  border-radius:4px;
+  background:#f2bd3d;
+}
+.common-hero-values-v23{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  max-width:850px;
+}
+.common-hero-value{
+  display:grid;
+  grid-template-columns:42px 1fr;
+  align-items:center;
+  gap:10px;
+  padding-right:20px;
+  margin-right:20px;
+  border-right:1px solid rgba(255,255,255,.28);
+}
+.common-hero-value:last-child{border-right:0}
+.common-hero-value>span{font-size:28px}
+.common-hero-value b{display:block;color:#fff;font-size:13px;line-height:1.2}
+.common-hero-value small{display:block;margin-top:3px;color:#dce8f3;font-size:12px;line-height:1.25}
+.common-hero-right-v23{
+  position:relative;
+  min-height:285px;
+  background:#0b477b url('/assets/common-hero-office-v23.jpg') center center/cover no-repeat!important;
+}
+.common-hero-right-v23::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(90deg,rgba(5,47,87,.14),rgba(5,47,87,.02));
+}
+.common-hero-script-v23{
+  position:absolute;
+  right:34px;
+  bottom:34px;
+  max-width:270px;
+  color:#fff;
+  font-family:cursive;
+  font-size:24px;
+  line-height:1.18;
+  font-style:italic;
+  text-align:center;
+  transform:rotate(-5deg);
+  text-shadow:0 3px 10px rgba(0,0,0,.45);
+}
+
+/* éviter les anciens héros en double */
+.about-v17-hero,
+.page-hero,
+.real-v22-hero{
+  display:none!important;
+}
+
+/* Connexion : hero au-dessus, carte inchangée */
+body .common-hero-v23 + .login-wrap{
+  padding-top:38px;
+}
+
+/* Responsive */
+@media(max-width:1050px){
+  .common-hero-v23{grid-template-columns:1fr}
+  .common-hero-right-v23{min-height:250px}
+}
+@media(max-width:700px){
+  .common-hero-left-v23{padding:30px 22px}
+  .common-hero-left-v23 h1{font-size:44px}
+  .common-hero-values-v23{grid-template-columns:1fr;gap:13px}
+  .common-hero-value{border-right:0;margin-right:0}
+  .common-hero-right-v23{min-height:210px}
+  .common-hero-script-v23{font-size:19px;right:18px;bottom:22px}
+}
