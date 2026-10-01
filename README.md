@@ -175,3 +175,9 @@ Les miniatures sont chargées via un service de capture de page web et se metten
 - La bulle « Rédaction rapide » se déplace automatiquement et lentement dans plusieurs directions sur chaque page.
 - Rebond doux sur les bords de l’écran sans sortir de la zone visible.
 - Le bouton reste cliquable pendant son déplacement et s’adapte au redimensionnement de l’écran.
+
+## V48 — Bulle : vitesse réduite et pause au survol
+- Vitesse de déplacement réduite de 50 % par rapport à V47.
+- Arrêt immédiat du déplacement lorsque le curseur de la souris est posé sur la bulle.
+- Reprise automatique dès que le curseur quitte la bulle.
+- Changement de couleur à chaque impact conservé.
