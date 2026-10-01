@@ -78,11 +78,14 @@ window.MEGA={mount,api};
  function startFloatingFab(fab,modal){
   // Déplacement autonome lent, multidirectionnel, avec rebond doux sur les bords.
   let x=Math.max(12,window.innerWidth-fab.offsetWidth-18),y=Math.max(12,window.innerHeight-fab.offsetHeight-18);
-  let vx=-0.24,vy=-0.17,last=performance.now(),raf=0;
+  let vx=-0.12,vy=-0.085,last=performance.now(),raf=0;
+  const impactColors=['#0b63ce','#16a34a','#d97706','#7c3aed','#dc2626','#0891b2','#be185d','#4f46e5'];
+  let colorIndex=0;
+  function impactColor(){colorIndex=(colorIndex+1)%impactColors.length;fab.style.background=impactColors[colorIndex];fab.style.color='#fff';}
   const margin=10;
   fab.style.right='auto';fab.style.bottom='auto';fab.style.left='0';fab.style.top='0';fab.style.willChange='transform';
   function clamp(){const maxX=Math.max(margin,window.innerWidth-fab.offsetWidth-margin),maxY=Math.max(margin,window.innerHeight-fab.offsetHeight-margin);x=Math.min(maxX,Math.max(margin,x));y=Math.min(maxY,Math.max(margin,y));}
-  function tick(now){const dt=Math.min(32,now-last);last=now;const maxX=Math.max(margin,window.innerWidth-fab.offsetWidth-margin),maxY=Math.max(margin,window.innerHeight-fab.offsetHeight-margin);x+=vx*dt;y+=vy*dt;if(x<=margin||x>=maxX){vx*=-1;x=Math.min(maxX,Math.max(margin,x));}if(y<=margin||y>=maxY){vy*=-1;y=Math.min(maxY,Math.max(margin,y));}fab.style.transform=`translate3d(${x}px,${y}px,0)`;raf=requestAnimationFrame(tick);}
+  function tick(now){const dt=Math.min(32,now-last);last=now;const maxX=Math.max(margin,window.innerWidth-fab.offsetWidth-margin),maxY=Math.max(margin,window.innerHeight-fab.offsetHeight-margin);x+=vx*dt;y+=vy*dt;let impacted=false;if(x<=margin||x>=maxX){vx*=-1;x=Math.min(maxX,Math.max(margin,x));impacted=true;}if(y<=margin||y>=maxY){vy*=-1;y=Math.min(maxY,Math.max(margin,y));impacted=true;}if(impacted)impactColor();fab.style.transform=`translate3d(${x}px,${y}px,0)`;raf=requestAnimationFrame(tick);}
   window.addEventListener('resize',clamp,{passive:true});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(raf)}else{last=performance.now();raf=requestAnimationFrame(tick)}});
   clamp();raf=requestAnimationFrame(tick);
