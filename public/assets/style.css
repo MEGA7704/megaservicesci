@@ -1834,3 +1834,13 @@ body .common-hero-v23 + .login-wrap{
 .real-v22-platform-cover span{font-size:46px}.real-v22-platform-cover strong{font-size:20px;letter-spacing:.03em}.real-v22-platform-cover small{color:#dceaf6;font-size:12px}
 .platforms-home{padding:44px 3%;background:#f4f7fa;text-align:center}.platforms-home-head span{color:#bd8615;font-size:11px;font-weight:900;letter-spacing:.16em}.platforms-home-head h2{margin:8px 0 6px;color:#092f5d;font-size:28px}.platforms-home-head p{margin:0 0 25px;color:#687b8e}.platforms-home-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;max-width:1450px;margin:0 auto}.platforms-home-grid a{min-height:175px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:22px;border:1px solid #dbe5ee;border-radius:14px;background:#fff;text-decoration:none;box-shadow:0 8px 24px rgba(9,46,82,.07);transition:.2s ease;text-align:left}.platforms-home-grid a:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(9,46,82,.13)}.platforms-home-grid b{font-size:30px;margin-bottom:10px}.platforms-home-grid strong{color:#092f5d;font-size:16px}.platforms-home-grid small{color:#708397;margin-top:4px}.platforms-home-grid em{margin-top:16px;color:#b77e0b;font-style:normal;font-weight:900;font-size:12px}.platforms-home-more{display:inline-block;margin-top:24px;padding:13px 22px;border-radius:8px;background:#092f5d;color:#fff!important;text-decoration:none;font-weight:800}
 @media(max-width:1100px){.platforms-home-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.platforms-home{padding:32px 16px}.platforms-home-grid{grid-template-columns:1fr}.platforms-home-head h2{font-size:23px}}
+
+/* V44 — Plateformes en cartes sans images */
+.real-v22-grid{align-items:stretch!important}
+.real-v22-card{display:flex!important;flex-direction:column!important;min-height:285px!important;padding:26px!important;background:#fff!important;border:1px solid #dbe5ee!important;border-radius:16px!important;box-shadow:0 10px 28px rgba(9,46,82,.08)!important}
+.real-v22-card .real-v22-shot,.real-v22-card img,.real-v22-platform-cover{display:none!important}
+.real-v22-card .real-v22-tags{margin-top:0!important}
+.real-v22-card h3{margin-top:20px!important}
+.real-v22-card p{flex:1!important}
+.real-v22-card .real-v22-btn{margin-top:20px!important;align-self:flex-start!important}
+.platforms-home-grid a{background:#fff!important;background-image:none!important}
