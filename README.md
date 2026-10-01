@@ -162,3 +162,11 @@ Les miniatures sont chargées via un service de capture de page web et se metten
 ## V24 — Hero sans texte sur image
 - Suppression du texte décoratif « Des idées, des solutions durables » sur les images Hero.
 - Aucun autre contenu ou fonctionnement modifié.
+
+## V45 — Rédaction rapide
+- Bulle flottante discrète sur toutes les pages.
+- Formulaires : CV, courrier administratif, demande d'aide, contrat de travail, contrat de loyer, autres.
+- Enregistrement D1 avec numéro unique MEGA-YYMMDD-XXXXX.
+- Nouvelle rubrique « Rédaction rapide » dans l'administration avec suivi de statut.
+- Après enregistrement, bouton WhatsApp vers MEGA SERVICES (+225 07 77 04 17 90) avec la référence préremplie.
+- La bulle est responsive et reste en bas à droite sans bloquer la navigation.

@@ -3,7 +3,7 @@ const PBKDF2_ITERATIONS = 100000;
 const SESSION_COOKIE = '__Host-mega_session';
 const enc = new TextEncoder();
 
-const SCHEMA_VERSION = 'v4-auto-schema-1';
+const SCHEMA_VERSION = 'v5-quick-writing-1';
 let schemaReadyPromise = null;
 
 async function ensureSchema(env) {
@@ -22,12 +22,14 @@ async function ensureSchema(env) {
       `CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT,actor_user_id TEXT,action TEXT NOT NULL,target_type TEXT,target_id TEXT,ip TEXT,user_agent TEXT,details_json TEXT,created_at TEXT NOT NULL)`,
       `CREATE TABLE IF NOT EXISTS jobs (id TEXT PRIMARY KEY,title TEXT NOT NULL,location TEXT NOT NULL DEFAULT 'Diabo',contract_type TEXT NOT NULL DEFAULT 'À définir',description TEXT NOT NULL,requirements TEXT,active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0,1)),created_at TEXT NOT NULL,updated_at TEXT NOT NULL,created_by TEXT)`,
       `CREATE TABLE IF NOT EXISTS job_applications (id TEXT PRIMARY KEY,job_id TEXT,full_name TEXT NOT NULL,phone TEXT NOT NULL,email TEXT,locality TEXT,position_sought TEXT,education TEXT,experience TEXT,skills TEXT,cv_url TEXT,message TEXT,status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new','reviewed','shortlisted','rejected','archived')),created_at TEXT NOT NULL,FOREIGN KEY(job_id) REFERENCES jobs(id) ON DELETE SET NULL)`,
+      `CREATE TABLE IF NOT EXISTS writing_requests (id TEXT PRIMARY KEY,reference TEXT NOT NULL UNIQUE,document_type TEXT NOT NULL,full_name TEXT NOT NULL,phone TEXT NOT NULL,email TEXT,locality TEXT,data_json TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new','processing','completed','archived')),created_at TEXT NOT NULL,updated_at TEXT NOT NULL)`,
       `CREATE INDEX IF NOT EXISTS idx_contact_status_created ON contact_messages(status, created_at DESC)`,
       `CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at DESC)`,
       `CREATE INDEX IF NOT EXISTS idx_users_active ON users(active)`,
       `CREATE INDEX IF NOT EXISTS idx_jobs_active_created ON jobs(active, created_at DESC)`,
       `CREATE INDEX IF NOT EXISTS idx_applications_status_created ON job_applications(status, created_at DESC)`,
-      `CREATE INDEX IF NOT EXISTS idx_applications_job ON job_applications(job_id)`
+      `CREATE INDEX IF NOT EXISTS idx_applications_job ON job_applications(job_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_writing_status_created ON writing_requests(status, created_at DESC)`
     ];
     await env.SITE_MEGA_D1.batch(ddl.map(sql => env.SITE_MEGA_D1.prepare(sql)));
     if (!await env.SITE_MEGA_KV.get('auth:epoch')) await env.SITE_MEGA_KV.put('auth:epoch','1');
@@ -194,16 +196,17 @@ async function publicContact(req,env){
 }
 async function load(req,env){
   const a=await requireSession(req,env,false); if(a.error)return a.error;
-  const [content,contacts,users,audits,jobs,applications]=await Promise.all([
+  const [content,contacts,users,audits,jobs,applications,writingRequests]=await Promise.all([
     env.SITE_MEGA_D1.prepare(`SELECT key,value_json,updated_at FROM site_content`).all(),
     env.SITE_MEGA_D1.prepare(`SELECT * FROM contact_messages ORDER BY created_at DESC LIMIT 200`).all(),
     env.SITE_MEGA_D1.prepare(`SELECT id,email,display_name,role,active,created_at,updated_at FROM users ORDER BY created_at DESC`).all(),
     env.SITE_MEGA_D1.prepare(`SELECT id,actor_user_id,action,target_type,target_id,ip,details_json,created_at FROM audit_log ORDER BY id DESC LIMIT 200`).all(),
     env.SITE_MEGA_D1.prepare(`SELECT * FROM jobs ORDER BY active DESC, created_at DESC LIMIT 200`).all(),
-    env.SITE_MEGA_D1.prepare(`SELECT a.*,j.title AS job_title FROM job_applications a LEFT JOIN jobs j ON j.id=a.job_id ORDER BY a.created_at DESC LIMIT 500`).all()
+    env.SITE_MEGA_D1.prepare(`SELECT a.*,j.title AS job_title FROM job_applications a LEFT JOIN jobs j ON j.id=a.job_id ORDER BY a.created_at DESC LIMIT 500`).all(),
+    env.SITE_MEGA_D1.prepare(`SELECT * FROM writing_requests ORDER BY created_at DESC LIMIT 500`).all()
   ]);
   const site={}; for(const r of content.results||[]) { try{site[r.key]=JSON.parse(r.value_json)}catch{site[r.key]=r.value_json} }
-  return json({site,contacts:contacts.results||[],users:users.results||[],audit:audits.results||[],jobs:jobs.results||[],applications:applications.results||[]});
+  return json({site,contacts:contacts.results||[],users:users.results||[],audit:audits.results||[],jobs:jobs.results||[],applications:applications.results||[],writingRequests:writingRequests.results||[]});
 }
 async function save(req,env){
   const a=await requireSession(req,env,true); if(a.error)return a.error;
@@ -274,6 +277,35 @@ async function publicApplication(req,env){
   await audit(env,req,null,'JOB_APPLICATION_CREATED','job_application',id,{jobId:validJobId,positionSought});
   return json({ok:true,id},201);
 }
+
+function makeWritingReference(){
+  const d=new Date(); const stamp=`${String(d.getUTCFullYear()).slice(-2)}${String(d.getUTCMonth()+1).padStart(2,'0')}${String(d.getUTCDate()).padStart(2,'0')}`;
+  const a=new Uint32Array(1); crypto.getRandomValues(a); return `MEGA-${stamp}-${String(a[0]%100000).padStart(5,'0')}`;
+}
+async function publicWritingRequest(req,env){
+  if(!sameOrigin(req)) return json({error:'ORIGIN_REJECTED'},403);
+  const b=await bodyJson(req); if(b.website) return json({ok:true});
+  const allowed=['cv','courrier_administratif','demande_aide','contrat_travail','contrat_loyer','autres'];
+  const documentType=allowed.includes(b.documentType)?b.documentType:'autres';
+  const fullName=String(b.fullName||'').trim().slice(0,140), phone=String(b.phone||'').trim().slice(0,60), email=String(b.email||'').trim().slice(0,180), locality=String(b.locality||'').trim().slice(0,120);
+  if(!fullName||!phone) return json({error:'MISSING_FIELDS'},400);
+  const rk=`writing-rate:${clientIp(req)}`; const count=Number(await env.SITE_MEGA_KV.get(rk)||'0'); if(count>=8) return json({error:'RATE_LIMIT'},429);
+  await env.SITE_MEGA_KV.put(rk,String(count+1),{expirationTtl:3600});
+  const clean={}; for(const [k,v] of Object.entries(b.data||{})){ if(Object.keys(clean).length>=40)break; clean[String(k).slice(0,60)]=String(v??'').trim().slice(0,4000); }
+  const id=crypto.randomUUID(), reference=makeWritingReference(), t=now();
+  await env.SITE_MEGA_D1.prepare(`INSERT INTO writing_requests(id,reference,document_type,full_name,phone,email,locality,data_json,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,'new',?,?)`).bind(id,reference,documentType,fullName,phone,email,locality,JSON.stringify(clean),t,t).run();
+  await audit(env,req,null,'WRITING_REQUEST_CREATED','writing_request',id,{reference,documentType});
+  return json({ok:true,id,reference},201);
+}
+async function writingAdmin(req,env,url){
+  const a=await requireSession(req,env,req.method!=='GET'); if(a.error)return a.error;
+  if(req.method==='GET'){const rows=await env.SITE_MEGA_D1.prepare(`SELECT * FROM writing_requests ORDER BY created_at DESC LIMIT 500`).all();return json({writingRequests:rows.results||[]});}
+  const id=url.pathname.split('/').pop();
+  if(req.method==='PUT'){const b=await bodyJson(req);const status=['new','processing','completed','archived'].includes(b.status)?b.status:'processing';await env.SITE_MEGA_D1.prepare(`UPDATE writing_requests SET status=?,updated_at=? WHERE id=?`).bind(status,now(),id).run();await audit(env,req,a.user.id,'WRITING_STATUS_CHANGED','writing_request',id,{status});return json({ok:true});}
+  if(req.method==='DELETE'){await env.SITE_MEGA_D1.prepare(`DELETE FROM writing_requests WHERE id=?`).bind(id).run();await audit(env,req,a.user.id,'WRITING_REQUEST_DELETED','writing_request',id,{});return json({ok:true});}
+  return json({error:'METHOD_NOT_ALLOWED'},405);
+}
+
 async function jobsAdmin(req,env){
   const write=req.method!=='GET'; const a=await requireSession(req,env,write); if(a.error)return a.error; const denied=requireAdmin(a); if(denied)return denied;
   if(req.method==='GET'){ const rows=await env.SITE_MEGA_D1.prepare(`SELECT * FROM jobs ORDER BY active DESC,created_at DESC`).all(); return json({jobs:rows.results||[]}); }
@@ -318,6 +350,7 @@ export default {
       if(url.pathname==='/api/contact'&&req.method==='POST') return await publicContact(req,env);
       if(url.pathname==='/api/jobs'&&req.method==='GET') return await publicJobs(req,env);
       if(url.pathname==='/api/applications'&&req.method==='POST') return await publicApplication(req,env);
+      if(url.pathname==='/api/writing-requests'&&req.method==='POST') return await publicWritingRequest(req,env);
       if(url.pathname==='/api/load'&&req.method==='GET') return await load(req,env);
       if(url.pathname==='/api/save'&&req.method==='POST') return await save(req,env);
       if(url.pathname==='/api/admin/users') return await usersApi(req,env);
@@ -325,6 +358,8 @@ export default {
       if(url.pathname==='/api/admin/jobs') return await jobsAdmin(req,env);
       if(url.pathname==='/api/admin/applications'&&req.method==='GET') return await applicationsAdmin(req,env,url);
       if(url.pathname.startsWith('/api/admin/applications/')) return await applicationsAdmin(req,env,url);
+      if(url.pathname==='/api/admin/writing-requests'&&req.method==='GET') return await writingAdmin(req,env,url);
+      if(url.pathname.startsWith('/api/admin/writing-requests/')) return await writingAdmin(req,env,url);
       if(url.pathname.startsWith('/api/admin/contact/')) return await contactAdmin(req,env,url);
       if(url.pathname.startsWith('/api/')) return json({error:'NOT_FOUND'},404);
       return env.ASSETS.fetch(req);
