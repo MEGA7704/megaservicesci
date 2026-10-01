@@ -71,7 +71,21 @@ window.MEGA={mount,api};
  function inject(){
   if(document.getElementById('megaQuickFab'))return;
   document.body.insertAdjacentHTML('beforeend',`<button id="megaQuickFab" class="mega-quick-fab" type="button" aria-label="Ouvrir Rédaction rapide"><span class="qicon">✎</span><span>Rédaction rapide</span></button><div id="megaQuickModal" class="mega-quick-modal" role="dialog" aria-modal="true" aria-label="Rédaction rapide"><div class="mega-quick-card"><div class="mega-quick-head"><div><h2>Rédaction rapide</h2><p>Choisissez le document puis renseignez les informations utiles.</p></div><button id="megaQuickClose" class="mega-quick-close" type="button">×</button></div><div id="megaQuickBody"></div></div></div>`);
-  const modal=document.getElementById('megaQuickModal');document.getElementById('megaQuickFab').onclick=()=>{modal.classList.add('open');choose()};document.getElementById('megaQuickClose').onclick=()=>modal.classList.remove('open');modal.onclick=e=>{if(e.target===modal)modal.classList.remove('open')};
+  const modal=document.getElementById('megaQuickModal'),fab=document.getElementById('megaQuickFab');
+  startFloatingFab(fab,modal);
+  fab.onclick=()=>{modal.classList.add('open');choose()};document.getElementById('megaQuickClose').onclick=()=>modal.classList.remove('open');modal.onclick=e=>{if(e.target===modal)modal.classList.remove('open')};
+ }
+ function startFloatingFab(fab,modal){
+  // Déplacement autonome lent, multidirectionnel, avec rebond doux sur les bords.
+  let x=Math.max(12,window.innerWidth-fab.offsetWidth-18),y=Math.max(12,window.innerHeight-fab.offsetHeight-18);
+  let vx=-0.24,vy=-0.17,last=performance.now(),raf=0;
+  const margin=10;
+  fab.style.right='auto';fab.style.bottom='auto';fab.style.left='0';fab.style.top='0';fab.style.willChange='transform';
+  function clamp(){const maxX=Math.max(margin,window.innerWidth-fab.offsetWidth-margin),maxY=Math.max(margin,window.innerHeight-fab.offsetHeight-margin);x=Math.min(maxX,Math.max(margin,x));y=Math.min(maxY,Math.max(margin,y));}
+  function tick(now){const dt=Math.min(32,now-last);last=now;const maxX=Math.max(margin,window.innerWidth-fab.offsetWidth-margin),maxY=Math.max(margin,window.innerHeight-fab.offsetHeight-margin);x+=vx*dt;y+=vy*dt;if(x<=margin||x>=maxX){vx*=-1;x=Math.min(maxX,Math.max(margin,x));}if(y<=margin||y>=maxY){vy*=-1;y=Math.min(maxY,Math.max(margin,y));}fab.style.transform=`translate3d(${x}px,${y}px,0)`;raf=requestAnimationFrame(tick);}
+  window.addEventListener('resize',clamp,{passive:true});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(raf)}else{last=performance.now();raf=requestAnimationFrame(tick)}});
+  clamp();raf=requestAnimationFrame(tick);
  }
  function choose(){const b=document.getElementById('megaQuickBody');b.innerHTML=`<div class="mega-doc-grid">${Object.entries(defs).map(([k,v])=>`<button class="mega-doc-btn" data-doc="${k}" type="button">${v.label}</button>`).join('')}</div><p style="text-align:center;color:#667">Votre demande sera enregistrée et recevra un numéro unique.</p>`;b.querySelectorAll('[data-doc]').forEach(x=>x.onclick=()=>form(x.dataset.doc));}
  function form(type){const d=defs[type],b=document.getElementById('megaQuickBody');b.innerHTML=`<button type="button" id="qBack" class="mega-doc-btn" style="padding:8px 12px">← Documents</button><h3>${d.label}</h3><form id="megaQuickForm"><input type="hidden" name="website"><div class="mega-q-fields"><label>Nom et prénoms *<input name="fullName" required maxlength="140"></label><label>Téléphone / WhatsApp *<input name="phone" required maxlength="60" inputmode="tel"></label><label>E-mail<input name="email" type="email" maxlength="180"></label><label>Localité<input name="locality" maxlength="120"></label>${d.fields.map(([n,l,t])=>`<label class="${t==='textarea'?'wide':''}">${l}${t==='textarea'?`<textarea name="${n}" maxlength="4000"></textarea>`:`<input name="${n}" type="${t}" maxlength="500">`}</label>`).join('')}</div><button class="btn btn-primary mega-q-submit" type="submit">Enregistrer ma demande</button></form>`;document.getElementById('qBack').onclick=choose;document.getElementById('megaQuickForm').onsubmit=e=>submit(e,type);}

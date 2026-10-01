@@ -170,3 +170,8 @@ Les miniatures sont chargées via un service de capture de page web et se metten
 - Nouvelle rubrique « Rédaction rapide » dans l'administration avec suivi de statut.
 - Après enregistrement, bouton WhatsApp vers MEGA SERVICES (+225 07 77 04 17 90) avec la référence préremplie.
 - La bulle est responsive et reste en bas à droite sans bloquer la navigation.
+
+## V46 — Bulle Rédaction rapide mobile
+- La bulle « Rédaction rapide » se déplace automatiquement et lentement dans plusieurs directions sur chaque page.
+- Rebond doux sur les bords de l’écran sans sortir de la zone visible.
+- Le bouton reste cliquable pendant son déplacement et s’adapte au redimensionnement de l’écran.
