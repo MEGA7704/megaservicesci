@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SIGAT — Rapports et bilans</title>
+  <link rel="stylesheet" href="/assets/styles.css?v=2.04">
+</head>
+<body data-module="rapports">
+  <main class="container reports-page">
+    <div class="page-head reports-page-head">
+      <div>
+        <h1 id="pageTitle">Rapports et bilans</h1>
+        <p id="pageSubtitle">Bilans mensuels, trimestriels, semestriels et annuels — consolidation de tous les travaux du service.</p>
+      </div>
+      <button id="reportPrintBtn" class="btn btn-primary" type="button">Imprimer le bilan complet / PDF</button>
+    </div>
+
+    <section class="card report-filter-card" aria-labelledby="reportFilterTitle">
+      <div class="report-filter-head">
+        <div>
+          <div class="report-kicker">Période du rapport</div>
+          <h2 id="reportFilterTitle">Sélection intelligente de la période</h2>
+          <p class="muted">Choisissez la période. Les tableaux du service sont actualisés automatiquement.</p>
+        </div>
+        <div id="reportPeriodBadge" class="report-period-badge">—</div>
+      </div>
+
+      <div class="report-filter-grid">
+        <div class="field"><label for="reportPeriodType">Type de période</label><select id="reportPeriodType"><option value="MONTH">Mensuel</option><option value="QUARTER">Trimestriel</option><option value="SEMESTER">Semestriel</option><option value="YEAR">Annuel</option><option value="CUSTOM">Période personnalisée</option></select></div>
+        <div class="field" id="reportYearField"><label for="reportYear">Année</label><input id="reportYear" type="number" min="2000" max="2100"></div>
+        <div class="field" id="reportMonthField"><label for="reportMonth">Mois</label><select id="reportMonth"><option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option><option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option><option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option><option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option></select></div>
+        <div class="field" id="reportQuarterField" hidden><label for="reportQuarter">Trimestre</label><select id="reportQuarter"><option value="1">1er trimestre</option><option value="2">2e trimestre</option><option value="3">3e trimestre</option><option value="4">4e trimestre</option></select></div>
+        <div class="field" id="reportSemesterField" hidden><label for="reportSemester">Semestre</label><select id="reportSemester"><option value="1">1er semestre</option><option value="2">2e semestre</option></select></div>
+        <div class="field" id="reportStartField" hidden><label for="reportStartDate">Date de début</label><input id="reportStartDate" type="date"></div>
+        <div class="field" id="reportEndField" hidden><label for="reportEndDate">Date de fin</label><input id="reportEndDate" type="date"></div>
+        <div class="field report-conclusion-field"><label for="reportConclusion">Observations générales / conclusion</label><textarea id="reportConclusion" rows="2" placeholder="Facultatif — cette observation figurera à la fin du bilan imprimé."></textarea></div>
+      </div>
+
+      <div class="report-filter-actions">
+        <label class="report-check"><input id="reportIncludeEmpty" type="checkbox" checked> Afficher les rubriques sans données</label>
+        <div class="spacer"></div>
+        <button id="reportReloadBtn" class="btn btn-secondary" type="button">Actualiser les données</button>
+      </div>
+    </section>
+
+    <section class="card report-table-selector-card" aria-labelledby="reportTableSelectorTitle">
+      <div class="report-table-selector-head">
+        <div>
+          <div class="report-kicker">Tableaux à imprimer</div>
+          <h2 id="reportTableSelectorTitle">Sélection des rubriques du bilan</h2>
+          <p class="muted">Cochez uniquement les tableaux que vous souhaitez intégrer au document final. La sélection met à jour l’aperçu immédiatement.</p>
+        </div>
+        <div class="report-table-selector-actions">
+          <button id="reportSelectAllBtn" class="btn btn-secondary btn-sm" type="button">Tout sélectionner</button>
+          <button id="reportSelectNoneBtn" class="btn btn-secondary btn-sm" type="button">Tout désélectionner</button>
+        </div>
+      </div>
+      <div id="reportTableSelector" class="report-table-selector" aria-live="polite"></div>
+    </section>
+
+    <section class="report-metrics" id="reportMetrics" aria-live="polite"></section>
+
+    <section class="card report-preview-card">
+      <div class="report-preview-head">
+        <div>
+          <div class="report-kicker">Document consolidé</div>
+          <h2 id="reportPreviewTitle">Aperçu du bilan</h2>
+          <p id="reportPreviewSubtitle" class="muted">Chargement des travaux du service…</p>
+        </div>
+      </div>
+      <div id="reportLoading" class="report-loading">Chargement des rubriques du service…</div>
+      <div id="reportSections" class="report-sections" hidden></div>
+    </section>
+  </main>
+
+  <dialog id="freePlanDialog" class="dialog"><div class="dialog-head"><div><strong>Passez à une formule SIGAT payante</strong><div class="muted">La période FREE initiale est de 20 jours. Après l’expiration d’un abonnement payant, la période FREE de secours est limitée à 7 jours.</div></div></div><div class="dialog-body"><div class="plans" style="grid-template-columns:1fr 1fr"><div class="card plan"><h3>STANDARD</h3><div class="price">23 700 FCFA</div><div class="muted">30 jours — accès complet</div></div><div class="card plan featured"><h3>BUSINESS</h3><div class="price">181 000 FCFA</div><div class="muted">365 jours — accès complet</div></div></div></div><div class="dialog-foot"><form method="dialog"><button class="btn btn-secondary" value="cancel">COMPRIS</button></form><a class="btn btn-primary" href="/mon-compte/#abonnement">ACHETER MON PLAN</a></div></dialog>
+  <footer class="footer">SIGAT — Système Intégré de Gestion Administrative et Technique</footer>
+  <script type="module" src="/assets/app.js?v=2.04"></script>
+</body>
+</html>

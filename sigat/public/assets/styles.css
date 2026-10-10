@@ -1,0 +1,1290 @@
+:root{
+  --forest:#0b4d3b;--forest2:#07382d;--gold:#c9a227;--cream:#f7f8f5;--ink:#17221d;--muted:#66736d;--line:#dfe6e2;--danger:#a52a2a;--ok:#177245;--white:#fff;--shadow:0 14px 40px rgba(12,45,34,.12)
+}
+*{box-sizing:border-box}html,body{margin:0;padding:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--cream)}
+a{color:inherit}.hidden{display:none!important}.muted{color:var(--muted)}.danger{color:var(--danger)}
+button,input,select,textarea{font:inherit}button{cursor:pointer}
+.btn{border:0;border-radius:10px;padding:10px 16px;font-weight:700;display:inline-flex;align-items:center;gap:8px;justify-content:center}.btn-primary{background:var(--forest);color:#fff}.btn-primary:hover{background:var(--forest2)}.btn-secondary{background:#edf2ef;color:var(--forest2)}.btn-danger{background:#fceaea;color:var(--danger)}.btn-gold{background:var(--gold);color:#fff}.btn-sm{padding:7px 10px;font-size:13px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}.field label{font-size:13px;font-weight:800;color:#33483f}.field input,.field select,.field textarea{width:100%;border:1px solid #ced8d3;background:#fff;border-radius:10px;padding:11px 12px;outline:none}.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--forest);box-shadow:0 0 0 3px rgba(11,77,59,.08)}
+.login-page{min-height:100vh;display:grid;grid-template-columns:minmax(320px,1fr) minmax(380px,520px);background-image:url("/assets/login-background.png");background-size:cover;background-position:center center;background-repeat:no-repeat;background-attachment:fixed}
+.login-brand{padding:8vh 7vw;color:#fff;display:flex;flex-direction:column;justify-content:center;background:linear-gradient(90deg,rgba(2,38,30,.34),rgba(2,38,30,.08) 70%,transparent)}.brand-mark{width:92px;height:92px;border:2px solid rgba(255,255,255,.7);border-radius:24px;display:grid;place-items:center;font-size:34px;font-weight:900;color:var(--gold);margin-bottom:24px}.login-brand h1{font-size:54px;margin:0 0 8px;letter-spacing:.5px}.login-brand p{max-width:620px;color:#dce9e4;font-size:18px;line-height:1.6}.login-panel{display:flex;align-items:center;padding:40px;background:transparent}.login-card{width:100%;background:rgba(255,255,255,.96);padding:32px;border-radius:22px;box-shadow:0 18px 55px rgba(0,0,0,.18);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}.login-card h2{margin:0 0 6px}.password-wrap{position:relative}.password-wrap input{padding-right:48px}.eye-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;padding:7px;border-radius:8px;color:var(--forest)}.login-actions{display:grid;gap:10px}.link-btn{border:0;background:none;color:var(--forest);font-weight:800;padding:8px 0}.small-note{font-size:12px;color:var(--muted);line-height:1.5}
+.topbar{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 6px 20px rgba(0,0,0,.04)}.topbar-inner{max-width:1600px;margin:auto;padding:0 18px;display:flex;align-items:center;gap:20px;min-height:72px}.logo{display:flex;align-items:center;gap:10px;white-space:nowrap}.logo-badge{width:42px;height:42px;border-radius:12px;background:var(--forest);color:var(--gold);display:grid;place-items:center;font-weight:900}.logo strong{font-size:20px}.org-chip{font-size:12px;color:var(--muted);max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nav{display:flex;align-items:center;gap:4px;flex:1}.nav>a,.nav-group>button{border:0;background:transparent;text-decoration:none;padding:10px 11px;border-radius:9px;font-weight:750;color:#31463d}.nav>a:hover,.nav-group>button:hover{background:#edf3ef;color:var(--forest)}.nav-group{position:relative}.dropdown{display:none;position:absolute;top:44px;left:0;min-width:240px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:8px}.nav-group:hover .dropdown,.nav-group:focus-within .dropdown{display:grid}.dropdown a{text-decoration:none;padding:10px;border-radius:8px;font-size:14px}.dropdown a:hover{background:#edf3ef;color:var(--forest)}.top-actions{display:flex;align-items:center;gap:8px}.avatar{width:36px;height:36px;border-radius:50%;background:#edf3ef;display:grid;place-items:center;font-weight:900;color:var(--forest)}
+.container{max-width:1600px;margin:0 auto;padding:24px 18px 60px}.page-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:20px}.page-head h1{margin:0;font-size:28px}.page-head p{margin:6px 0 0;color:var(--muted)}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 25px rgba(5,55,39,.04);padding:18px}.cards{display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:14px}.metric .k{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:800}.metric .v{font-size:30px;font-weight:900;color:var(--forest);margin-top:8px}.metric .s{font-size:12px;color:var(--muted);margin-top:3px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}.toolbar input,.toolbar select{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff}.toolbar input{min-width:280px}.toolbar .spacer{flex:1}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px;background:#fff}.table{width:100%;border-collapse:collapse;min-width:850px}.table th,.table td{padding:12px 13px;border-bottom:1px solid #edf1ef;text-align:left;vertical-align:top}.table th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#56675f;background:#f8faf9;position:sticky;top:0}.table td{font-size:14px}.table tr:hover td{background:#fbfcfb}.pill{display:inline-flex;padding:5px 8px;border-radius:999px;background:#edf3ef;color:var(--forest);font-weight:800;font-size:12px}.pill.warn{background:#fff4d5;color:#7c5b00}.pill.danger{background:#fdeaea;color:#962c2c}.actions{display:flex;gap:6px;flex-wrap:wrap}.pagination{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:14px}
+.dialog{border:0;padding:0;border-radius:18px;box-shadow:0 30px 90px rgba(0,0,0,.25);width:min(720px,calc(100vw - 24px));max-height:90vh}.dialog::backdrop{background:rgba(3,25,18,.62)}.dialog-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}.dialog-body{padding:20px;overflow:auto;max-height:68vh}.dialog-foot{padding:15px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}.close-x{border:0;background:#edf3ef;border-radius:9px;width:34px;height:34px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}.form-grid .full{grid-column:1/-1}.notice{padding:12px 14px;border-radius:10px;background:#edf6f1;color:#1b593f;font-size:14px}.notice.error{background:#fdeaea;color:#8e2e2e}.notice.warn{background:#fff5db;color:#755900}
+.plans{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:16px}.plan{position:relative}.plan.featured{border:2px solid var(--gold)}.plan h3{margin:0}.price{font-size:28px;font-weight:900;color:var(--forest);margin:12px 0}.plan ul{padding-left:18px;color:var(--muted);line-height:1.8}.plan .btn{width:100%}
+.superadmin-banner{background:linear-gradient(90deg,#101a16,#0b4d3b);color:#fff;border-radius:18px;padding:22px;margin-bottom:18px}.superadmin-banner h1{margin:0}.superadmin-banner p{margin:6px 0 0;color:#d7e4df}
+.footer{text-align:center;color:#78847f;font-size:12px;padding:22px}
+.mobile-nav{display:none}
+@media(max-width:1100px){.cards{grid-template-columns:repeat(2,1fr)}.nav{display:none}.mobile-nav{display:block}.topbar-inner{flex-wrap:wrap;padding-bottom:10px}.org-chip{max-width:180px}}
+@media(max-width:800px){.login-page{grid-template-columns:1fr;background-image:url("/assets/login-background.png");background-size:cover;background-position:35% center;background-repeat:no-repeat;background-attachment:scroll}.login-brand{padding:34px 24px 18px;background:linear-gradient(180deg,rgba(2,38,30,.78),rgba(2,38,30,.45))}.login-brand h1{font-size:38px}.login-brand p{font-size:15px}.login-panel{padding:18px 16px 28px;align-items:flex-start}.login-card{background:rgba(255,255,255,.97);padding:24px}.form-grid{grid-template-columns:1fr}.cards,.plans{grid-template-columns:1fr}.page-head{flex-direction:column}.toolbar input{min-width:0;width:100%}}
+
+/* === SIGAT V1.11 — Popups professionnels, anti double-clic, impression et formulaires compacts === */
+.btn:disabled,.btn.is-busy,button:disabled{opacity:.58;cursor:not-allowed;pointer-events:none}
+.btn-danger-solid{background:#a52a2a;color:#fff}.btn-danger-solid:hover{background:#812020}
+.sigat-toast{position:fixed;right:18px;bottom:18px;z-index:9999;max-width:380px;padding:13px 16px;border-radius:12px;color:#fff;font-weight:750;box-shadow:0 12px 35px rgba(0,0,0,.2)}.sigat-toast.ok{background:#0b4d3b}.sigat-toast.error{background:#9f2e2e}
+.pro-dialog{width:min(680px,calc(100vw - 24px));overflow:hidden}.pro-dialog-head{background:linear-gradient(90deg,#f5f9f7,#fff)}.pro-kicker{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:900;margin-bottom:4px}.pro-message{white-space:pre-wrap;line-height:1.6;color:#384c43}.detail-layout{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start}.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.detail-item{background:#f8faf9;border:1px solid var(--line);border-radius:12px;padding:10px}.detail-item span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:800;margin-bottom:4px}.detail-item strong{white-space:pre-wrap;overflow-wrap:anywhere}.agent-photo-view img{width:118px;height:145px;object-fit:cover;border-radius:12px;border:1px solid var(--line);box-shadow:0 8px 20px rgba(0,0,0,.08)}
+
+/* Les popups d'ajout sont larges et sans défilement interne sur écran de bureau. */
+#editorDialog.editor-dialog{width:min(1180px,calc(100vw - 28px));max-height:none;overflow:visible}
+#editorDialog.editor-dialog .dialog-head{padding:14px 18px;background:linear-gradient(90deg,#f4f8f6,#fff)}
+#editorDialog.editor-dialog .dialog-body{padding:14px 18px;overflow:visible;max-height:none}
+#editorDialog.editor-dialog .dialog-foot{padding:12px 18px;background:#fbfcfb}
+#editorDialog.editor-dialog .form-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:0 12px}
+#editorDialog.editor-dialog .form-grid .full{grid-column:span 2}
+#editorDialog.editor-dialog .field{margin-bottom:9px;gap:4px}
+#editorDialog.editor-dialog .field label{font-size:12px}
+#editorDialog.editor-dialog .field input,#editorDialog.editor-dialog .field select,#editorDialog.editor-dialog .field textarea{padding:8px 10px;border-radius:9px;min-height:38px}
+#editorDialog.editor-dialog textarea{resize:vertical;min-height:58px}
+#editorDialog.editor-dialog .photo-field{grid-column:span 1;border:1px dashed #b9c8c1;border-radius:12px;padding:9px;background:#f8fbf9}
+.photo-preview{display:flex;align-items:center;gap:10px;min-height:54px;margin-top:5px}.photo-preview img{width:54px;height:66px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+
+/* Menus déroulants compacts : pas de défilement interne dans les groupes principaux. */
+.dropdown{max-height:none;overflow:visible;grid-template-columns:1fr}.nav-group:nth-of-type(3) .dropdown{min-width:270px}
+
+@media(max-width:900px){
+  #editorDialog.editor-dialog{width:min(760px,calc(100vw - 18px));max-height:94vh;overflow:hidden}
+  #editorDialog.editor-dialog .dialog-body{overflow:auto;max-height:72vh}
+  #editorDialog.editor-dialog .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #editorDialog.editor-dialog .form-grid .full{grid-column:1/-1}
+  .detail-layout{grid-template-columns:1fr}.detail-grid{grid-template-columns:1fr}
+}
+@media(max-width:620px){#editorDialog.editor-dialog .form-grid{grid-template-columns:1fr}#editorDialog.editor-dialog .form-grid .full,#editorDialog.editor-dialog .photo-field{grid-column:1}.detail-grid{grid-template-columns:1fr}}
+
+/* === SIGAT V1.12 — Personnel : formulaire Agent en 3 colonnes sans défilement === */
+#editorDialog.personnel-editor{width:min(1180px,calc(100vw - 24px));max-height:none;overflow:visible}
+#editorDialog.personnel-editor .dialog-body{overflow:visible;max-height:none;padding:13px 18px}
+#editorDialog.personnel-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:0 14px;align-items:start}
+#editorDialog.personnel-editor #dynamicFields{display:contents}
+#editorDialog.personnel-editor .personnel-status-hidden{display:none!important}
+#editorDialog.personnel-editor .field{margin-bottom:8px}
+#editorDialog.personnel-editor .field input,#editorDialog.personnel-editor .field select{min-height:36px;padding:7px 10px}
+#editorDialog.personnel-editor .photo-field{grid-column:auto;padding:7px 9px;min-height:86px}
+#editorDialog.personnel-editor .photo-preview{min-height:42px;margin-top:3px}
+#editorDialog.personnel-editor .photo-preview img{width:48px;height:58px}
+@media(max-width:900px) and (min-width:621px){
+  #editorDialog.personnel-editor{width:min(820px,calc(100vw - 18px));max-height:none;overflow:visible}
+  #editorDialog.personnel-editor .dialog-body{overflow:visible;max-height:none}
+  #editorDialog.personnel-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  #editorDialog.personnel-editor{max-height:94vh;overflow:hidden}
+  #editorDialog.personnel-editor .dialog-body{overflow:auto;max-height:72vh}
+  #editorDialog.personnel-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:1fr}
+}
+
+
+/* V1.13 — Autorisations d'absence : formulaire compact sans défilement sur grand écran */
+#editorDialog.absence-editor{width:min(1120px,calc(100vw - 24px));max-height:none;overflow:visible}
+#editorDialog.absence-editor .dialog-body{overflow:visible;max-height:none;padding:13px 18px}
+#editorDialog.absence-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:0 14px;align-items:start}
+#editorDialog.absence-editor #dynamicFields{display:contents}
+#editorDialog.absence-editor .field{margin-bottom:8px}
+#editorDialog.absence-editor .field input,#editorDialog.absence-editor .field select,#editorDialog.absence-editor .field textarea{min-height:36px;padding:7px 10px}
+#editorDialog.absence-editor .computed-field{background:#f1f5f3;font-weight:800;color:#0b4d3b}
+#editorDialog.absence-editor textarea{min-height:54px;resize:none}
+@media(max-width:900px){#editorDialog.absence-editor{width:min(820px,calc(100vw - 18px));max-height:94vh;overflow:hidden}#editorDialog.absence-editor .dialog-body{overflow:auto;max-height:72vh}#editorDialog.absence-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){#editorDialog.absence-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:1fr}}
+
+/* === SIGAT V1.14 — Paramètres d'impression officiels === */
+.print-settings-card{max-width:1180px;margin:0 auto}.settings-section-title{font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:var(--forest);border-bottom:2px solid var(--gold);padding-bottom:7px;margin:4px 0 14px}.settings-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 14px;margin-bottom:18px}.settings-grid .full{grid-column:1/-1}.settings-actions{display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--line);padding-top:16px}.image-setting{border:1px dashed #bcc9c3;border-radius:12px;padding:10px;background:#f9fbfa}.setting-image-preview{min-height:72px;display:flex;align-items:center;gap:10px;margin-top:7px}.setting-image-preview img{max-width:95px;max-height:75px;object-fit:contain;border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px}.print-settings-preview{display:grid;grid-template-columns:1fr 100px 1fr;gap:14px;align-items:start;font-size:11px}@media(max-width:850px){.settings-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.settings-grid{grid-template-columns:1fr}.settings-grid .full{grid-column:1}.print-settings-preview{grid-template-columns:1fr}}
+
+/* V1.15 — Convocations : formulaire compact et sans défilement sur grand écran */
+#editorDialog.convocation-editor{width:min(1120px,calc(100vw - 24px));max-height:none;overflow:visible}
+#editorDialog.convocation-editor .dialog-body{overflow:visible;max-height:none;padding:13px 18px}
+#editorDialog.convocation-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:0 14px;align-items:start}
+#editorDialog.convocation-editor #dynamicFields{display:contents}
+#editorDialog.convocation-editor .field{margin-bottom:8px}
+#editorDialog.convocation-editor .field input,#editorDialog.convocation-editor .field select,#editorDialog.convocation-editor .field textarea{min-height:36px;padding:7px 10px}
+#editorDialog.convocation-editor textarea{min-height:66px;resize:none}
+#editorDialog.convocation-editor .convocation-object-field{grid-column:1/-1}
+#editorDialog.convocation-editor .convocation-person-field{grid-column:1/-1}
+#editorDialog.convocation-editor .convocation-object-field textarea{min-height:74px}
+@media(max-width:900px){#editorDialog.convocation-editor{width:min(820px,calc(100vw - 18px));max-height:94vh;overflow:hidden}#editorDialog.convocation-editor .dialog-body{overflow:auto;max-height:72vh}#editorDialog.convocation-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){#editorDialog.convocation-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:1fr}}
+
+/* === SIGAT V1.23 — AMPLIATIONS + menu principal mobile === */
+.mobile-menu-btn{display:none;border:1px solid var(--line);background:#f5f8f6;color:var(--forest2);border-radius:10px;padding:8px 11px;font-weight:800;align-items:center;gap:7px}
+.ampliations-toggle-field{grid-column:1/-1!important;border:1px solid #d9e2de;border-radius:12px;background:#f8faf9;padding:10px 12px;margin-top:2px}
+.ampliations-toggle{display:flex;align-items:flex-start;gap:10px;cursor:pointer;color:#243c32}
+.ampliations-toggle input[type="checkbox"]{width:18px!important;min-width:18px;height:18px;min-height:18px!important;margin:2px 0 0;padding:0;accent-color:var(--forest);box-shadow:none!important}
+.ampliations-toggle span{display:block;line-height:1.35}
+.ampliations-toggle strong{display:block;font-size:13px}
+.ampliations-toggle small{display:block;margin-top:3px;color:var(--muted);font-size:11.5px;font-weight:500}
+
+@media(max-width:1100px){
+  .topbar-inner{flex-wrap:wrap;gap:10px;padding-top:9px;padding-bottom:9px}
+  .mobile-menu-btn{display:inline-flex;margin-left:auto}
+  .nav{display:none!important;order:20;flex:0 0 100%;width:100%;padding:8px;background:#fff;border-top:1px solid var(--line);border-radius:0 0 12px 12px}
+  .nav.is-open{display:grid!important;grid-template-columns:1fr;gap:4px}
+  .nav>a,.nav-group>button{width:100%;text-align:left;justify-content:flex-start;padding:11px 12px}
+  .nav-group{width:100%}
+  .nav-group>button{display:flex;align-items:center}
+  .nav .nav-group:hover .dropdown,.nav .nav-group:focus-within .dropdown{display:none}
+  .nav .nav-group.is-open .dropdown{display:grid}
+  .dropdown{position:static;top:auto;left:auto;min-width:0;width:100%;margin:2px 0 5px;padding:5px 8px 5px 16px;box-shadow:none;border:0;border-left:3px solid #dfe9e4;border-radius:0;background:#f8faf9}
+  .dropdown a{padding:9px 10px}
+  .top-actions{margin-left:0}
+}
+@media(max-width:700px){
+  .topbar-inner{padding-left:10px;padding-right:10px}
+  .logo{min-width:0;flex:1 1 auto}
+  .logo strong{font-size:18px}
+  .logo-badge{width:38px;height:38px;border-radius:10px}
+  .org-chip{max-width:155px}
+  .mobile-menu-btn{flex:0 0 auto}
+  .top-actions{order:15;flex:0 0 100%;width:100%;justify-content:flex-end;gap:6px}
+  .top-actions .btn{padding:7px 9px;font-size:12px}
+  .avatar{width:32px;height:32px;font-size:12px}
+}
+@media(max-width:420px){
+  .mobile-menu-btn span:last-child{display:none}
+  .mobile-menu-btn{padding:8px 10px}
+  .org-chip{max-width:130px}
+}
+
+/* === SIGAT V1.24 — AMPLIATIONS : tirets automatiques + nombres/exemplaires === */
+.ampliations-settings-grid{grid-template-columns:minmax(0,2.8fr) minmax(130px,.8fr);column-gap:10px;align-items:start}
+.ampliations-settings-grid textarea{min-height:132px;resize:vertical}
+.ampliations-settings-grid .field:nth-child(2){min-width:0}
+@media(max-width:700px){.ampliations-settings-grid{grid-template-columns:1fr;row-gap:12px}.ampliations-settings-grid .full{grid-column:1}}
+
+/* V1.27 — Gestion des stages : vues Mise en stage / Fin de stage */
+.stage-page-head{margin-bottom:10px}
+.stage-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px}
+.stage-tab{appearance:none;border:1px solid #b9c8c1;background:#fff;color:#173f33;border-radius:12px;padding:11px 18px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.stage-tab:hover{border-color:#0b5a43;background:#f4f8f6}
+.stage-tab.is-active{background:#0b4d3b;color:#fff;border-color:#0b4d3b;box-shadow:0 5px 16px rgba(11,77,59,.18)}
+.stage-workspace{padding-top:14px}
+.stage-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:0 0 14px;border-bottom:1px solid #e1e8e4;margin-bottom:12px}
+.stage-section-head h2{margin:2px 0 4px;color:#173f33}
+.stage-section-kicker{text-transform:uppercase;letter-spacing:.08em;font-size:11px;font-weight:900;color:#8b7a3b}
+.stage-section-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+#editorDialog.stage-editor{width:min(1180px,calc(100vw - 24px));max-height:none;overflow:visible}
+#editorDialog.stage-editor .dialog-body{overflow:visible;max-height:none;padding:13px 18px}
+#editorDialog.stage-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:0 14px;align-items:start}
+#editorDialog.stage-editor #dynamicFields{display:contents}
+#editorDialog.stage-editor .field{margin-bottom:8px}
+#editorDialog.stage-editor .field input,#editorDialog.stage-editor .field select,#editorDialog.stage-editor .field textarea{min-height:36px;padding:7px 10px}
+#editorDialog.stage-editor textarea{min-height:70px;resize:none}
+#editorDialog.stage-editor .stage-theme-field{grid-column:1/-1}
+@media(max-width:900px){
+  .stage-section-head{align-items:flex-start;flex-direction:column}
+  .stage-section-actions{width:100%;justify-content:flex-start}
+  #editorDialog.stage-editor{width:min(820px,calc(100vw - 18px));max-height:94vh;overflow:hidden}
+  #editorDialog.stage-editor .dialog-body{overflow:auto;max-height:72vh}
+  #editorDialog.stage-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .stage-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .stage-tab{padding:10px 8px;font-size:13px}
+  .stage-section-actions{display:grid;grid-template-columns:1fr;width:100%}
+  .stage-section-actions .btn{width:100%}
+  #editorDialog.stage-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:1fr}
+}
+#editorDialog.stage-editor .stage-wide-field{grid-column:span 2}
+@media(max-width:620px){#editorDialog.stage-editor .stage-wide-field{grid-column:1}}
+
+/* V1.28 — Assistance intelligente / préremplissage contextuel */
+#editorDialog .smart-system-note,
+#editorDialog .smart-autofill-field{grid-column:1/-1!important}
+#editorDialog .smart-system-note{margin:0 0 7px!important}
+.smart-note{display:flex;align-items:center;gap:10px;border:1px solid #cfe0d7;background:#f3f8f5;border-radius:11px;padding:8px 11px;color:#234c3d;font-size:12px;line-height:1.35}
+.smart-note strong{white-space:nowrap;color:#0f5b41}
+.smart-note span{color:#53675f}
+#editorDialog .smart-autofill-field{display:grid;grid-template-columns:minmax(190px,.65fr) minmax(320px,1.35fr);gap:4px 12px;align-items:center;border:1px solid #d9e4df;background:#fbfdfc;border-radius:12px;padding:9px 11px;margin:0 0 10px!important}
+#editorDialog .smart-autofill-field>label{grid-column:1;font-size:12px;font-weight:800;color:#163f32;margin:0}
+#editorDialog .smart-autofill-field>.smart-source-select{grid-column:2;width:100%;min-height:38px;padding:7px 10px;border:1px solid #cbd8d2;border-radius:9px;background:#fff}
+#editorDialog .smart-autofill-field>.smart-help{grid-column:1/-1;color:#687a72;font-size:11px;line-height:1.35}
+#editorDialog .smart-autofill-field>.smart-source-select:disabled{background:#f0f3f2;color:#75827d}
+@media(max-width:760px){
+  .smart-note{align-items:flex-start;flex-direction:column;gap:2px}
+  #editorDialog .smart-autofill-field{grid-template-columns:1fr}
+  #editorDialog .smart-autofill-field>label,#editorDialog .smart-autofill-field>.smart-source-select,#editorDialog .smart-autofill-field>.smart-help{grid-column:1}
+}
+
+/* V1.29 — Documents administratifs : Cessation / Reprise / Autorisations d’absence */
+.document-page-head{margin-bottom:10px}
+.document-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px}
+.document-tab{appearance:none;border:1px solid #b9c8c1;background:#fff;color:#173f33;border-radius:12px;padding:11px 18px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.document-tab:hover{border-color:#0b5a43;background:#f4f8f6}
+.document-tab.is-active{background:#0b4d3b;color:#fff;border-color:#0b4d3b;box-shadow:0 5px 16px rgba(11,77,59,.18)}
+.document-workspace{padding-top:14px}
+.document-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:0 0 14px;border-bottom:1px solid #e1e8e4;margin-bottom:12px}
+.document-section-head h2{margin:2px 0 4px;color:#173f33}
+.document-section-kicker{text-transform:uppercase;letter-spacing:.08em;font-size:11px;font-weight:900;color:#8b7a3b}
+.document-section-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+#editorDialog.document-service-editor{width:min(1180px,calc(100vw - 24px));max-height:none;overflow:visible}
+#editorDialog.document-service-editor .dialog-body{overflow:visible;max-height:none;padding:13px 18px}
+#editorDialog.document-service-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:0 14px;align-items:start}
+#editorDialog.document-service-editor #dynamicFields{display:contents}
+#editorDialog.document-service-editor .field{margin-bottom:8px}
+#editorDialog.document-service-editor .field input,#editorDialog.document-service-editor .field select,#editorDialog.document-service-editor .field textarea{min-height:36px;padding:7px 10px}
+#editorDialog.document-service-editor textarea{min-height:70px;resize:none}
+#editorDialog.document-service-editor .document-wide-field{grid-column:span 2}
+@media(max-width:900px){
+  .document-section-head{align-items:flex-start;flex-direction:column}
+  .document-section-actions{width:100%;justify-content:flex-start}
+  #editorDialog.document-service-editor{width:min(820px,calc(100vw - 18px));max-height:94vh;overflow:hidden}
+  #editorDialog.document-service-editor .dialog-body{overflow:auto;max-height:72vh}
+  #editorDialog.document-service-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .document-tabs{display:grid;grid-template-columns:1fr;gap:8px}
+  .document-tab{padding:10px 8px;font-size:13px}
+  .document-section-actions{display:grid;grid-template-columns:1fr;width:100%}
+  .document-section-actions .btn{width:100%}
+  #editorDialog.document-service-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:1fr}
+  #editorDialog.document-service-editor .document-wide-field{grid-column:1}
+}
+
+/* V1.32 — Convocations : espace Procès-verbaux liés */
+.convocation-page-head{margin-bottom:10px}
+.convocation-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px}
+.convocation-tab{appearance:none;border:1px solid #b9c8c1;background:#fff;color:#173f33;border-radius:12px;padding:11px 18px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.convocation-tab:hover{border-color:#0b5a43;background:#f4f8f6}
+.convocation-tab.is-active{background:#0b4d3b;color:#fff;border-color:#0b4d3b;box-shadow:0 5px 16px rgba(11,77,59,.18)}
+.convocation-workspace{padding-top:14px}
+.convocation-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:0 0 14px;border-bottom:1px solid #e1e8e4;margin-bottom:12px}
+.convocation-section-head h2{margin:2px 0 4px;color:#173f33}
+.convocation-section-kicker{text-transform:uppercase;letter-spacing:.08em;font-size:11px;font-weight:900;color:#8b7a3b}
+.convocation-section-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+/* V1.33 — Popup Procès-verbal : 2 colonnes PC, 1 colonne téléphone, défilement adapté à l’écran */
+#editorDialog.pv-editor{
+  width:min(1040px,calc(100vw - 24px));
+  max-height:94vh;
+  max-height:94dvh;
+  overflow:hidden;
+}
+#editorDialog.pv-editor[open]{display:flex;flex-direction:column}
+#editorDialog.pv-editor #recordForm{display:flex;flex:1 1 auto;min-height:0;flex-direction:column}
+#editorDialog.pv-editor .dialog-head{flex:0 0 auto}
+#editorDialog.pv-editor .dialog-body{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-gutter:stable;
+  max-height:none;
+  padding:14px 18px;
+}
+#editorDialog.pv-editor .dialog-foot{flex:0 0 auto}
+#editorDialog.pv-editor #recordForm>.dialog-body>.form-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  column-gap:18px;
+  row-gap:0;
+  align-items:start;
+  width:100%;
+}
+#editorDialog.pv-editor #dynamicFields{display:contents}
+#editorDialog.pv-editor .field{margin-bottom:9px;min-width:0}
+#editorDialog.pv-editor .field input,#editorDialog.pv-editor .field select,#editorDialog.pv-editor .field textarea{min-height:38px;padding:8px 10px}
+#editorDialog.pv-editor textarea{min-height:82px;resize:vertical}
+#editorDialog.pv-editor .pv-wide-field{grid-column:1/-1}
+#editorDialog.pv-editor .pv-wide-field textarea{min-height:90px}
+@media(max-width:900px){
+  .convocation-section-head{align-items:flex-start;flex-direction:column}
+  .convocation-section-actions{width:100%;justify-content:flex-start}
+  #editorDialog.pv-editor{width:min(760px,calc(100vw - 18px));max-height:94vh;max-height:94dvh}
+}
+@media(max-width:620px){
+  .convocation-tabs{display:grid;grid-template-columns:1fr;gap:8px}
+  .convocation-tab{padding:10px 8px;font-size:13px}
+  .convocation-section-actions{display:grid;grid-template-columns:1fr;width:100%}
+  .convocation-section-actions .btn{width:100%}
+  #editorDialog.pv-editor{
+    width:calc(100vw - 12px);
+    max-width:none;
+    max-height:96vh;
+    max-height:96dvh;
+    border-radius:14px;
+  }
+  #editorDialog.pv-editor .dialog-head{padding:12px 14px}
+  #editorDialog.pv-editor .dialog-body{padding:12px 14px}
+  #editorDialog.pv-editor .dialog-foot{padding:11px 14px;gap:8px;position:sticky;bottom:0;background:#fff}
+  #editorDialog.pv-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:1fr;column-gap:0}
+  #editorDialog.pv-editor .pv-wide-field{grid-column:1}
+  #editorDialog.pv-editor .field.full{grid-column:1/-1}
+  #editorDialog.pv-editor textarea{min-height:92px}
+}
+\n/* === SIGAT V1.34 — AMPLIATIONS propres à chaque document === */
+.document-ampliations-field{padding:12px!important}
+.document-ampliations-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:10px}
+.document-ampliations-head>div:first-child{min-width:0;flex:1 1 auto}
+.document-ampliations-head>div:first-child>strong{display:block;color:#173f33;font-size:14px;margin-bottom:3px}
+.document-ampliations-head>div:first-child>small{display:block;color:var(--muted);line-height:1.4}
+.document-ampliations-head>.ampliations-toggle{flex:0 0 min(290px,42%);border-left:1px solid #d9e2de;padding-left:14px}
+.document-ampliations-grid{display:grid;grid-template-columns:minmax(0,2.7fr) minmax(120px,.8fr);gap:10px;align-items:start}
+.document-ampliations-grid .field{margin:0!important;min-width:0}
+.document-ampliations-grid textarea{width:100%;min-height:112px!important;resize:vertical!important;white-space:pre-wrap}
+@media(max-width:700px){
+  .document-ampliations-head{display:block}
+  .document-ampliations-head>.ampliations-toggle{margin-top:10px;border-left:0;border-top:1px solid #d9e2de;padding:10px 0 0;max-width:none}
+  .document-ampliations-grid{grid-template-columns:1fr}
+  .document-ampliations-grid textarea{min-height:104px!important}
+}
+
+/* V1.35 — Documents administratifs : demande d’explication */
+#editorDialog.document-explanation-editor{width:min(980px,calc(100vw - 24px));max-height:94vh;overflow:hidden}
+#editorDialog.document-explanation-editor .dialog-body{overflow:auto;max-height:72vh;padding:13px 18px}
+#editorDialog.document-explanation-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px;align-items:start}
+#editorDialog.document-explanation-editor #dynamicFields{display:contents}
+#editorDialog.document-explanation-editor .field{margin-bottom:9px}
+#editorDialog.document-explanation-editor .field input,#editorDialog.document-explanation-editor .field select,#editorDialog.document-explanation-editor .field textarea{min-height:38px;padding:8px 10px}
+#editorDialog.document-explanation-editor .document-explanation-wide-field{grid-column:1/-1}
+#editorDialog.document-explanation-editor .document-explanation-wide-field textarea{min-height:105px;resize:vertical}
+@media(max-width:620px){
+  #editorDialog.document-explanation-editor{width:calc(100vw - 14px);max-height:96vh}
+  #editorDialog.document-explanation-editor .dialog-body{max-height:74vh;padding:12px}
+  #editorDialog.document-explanation-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:1fr}
+  #editorDialog.document-explanation-editor .document-explanation-wide-field{grid-column:1}
+}
+
+/* V1.43 — Personnel : seules les colonnes demandées restent visibles dans la liste générale */
+.personnel-base-hidden{display:none!important}
+.personnel-table-wrap{
+  width:100%;
+  max-width:100%;
+  overflow-x:hidden!important;
+  overflow-y:visible;
+  overscroll-behavior-x:none;
+}
+.personnel-table{
+  width:100%!important;
+  min-width:0!important;
+  table-layout:fixed;
+}
+.personnel-table th,.personnel-table td{
+  white-space:nowrap!important;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  vertical-align:middle;
+  padding:9px 5px;
+  line-height:1.15;
+}
+.personnel-table th{font-size:10px;letter-spacing:.01em;text-align:left}
+.personnel-table td{font-size:12.5px}
+.personnel-table th:nth-child(1),.personnel-table td:nth-child(1){width:4%;text-align:center}
+.personnel-table th:nth-child(2),.personnel-table td:nth-child(2){width:10%}
+.personnel-table th:nth-child(3),.personnel-table td:nth-child(3){width:15%}
+.personnel-table th:nth-child(4),.personnel-table td:nth-child(4){width:7%}
+.personnel-table th:nth-child(5),.personnel-table td:nth-child(5){width:9%}
+.personnel-table th:nth-child(6),.personnel-table td:nth-child(6){width:9%}
+.personnel-table th:nth-child(7),.personnel-table td:nth-child(7){width:7%}
+.personnel-table th:nth-child(8),.personnel-table td:nth-child(8){width:8%}
+.personnel-table th:nth-child(9),.personnel-table td:nth-child(9){width:9%}
+.personnel-table th:nth-child(10),.personnel-table td:nth-child(10){width:10%;text-align:center}
+.personnel-table th:nth-child(11),.personnel-table td:nth-child(11){width:12%;text-align:right}
+.personnel-table .personnel-actions{
+  display:flex;
+  flex-wrap:nowrap!important;
+  justify-content:flex-end;
+  align-items:center;
+  gap:4px;
+  white-space:nowrap;
+}
+.personnel-table .personnel-actions .btn-sm{
+  min-width:28px;
+  min-height:28px;
+  padding:6px 7px;
+  font-size:10.5px;
+  line-height:1;
+  border-radius:7px;
+  white-space:nowrap;
+}
+#editorDialog.personnel-editor .photo-field{display:block!important}
+
+@media(max-width:1050px){
+  .personnel-table th,.personnel-table td{padding:8px 3px}
+  .personnel-table th{font-size:8.8px}
+  .personnel-table td{font-size:11px}
+  .personnel-table th:nth-child(1),.personnel-table td:nth-child(1){width:4%}
+  .personnel-table th:nth-child(2),.personnel-table td:nth-child(2){width:10%}
+  .personnel-table th:nth-child(3),.personnel-table td:nth-child(3){width:15%}
+  .personnel-table th:nth-child(4),.personnel-table td:nth-child(4){width:7%}
+  .personnel-table th:nth-child(5),.personnel-table td:nth-child(5){width:8%}
+  .personnel-table th:nth-child(6),.personnel-table td:nth-child(6){width:8%}
+  .personnel-table th:nth-child(7),.personnel-table td:nth-child(7){width:7%}
+  .personnel-table th:nth-child(8),.personnel-table td:nth-child(8){width:8%}
+  .personnel-table th:nth-child(9),.personnel-table td:nth-child(9){width:9%}
+  .personnel-table th:nth-child(10),.personnel-table td:nth-child(10){width:10%}
+  .personnel-table th:nth-child(11),.personnel-table td:nth-child(11){width:14%}
+  .personnel-table .personnel-actions{gap:2px}
+  .personnel-table .personnel-actions .btn-sm{min-width:23px;min-height:25px;padding:4px 5px;font-size:9px}
+}
+@media(max-width:700px){
+  .personnel-table th,.personnel-table td{padding:6px 2px;font-size:8.6px}
+  .personnel-table th{font-size:7px;letter-spacing:0}
+  .personnel-table .personnel-actions{gap:1px}
+  .personnel-table .personnel-actions .btn-sm{min-width:17px;min-height:20px;padding:2px 3px;font-size:7px;border-radius:4px}
+  #editorDialog.personnel-editor{width:calc(100vw - 12px);max-height:96vh;max-height:96dvh;overflow:hidden}
+  #editorDialog.personnel-editor .dialog-body{overflow:auto;max-height:74vh;max-height:74dvh;padding:12px}
+  #editorDialog.personnel-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:1fr}
+}
+
+
+/* === SIGAT V1.46 — Logo institutionnel + Sensibilisations === */
+.sigat-logo-nav{width:48px;height:48px;object-fit:contain;border-radius:10px;background:#fff;flex:0 0 auto}
+.login-sigat-logo{width:min(280px,78%);height:auto;object-fit:contain;background:rgba(255,255,255,.96);border-radius:24px;padding:10px;box-shadow:0 16px 42px rgba(0,0,0,.18);margin-bottom:20px}
+#editorDialog.awareness-editor{width:min(1080px,calc(100vw - 24px));max-height:94vh;overflow:hidden}
+#editorDialog.awareness-editor .dialog-body{overflow:auto;max-height:72vh;padding:15px 18px}
+#editorDialog.awareness-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px;align-items:start}
+#editorDialog.awareness-editor #dynamicFields{display:contents}
+#editorDialog.awareness-editor .field{margin-bottom:10px}
+#editorDialog.awareness-editor .field textarea{min-height:76px;resize:vertical}
+#editorDialog.awareness-editor .document-ampliations-field{grid-column:1/-1}
+.sensibilisations-filters{display:grid;grid-template-columns:minmax(180px,1fr) 110px 165px minmax(260px,1.3fr) auto;gap:8px;align-items:center}
+.sensibilisations-filters input,.sensibilisations-filters select{min-width:0!important;width:100%}
+.sensibilisations-table-wrap{overflow:hidden}
+.sensibilisations-table{min-width:0!important;width:100%;table-layout:fixed}
+.sensibilisations-table th,.sensibilisations-table td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:10px 8px;vertical-align:middle}
+.sensibilisations-table th:nth-child(1){width:11%}.sensibilisations-table th:nth-child(2){width:27%}.sensibilisations-table th:nth-child(3){width:13%}.sensibilisations-table th:nth-child(4){width:14%}.sensibilisations-table th:nth-child(5){width:19%}.sensibilisations-table th:nth-child(6){width:16%}
+.sensibilisations-table .awareness-count{font-size:13px}
+.awareness-actions{display:flex;flex-wrap:nowrap;gap:4px;justify-content:flex-start;white-space:nowrap}
+.awareness-actions .btn{padding:6px 8px;font-size:12px;min-width:0}
+@media(max-width:1100px){.sigat-logo-nav{width:42px;height:42px}.sensibilisations-filters{grid-template-columns:1fr 100px 155px 1.2fr auto}.sensibilisations-table th,.sensibilisations-table td{font-size:12px;padding:9px 5px}.awareness-actions .btn{padding:5px 6px;font-size:11px}}
+@media(max-width:760px){
+  .login-sigat-logo{width:min(210px,70%);margin-bottom:10px}
+  .sigat-logo-nav{width:38px;height:38px}
+  #editorDialog.awareness-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:1fr}
+  .sensibilisations-filters{grid-template-columns:1fr 1fr}.sensibilisations-filters #searchInput,.sensibilisations-filters #awarenessTypeFilter{grid-column:1/-1}.sensibilisations-filters #awarenessResetFilters{grid-column:1/-1;width:100%}
+  .sensibilisations-table th:nth-child(4),.sensibilisations-table td:nth-child(4){display:none}
+  .sensibilisations-table th:nth-child(1){width:16%}.sensibilisations-table th:nth-child(2){width:31%}.sensibilisations-table th:nth-child(3){width:16%}.sensibilisations-table th:nth-child(5){width:22%}.sensibilisations-table th:nth-child(6){width:15%}
+  .sensibilisations-table th,.sensibilisations-table td{font-size:10.5px;padding:8px 4px}
+  .awareness-actions .btn{padding:4px 5px;font-size:10px}
+}
+@media(max-width:520px){
+  .login-brand h1{display:none}.login-brand p{display:none}.login-brand{align-items:center;padding:18px 16px 8px;background:linear-gradient(180deg,rgba(2,38,30,.78),rgba(2,38,30,.32))}
+  .sensibilisations-table th:nth-child(3),.sensibilisations-table td:nth-child(3){display:none}
+  .sensibilisations-table th:nth-child(1){width:18%}.sensibilisations-table th:nth-child(2){width:38%}.sensibilisations-table th:nth-child(5){width:27%}.sensibilisations-table th:nth-child(6){width:17%}
+  .awareness-actions [data-view],.awareness-actions [data-print]{display:none}
+}
+
+/* V1.47 — Exploitation forestière : espaces techniques intégrés */
+.forest-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 14px}
+.forest-tab{appearance:none;border:1px solid #b9c8c1;background:#fff;color:#173f33;border-radius:12px;padding:11px 12px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.04);line-height:1.2}
+.forest-tab:hover{border-color:#0b5a43;background:#f4f8f6}
+.forest-tab.is-active{background:#0b4d3b;color:#fff;border-color:#0b4d3b;box-shadow:0 5px 16px rgba(11,77,59,.18)}
+.forest-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
+.forest-section-head h2{margin:3px 0 3px}.forest-section-kicker{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#6a7b73;font-weight:800}
+.forest-section-actions{display:flex;gap:8px;flex-wrap:nowrap}
+.forest-filters{display:grid;grid-template-columns:minmax(260px,1.7fr) 92px 150px minmax(130px,.85fr) minmax(130px,.85fr) minmax(120px,.8fr) minmax(190px,1.1fr) auto;gap:8px;align-items:center}
+.forest-filters input,.forest-filters select{min-width:0!important;width:100%}.forest-filters [hidden]{display:none!important}
+.forest-table-wrap{overflow:hidden}.forest-table{min-width:0!important;width:100%;table-layout:fixed}
+.forest-table th,.forest-table td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:9px 6px;vertical-align:middle;font-size:11.5px}
+.forest-table th{font-size:9.5px;letter-spacing:.01em}
+.forest-actions{display:flex;flex-wrap:nowrap;gap:3px;white-space:nowrap}.forest-actions .btn{padding:5px 6px;font-size:10px;min-width:0}
+/* Recherche parcellaire : 8 colonnes */
+.forest-table th:nth-child(1){width:10%}.forest-table th:nth-child(2){width:13%}.forest-table th:nth-child(3){width:13%}.forest-table th:nth-child(4){width:12%}.forest-table th:nth-child(5){width:10%}.forest-table th:nth-child(6){width:14%}.forest-table th:nth-child(7){width:14%}.forest-table th:last-child{width:14%}
+#editorDialog.forest-editor{width:min(1080px,calc(100vw - 24px));max-height:94vh;overflow:hidden}
+#editorDialog.forest-editor .dialog-body{overflow:auto;max-height:72vh;padding:15px 18px;overscroll-behavior:contain}
+#editorDialog.forest-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px;align-items:start}
+#editorDialog.forest-editor #dynamicFields{display:contents}
+#editorDialog.forest-editor .field{margin-bottom:10px}
+#editorDialog.forest-editor .document-ampliations-field{grid-column:1/-1}
+#editorDialog.forest-editor .computed-field{background:#eef4f1;font-weight:800;color:#164c3b}
+@media(max-width:1200px){
+  .forest-filters{grid-template-columns:minmax(220px,1.5fr) 85px 140px minmax(115px,.8fr) minmax(115px,.8fr) minmax(105px,.75fr) minmax(170px,1fr) auto}
+  .forest-table th,.forest-table td{font-size:10px;padding:8px 4px}.forest-table th{font-size:8px}.forest-actions .btn{padding:4px 5px;font-size:9px}
+}
+@media(max-width:900px){
+  .forest-tabs{grid-template-columns:1fr 1fr}
+  .forest-section-head{flex-direction:column}.forest-section-actions{width:100%;flex-wrap:wrap}.forest-section-actions .btn{flex:1 1 220px}
+  .forest-filters{grid-template-columns:1fr 1fr}.forest-filters #searchInput{grid-column:1/-1}.forest-filters #forestResetFilters{grid-column:1/-1;width:100%}
+  #editorDialog.forest-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:1fr}
+  .forest-table th,.forest-table td{font-size:8.8px;padding:7px 3px}.forest-table th{font-size:7px}
+  .forest-actions .btn{padding:3px 4px;font-size:8px}
+}
+@media(max-width:640px){
+  .forest-tabs{grid-template-columns:1fr}.forest-tab{padding:10px 8px;font-size:12px}
+  .forest-filters{grid-template-columns:1fr}.forest-filters #searchInput,.forest-filters #forestResetFilters{grid-column:auto}
+  /* Sur téléphone, priorité aux informations essentielles sans défilement horizontal. */
+  .forest-table th:nth-child(6),.forest-table td:nth-child(6),.forest-table th:nth-child(7),.forest-table td:nth-child(7){display:none}
+  .forest-table th,.forest-table td{font-size:8px;padding:6px 2px}.forest-table th{font-size:6.8px}.forest-actions [data-view],.forest-actions [data-print]{display:none}
+}
+
+/* V1.48 — Transformation du bois : registres intégrés et formulaires conditionnels */
+.form-section-heading{grid-column:1/-1;margin:7px 0 3px;padding:8px 10px;border-left:4px solid var(--gold);background:#f5f8f6;color:#143f33;border-radius:7px;font-size:13px;text-transform:uppercase;letter-spacing:.03em}
+.wood-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 14px}
+.wood-tab{appearance:none;border:1px solid #b9c8c1;background:#fff;color:#173f33;border-radius:12px;padding:11px 12px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.04);line-height:1.2}
+.wood-tab:hover{border-color:#0b5a43;background:#f4f8f6}
+.wood-tab.is-active{background:#0b4d3b;color:#fff;border-color:#0b4d3b;box-shadow:0 5px 16px rgba(11,77,59,.18)}
+.wood-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
+.wood-section-head h2{margin:3px 0 3px}.wood-section-kicker{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#6a7b73;font-weight:800}
+.wood-section-actions{display:flex;gap:8px;flex-wrap:nowrap}
+.wood-filters{display:grid;grid-template-columns:minmax(240px,1.7fr) 85px 145px minmax(120px,.85fr) minmax(120px,.85fr) minmax(145px,1fr) minmax(145px,1fr) minmax(120px,.9fr) minmax(120px,.9fr) auto;gap:8px;align-items:center}
+.wood-filters input,.wood-filters select{min-width:0!important;width:100%}.wood-filters [hidden]{display:none!important}
+.wood-table-wrap{overflow:hidden}.wood-table{min-width:0!important;width:100%;table-layout:fixed}
+.wood-table th,.wood-table td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:9px 5px;vertical-align:middle;font-size:10.8px}
+.wood-table th{font-size:8.9px;letter-spacing:.005em}
+.wood-actions{display:flex;flex-wrap:nowrap;gap:3px;white-space:nowrap}.wood-actions .btn{padding:5px 6px;font-size:9.5px;min-width:0}
+.wood-table th:last-child{width:14%}
+#editorDialog.wood-editor{width:min(1080px,calc(100vw - 24px));max-height:94vh;overflow:hidden}
+#editorDialog.wood-editor .dialog-body{overflow:auto;max-height:72vh;padding:15px 18px;overscroll-behavior:contain}
+#editorDialog.wood-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px;align-items:start}
+#editorDialog.wood-editor #dynamicFields{display:contents}
+#editorDialog.wood-editor .field{margin-bottom:10px}
+#editorDialog.wood-editor .document-ampliations-field{grid-column:1/-1}
+#editorDialog.wood-editor [hidden]{display:none!important}
+@media(max-width:1200px){
+  .wood-filters{grid-template-columns:minmax(220px,1.5fr) 80px 135px minmax(110px,.8fr) minmax(115px,.8fr) minmax(130px,1fr) minmax(130px,1fr) auto}
+  .wood-table th,.wood-table td{font-size:9.6px;padding:8px 3px}.wood-table th{font-size:7.6px}.wood-actions .btn{padding:4px 4px;font-size:8.3px}
+}
+@media(max-width:900px){
+  .wood-tabs{grid-template-columns:1fr 1fr}.wood-tab:last-child{grid-column:1/-1}
+  .wood-section-head{flex-direction:column}.wood-section-actions{width:100%;flex-wrap:wrap}.wood-section-actions .btn{flex:1 1 210px}
+  .wood-filters{grid-template-columns:1fr 1fr}.wood-filters #searchInput{grid-column:1/-1}.wood-filters #woodResetFilters{grid-column:1/-1;width:100%}
+  #editorDialog.wood-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:1fr}
+  .wood-table th,.wood-table td{font-size:8.4px;padding:7px 2px}.wood-table th{font-size:6.7px}.wood-actions .btn{padding:3px 3px;font-size:7.5px}
+}
+@media(max-width:620px){
+  .wood-tabs{grid-template-columns:1fr}.wood-tab:last-child{grid-column:auto}.wood-tab{padding:10px 8px;font-size:12px}
+  .wood-filters{grid-template-columns:1fr}.wood-filters #searchInput,.wood-filters #woodResetFilters{grid-column:auto}
+  .wood-table th,.wood-table td{font-size:7.7px;padding:6px 2px}.wood-table th{font-size:6.2px}
+  .wood-actions [data-view],.wood-actions [data-print]{display:none}
+}
+
+/* V1.50 — Feux de brousse, faune, missions et formations */
+.compact-actions{display:flex;gap:3px;flex-wrap:nowrap;white-space:nowrap}.compact-actions .btn{padding:5px 6px;font-size:9.5px;min-width:0}
+#editorDialog.fire-editor,#editorDialog.fauna-editor,#editorDialog.mission-editor,#editorDialog.formation-editor{width:min(1080px,calc(100vw - 24px));max-height:94dvh;overflow:hidden}
+#editorDialog.fire-editor .dialog-body,#editorDialog.fauna-editor .dialog-body,#editorDialog.mission-editor .dialog-body,#editorDialog.formation-editor .dialog-body{overflow:auto;max-height:calc(94dvh - 118px);padding:15px 18px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#editorDialog.fire-editor #recordForm>.dialog-body>.form-grid,#editorDialog.fauna-editor #recordForm>.dialog-body>.form-grid,#editorDialog.mission-editor #recordForm>.dialog-body>.form-grid,#editorDialog.formation-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px;align-items:start}
+#editorDialog.fire-editor #dynamicFields,#editorDialog.fauna-editor #dynamicFields,#editorDialog.mission-editor #dynamicFields,#editorDialog.formation-editor #dynamicFields{display:contents}
+#editorDialog.fire-editor .field,#editorDialog.fauna-editor .field,#editorDialog.mission-editor .field,#editorDialog.formation-editor .field{margin-bottom:10px;min-width:0}
+#editorDialog.fire-editor .document-ampliations-field,#editorDialog.fauna-editor .document-ampliations-field,#editorDialog.mission-editor .document-ampliations-field,#editorDialog.formation-editor .document-ampliations-field{grid-column:1/-1}
+#editorDialog.fire-editor [hidden],#editorDialog.fauna-editor [hidden],#editorDialog.mission-editor [hidden],#editorDialog.formation-editor [hidden]{display:none!important}
+.print-photo-row{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;padding:6px 8px;border-bottom:1px solid #d9dfdc}
+@media(max-width:900px){.compact-actions .btn{padding:4px 4px;font-size:8px}#editorDialog.fire-editor #recordForm>.dialog-body>.form-grid,#editorDialog.fauna-editor #recordForm>.dialog-body>.form-grid,#editorDialog.mission-editor #recordForm>.dialog-body>.form-grid,#editorDialog.formation-editor #recordForm>.dialog-body>.form-grid{grid-template-columns:1fr}}
+@media(max-width:640px){.compact-actions [data-view],.compact-actions [data-print]{display:none}.forest-table th,.forest-table td{white-space:nowrap}}
+@media(max-width:640px){
+  body[data-module="feux-brousse"] .forest-table th:last-child,body[data-module="feux-brousse"] .forest-table td:last-child,
+  body[data-module="faune"] .forest-table th:last-child,body[data-module="faune"] .forest-table td:last-child,
+  body[data-module="missions"] .forest-table th:last-child,body[data-module="missions"] .forest-table td:last-child{display:table-cell!important}
+  body[data-module="feux-brousse"] .forest-table .compact-actions .btn,body[data-module="faune"] .forest-table .compact-actions .btn,body[data-module="missions"] .forest-table .compact-actions .btn{font-size:7px;padding:3px}
+}
+body[data-module="faune"] .forest-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}
+body[data-module="missions"] .forest-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:900px){body[data-module="faune"] .forest-tabs,body[data-module="missions"] .forest-tabs{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){body[data-module="faune"] .forest-tabs,body[data-module="missions"] .forest-tabs{grid-template-columns:1fr}}
+
+
+/* V1.51 — Activités du MINEF */
+body[data-module="activites-minef"] .minef-activities-filters{display:grid;grid-template-columns:minmax(200px,1.55fr) 86px 140px minmax(150px,1fr) minmax(190px,1.2fr) auto;gap:8px;align-items:center;width:100%;max-width:100%;overflow:hidden}
+body[data-module="activites-minef"] .minef-activities-filters>*{min-width:0;max-width:100%;width:100%;box-sizing:border-box}
+body[data-module="activites-minef"] .minef-activities-filters #minefActivityResetFilters{width:auto;white-space:nowrap;justify-self:end}
+body[data-module="activites-minef"] .minef-activities-table{table-layout:fixed;width:100%}
+body[data-module="activites-minef"] .minef-activities-table th,body[data-module="activites-minef"] .minef-activities-table td{vertical-align:middle;overflow:hidden;text-overflow:ellipsis}
+body[data-module="activites-minef"] .minef-activities-table th:nth-child(1){width:10%}
+body[data-module="activites-minef"] .minef-activities-table th:nth-child(2){width:15%}
+body[data-module="activites-minef"] .minef-activities-table th:nth-child(3){width:16%}
+body[data-module="activites-minef"] .minef-activities-table th:nth-child(4){width:19%}
+body[data-module="activites-minef"] .minef-activities-table th:nth-child(5){width:13%}
+body[data-module="activites-minef"] .minef-activities-table th:nth-child(6){width:13%}
+body[data-module="activites-minef"] .minef-activities-table th:nth-child(7){width:14%}
+body[data-module="activites-minef"] .minef-activities-table .compact-actions{display:flex;gap:4px;flex-wrap:wrap}
+@media(max-width:1180px){body[data-module="activites-minef"] .minef-activities-filters{grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible}body[data-module="activites-minef"] .minef-activities-table th:nth-child(3),body[data-module="activites-minef"] .minef-activities-table td:nth-child(3),body[data-module="activites-minef"] .minef-activities-table th:nth-child(6),body[data-module="activites-minef"] .minef-activities-table td:nth-child(6){display:none}body[data-module="activites-minef"] .minef-activities-table th:nth-child(1){width:12%}body[data-module="activites-minef"] .minef-activities-table th:nth-child(2){width:18%}body[data-module="activites-minef"] .minef-activities-table th:nth-child(4){width:29%}body[data-module="activites-minef"] .minef-activities-table th:nth-child(5){width:18%}body[data-module="activites-minef"] .minef-activities-table th:nth-child(7){width:23%}}
+@media(max-width:700px){body[data-module="activites-minef"] .minef-activities-filters{grid-template-columns:1fr}body[data-module="activites-minef"] .minef-activities-filters #minefActivityResetFilters{width:100%;justify-self:stretch}body[data-module="activites-minef"] .minef-activities-table{table-layout:auto}body[data-module="activites-minef"] .minef-activities-table th:nth-child(5),body[data-module="activites-minef"] .minef-activities-table td:nth-child(5){display:none}body[data-module="activites-minef"] .minef-activities-table .compact-actions .btn{font-size:8px;padding:4px}}
+
+/* === SIGAT V1.53 — Activités MINEF : suppression du statut du formulaire === */
+#editorDialog.minef-activity-editor .personnel-status-hidden{display:none!important}
+#editorDialog.minef-activity-editor [hidden]{display:none!important}
+
+/* === SIGAT V1.55 — Harmonisation générale des popups et tableaux === */
+/* Le statut reste géré techniquement, mais n'est plus présenté dans les formulaires métier. */
+#editorDialog .global-record-status-hidden{display:none!important}
+
+/* Tous les formulaires métier en popup : 2 colonnes sur écran confortable, 1 colonne sur téléphone. */
+#editorDialog{
+  width:min(1040px,calc(100vw - 20px))!important;
+  max-width:calc(100vw - 20px)!important;
+  max-height:94dvh!important;
+  overflow:hidden!important;
+}
+#editorDialog>form{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  max-height:calc(94dvh - 58px);
+}
+#editorDialog .dialog-body{
+  flex:1 1 auto;
+  min-height:0;
+  max-height:none!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  padding:16px 18px!important;
+}
+#editorDialog #recordForm>.dialog-body>.form-grid,
+#editorDialog #dynamicFields:not([style*="display: none"]){
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  column-gap:16px!important;
+  row-gap:0!important;
+  align-items:start!important;
+}
+#editorDialog .form-grid .full,
+#editorDialog .field.full,
+#editorDialog .form-section,
+#editorDialog .section-title,
+#editorDialog .smart-autofill-field,
+#editorDialog .ampliations-toggle-field{
+  grid-column:1/-1!important;
+}
+#editorDialog .field{min-width:0!important}
+#editorDialog .field input,
+#editorDialog .field select,
+#editorDialog .field textarea{min-width:0!important;max-width:100%!important}
+#editorDialog .dialog-foot{flex:0 0 auto;position:relative;z-index:2;background:#fff}
+
+/* Les autres popups de formulaires qui utilisent une grille suivent la même règle. */
+#userDialog .form-grid,#editUserDialog .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:0 14px!important}
+#userDialog,#editUserDialog,#parentDialog,#forgotDialog{max-width:calc(100vw - 20px);max-height:94dvh;overflow:hidden}
+#userDialog .dialog-body,#editUserDialog .dialog-body,#parentDialog .dialog-body,#forgotDialog .dialog-body{max-height:70dvh;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+@media(max-width:700px){
+  #editorDialog{width:calc(100vw - 12px)!important;max-width:calc(100vw - 12px)!important;max-height:96dvh!important}
+  #editorDialog>form{max-height:calc(96dvh - 54px)}
+  #editorDialog .dialog-body{padding:12px!important}
+  #editorDialog #recordForm>.dialog-body>.form-grid,
+  #editorDialog #dynamicFields:not([style*="display: none"]),
+  #userDialog .form-grid,#editUserDialog .form-grid{
+    grid-template-columns:1fr!important;
+  }
+  #editorDialog .form-grid .full,#editorDialog .field.full,
+  #userDialog .form-grid .full,#editUserDialog .form-grid .full{grid-column:1!important}
+  #editorDialog .dialog-foot{padding:10px 12px;gap:8px;flex-wrap:wrap}
+  #editorDialog .dialog-foot .btn{flex:1 1 130px}
+}
+
+/* Tableaux : aucune barre de défilement horizontale et colonnes réparties sur la largeur disponible. */
+body .table-wrap,
+body .personnel-table-wrap,
+body .sensibilisations-table-wrap,
+body .forest-table-wrap,
+body .wood-table-wrap,
+body .fire-table-wrap,
+body .fauna-table-wrap,
+body .mission-table-wrap,
+body .minef-activities-table-wrap{
+  width:100%!important;
+  max-width:100%!important;
+  overflow-x:hidden!important;
+  overflow-y:visible!important;
+}
+body .table-wrap>.table,
+body table.table{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  table-layout:fixed!important;
+}
+body table.table th,
+body table.table td{
+  box-sizing:border-box!important;
+  text-align:center!important;
+  vertical-align:middle!important;
+  padding:clamp(5px,.65vw,10px) clamp(3px,.55vw,9px)!important;
+  font-size:clamp(8.5px,.78vw,13px)!important;
+  line-height:1.2!important;
+  min-width:0!important;
+  max-width:none!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+  word-break:normal!important;
+}
+body table.table th{font-weight:800!important}
+body table.table td .actions,
+body table.table .actions{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:3px!important;
+  flex-wrap:wrap!important;
+  min-width:0!important;
+}
+body table.table .actions .btn,
+body table.table td .btn{
+  min-width:0!important;
+  max-width:100%!important;
+  padding:5px 7px!important;
+  font-size:clamp(8px,.7vw,11px)!important;
+  white-space:nowrap!important;
+}
+@media(max-width:700px){
+  body table.table th,body table.table td{font-size:8px!important;padding:4px 2px!important;letter-spacing:0!important}
+  body table.table .actions .btn,body table.table td .btn{font-size:7.5px!important;padding:4px 5px!important;border-radius:7px!important}
+}
+
+/* V1.57 — Tableaux compacts, justifiés et sans défilement horizontal. */
+body .table-wrap,
+body .personnel-table-wrap,
+body .sensibilisations-table-wrap,
+body .forest-table-wrap,
+body .wood-table-wrap,
+body .fire-table-wrap,
+body .fauna-table-wrap,
+body .mission-table-wrap,
+body .minef-activities-table-wrap{
+  overflow-x:hidden!important;
+}
+body table.table{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  table-layout:fixed!important;
+}
+body table.table th,
+body table.table td{
+  text-align:center!important;
+  vertical-align:middle!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  word-break:normal!important;
+  overflow-wrap:normal!important;
+}
+body table.table th:first-child,
+body table.table td:first-child{padding-left:7px!important}
+body table.table th:last-child,
+body table.table td:last-child{padding-right:7px!important}
+body table.table .actions,
+body table.table td .actions{
+  width:100%!important;
+  display:flex!important;
+  justify-content:center!important;
+  align-items:center!important;
+  flex-wrap:nowrap!important;
+  gap:3px!important;
+  overflow:visible!important;
+}
+body table.table .actions .btn,
+body table.table td .btn{
+  flex:0 1 auto!important;
+  min-width:0!important;
+  padding:4px 6px!important;
+  white-space:nowrap!important;
+}
+body table.table .actions-col{width:23%!important;min-width:0!important}
+body table.table.adaptive-data-table th:not(.actions-col),
+body table.table.adaptive-data-table td:not(.actions-col){width:auto!important}
+
+/* Sur les écrans étroits, les colonnes secondaires d'un registre adaptatif sont masquées
+   afin de conserver une lecture sans barre de défilement horizontale. */
+@media(max-width:760px){
+  body table.table.adaptive-data-table th:nth-child(n+4):not(:last-child),
+  body table.table.adaptive-data-table td:nth-child(n+4):not(:last-child){display:none!important}
+  body table.table.adaptive-data-table .actions-col{width:34%!important;min-width:0!important}
+  body table.table.adaptive-data-table th,
+  body table.table.adaptive-data-table td{font-size:8.5px!important;padding:5px 3px!important}
+  body table.table.adaptive-data-table .actions .btn{font-size:7.5px!important;padding:4px 4px!important}
+}
+
+/* V1.59 — Rapports et bilans consolidés */
+.reports-page{max-width:1680px}
+.reports-page-head{align-items:flex-end;gap:18px}
+.report-filter-card,.report-preview-card{overflow:hidden}
+.report-filter-head,.report-preview-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:16px}
+.report-filter-head h2,.report-preview-head h2{margin:2px 0 4px;font-size:1.25rem}
+.report-kicker{text-transform:uppercase;letter-spacing:.09em;font-size:.72rem;font-weight:900;color:#87681b}
+.report-period-badge{border:1px solid #b9ccc6;background:#edf6f3;color:#174a3f;border-radius:999px;padding:8px 13px;font-weight:800;white-space:nowrap}
+.report-filter-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end}
+.report-filter-grid .field{min-width:0}
+.report-filter-grid .field[hidden]{display:none!important}
+.report-conclusion-field{grid-column:span 2}
+.report-filter-grid textarea{resize:vertical;min-height:70px}
+.report-filter-actions{display:flex;align-items:center;gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid #dce7e3}
+.report-check{display:flex;align-items:center;gap:8px;font-weight:700;color:#334c44}
+.report-check input{width:18px;height:18px}
+.report-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0}
+.report-metric{padding:14px 16px;display:grid;gap:5px;min-width:0}
+.report-metric span{font-size:.76rem;text-transform:uppercase;letter-spacing:.04em;color:#697a74;font-weight:800}
+.report-metric strong{font-size:1.15rem;color:#173f33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.report-loading{text-align:center;padding:34px 14px;color:#63736e;font-weight:700}
+.report-sections{display:grid;gap:14px}
+.report-preview-section{border:1px solid #d7e3df;border-radius:10px;overflow:hidden;background:#fff;min-width:0}
+.report-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:#f1f7f5;border-bottom:1px solid #d7e3df}
+.report-section-head h3{margin:0;font-size:.98rem;color:#173f33}
+.report-section-head span{font-size:.78rem;color:#687872;font-weight:700;white-space:nowrap}
+.report-preview-section .report-table{width:100%;max-width:100%;table-layout:fixed;border-collapse:collapse}
+.report-preview-section .report-table th,.report-preview-section .report-table td{padding:8px 7px;border:1px solid #e0e8e5;font-size:.78rem;line-height:1.15;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.report-preview-section .report-table th{background:#fafcfb;color:#345149;text-align:center;font-weight:900}
+.report-preview-section .report-table td{text-align:left}
+.report-empty-cell{text-align:center!important;color:#7a8581;font-style:italic;white-space:normal!important}
+@media(max-width:1100px){
+  .report-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .report-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .report-conclusion-field{grid-column:1/-1}
+}
+@media(max-width:700px){
+  .reports-page-head,.report-filter-head,.report-preview-head{align-items:stretch;flex-direction:column}
+  .reports-page-head .btn{width:100%}
+  .report-period-badge{align-self:flex-start;white-space:normal}
+  .report-filter-grid,.report-metrics{grid-template-columns:1fr}
+  .report-conclusion-field{grid-column:auto}
+  .report-filter-actions{align-items:stretch;flex-direction:column}
+  .report-filter-actions .spacer{display:none}
+  .report-filter-actions .btn{width:100%}
+  .report-preview-section .report-table th,.report-preview-section .report-table td{font-size:.68rem;padding:6px 4px}
+}
+
+
+/* V1.60 — Sélection des tableaux du bilan + P-V d'infraction lié */
+.report-table-selector-card{margin:14px 0;overflow:hidden}
+.report-table-selector-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}
+.report-table-selector-head h2{margin:2px 0 4px;font-size:1.18rem}
+.report-table-selector-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.report-table-selector{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px}
+.report-table-choice{display:flex;align-items:flex-start;gap:8px;padding:9px 10px;border:1px solid #dce7e3;border-radius:9px;background:#fbfdfc;font-size:.82rem;font-weight:700;color:#29483e;min-width:0}
+.report-table-choice input{width:17px;height:17px;flex:0 0 auto;margin-top:1px}
+.report-table-choice span{min-width:0;line-height:1.25}
+.report-no-selection{padding:30px 16px;text-align:center;color:#6f7d78;font-weight:700;border:1px dashed #cbd9d4;border-radius:10px;background:#fbfdfc}
+#editorDialog.mission-editor input.computed-field,#editorDialog.mission-editor textarea.computed-field{background:#f2f5f4;color:#3f4f4a;cursor:not-allowed}
+@media(max-width:1100px){.report-table-selector{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.report-table-selector-head{flex-direction:column}.report-table-selector-actions{width:100%;justify-content:stretch}.report-table-selector-actions .btn{flex:1}.report-table-selector{grid-template-columns:1fr}}
+
+/* V1.66 — Missions : quatre espaces sur une même ligne + Ordre de mission */
+body[data-module="missions"] .forest-tabs{grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch}
+body[data-module="missions"] .forest-tab{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:clamp(9px,1.05vw,13px);padding-left:7px;padding-right:7px}
+@media(max-width:900px){body[data-module="missions"] .forest-tabs{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:7px;scrollbar-width:thin}body[data-module="missions"] .forest-tab{flex:0 0 auto;min-width:max-content;font-size:11px}}
+.order-mission-body,.order-mission-pv-body{width:96%;margin:0 auto;font-family:"Arial Narrow",Arial,sans-serif!important;font-size:14pt!important;line-height:1.5!important;text-align:justify;color:#111}
+.order-mission-body *,.order-mission-pv-body *{font-family:"Arial Narrow",Arial,sans-serif!important;font-size:14pt!important;line-height:1.5!important;box-sizing:border-box}
+.record-print.order-mission-print .order-document-title,.record-print.order-mission-pv-print .order-document-title{margin-top:12mm!important;margin-bottom:10mm!important}
+.order-mission-body p,.order-mission-pv-body p{font-size:14pt!important;line-height:1.5!important;margin:0 0 5mm;text-align:justify}
+.order-mission-body .order-intro,.order-mission-pv-body .order-intro{margin:0 0 5mm!important;text-align:left!important}
+.order-number{display:block;width:max-content;min-width:72mm;max-width:100%;margin:0 auto 8mm;padding:1.6mm 7mm;border:1px solid #cfd4d2;text-align:center!important;font-weight:400;white-space:nowrap}
+.order-number strong{font-weight:800}
+.order-team-table{width:100%!important;border-collapse:collapse!important;table-layout:fixed!important;margin:0 0 5mm!important;background:#fff!important}
+.order-team-table th,.order-team-table td{border:1px solid #cfd4d2!important;padding:1.1mm 2mm!important;height:7.2mm!important;vertical-align:middle!important;text-align:center!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;font-size:14pt!important;line-height:1.5!important;background:#fff!important;color:#111!important}
+.order-team-table th{font-weight:800!important}.order-team-table th:first-child,.order-team-table td:first-child{width:40%}.order-team-table th:nth-child(2),.order-team-table td:nth-child(2){width:19%}.order-team-table th:nth-child(3),.order-team-table td:nth-child(3){width:17%}.order-team-table th:nth-child(4),.order-team-table td:nth-child(4){width:24%}.order-team-table .order-team-chief td:first-child{font-weight:800!important}
+.order-box-row{display:grid!important;grid-template-columns:max-content 7mm minmax(0,1fr)!important;align-items:center!important;gap:0!important;border:1px solid #d5dad8!important;padding:1.4mm 2mm!important;margin:0 0 4mm!important;min-height:8mm!important}
+.order-box-row strong{white-space:nowrap!important}.order-colon{text-align:center!important;font-weight:700!important}
+.order-objective-label{margin:0 0 2.2mm!important;padding-left:2mm!important;font-weight:800!important;text-align:left!important}
+.order-objective-box{border:1px solid #d5dad8!important;min-height:27mm!important;padding:3mm 2mm!important;margin:0 0 6mm!important;text-align:justify!important;white-space:normal!important;overflow-wrap:anywhere!important}
+.order-pair{display:grid!important;grid-template-columns:1fr 1fr!important;gap:9mm!important;margin:0 0 2.5mm!important}
+.order-pair-cell{display:grid!important;grid-template-columns:max-content 7mm minmax(0,1fr)!important;align-items:center!important;gap:0!important;border-bottom:1px solid #d5dad8!important;padding:1.2mm 2mm!important;min-width:0!important;min-height:8mm!important}
+.order-pair-cell strong{white-space:nowrap!important}.order-pair-cell>span:last-child{min-width:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.order-team-preview{grid-column:1/-1}.order-team-preview>label{display:block;margin-bottom:6px;font-weight:800}.order-team-preview-wrap{width:100%;overflow:hidden;border:1px solid #dce5e1;border-radius:10px;background:#fff}.order-team-preview-table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:12px}.order-team-preview-table th,.order-team-preview-table td{padding:7px 8px;border-right:1px solid #e1e8e5;border-bottom:1px solid #e1e8e5;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.order-team-preview-table th:last-child,.order-team-preview-table td:last-child{border-right:0}.order-team-preview-table tr:last-child td{border-bottom:0}.order-team-preview-table th{background:#f2f7f5;color:#21483d}.order-team-role{display:block;font-size:10px;color:#6a7d76;font-weight:700;margin-bottom:2px}
+.order-pv-sections{margin-top:8mm!important}.order-pv-section{margin:0 0 7mm!important;break-inside:auto!important;page-break-inside:auto!important}.order-pv-section h2{font-size:14pt!important;line-height:1.5!important;margin:0 0 2mm!important;font-weight:800!important;text-align:left!important;text-decoration:none!important}.order-pv-text{border:1px solid #d5dad8!important;min-height:18mm!important;padding:3mm!important;text-align:justify!important;white-space:normal!important;overflow-wrap:anywhere!important;font-size:14pt!important;line-height:1.5!important}
+.record-print.order-mission-print .official-signature,.record-print.order-mission-pv-print .official-signature{font-family:"Arial Narrow",Arial,sans-serif!important;font-size:14pt!important;line-height:1.5!important}
+@media print{.order-team-table,.order-number,.order-box-row,.order-pair,.order-pv-section h2{break-inside:avoid!important;page-break-inside:avoid!important}.order-mission-body,.order-mission-pv-body{font-size:14pt!important;line-height:1.5!important}}
+@media(max-width:700px){.order-team-preview-table{font-size:10px}.order-team-preview-table th,.order-team-preview-table td{padding:6px 5px}.order-team-role{font-size:9px}}
+
+
+/* V1.67 — Navigation fiable + menu horizontal restauré */
+.nav-group.is-open>.dropdown{display:grid!important}
+.forest-tab{text-decoration:none;text-align:center;display:flex;align-items:center;justify-content:center}
+@media (min-width:761px) and (max-width:1200px){
+  .topbar-inner{flex-wrap:wrap!important;gap:8px 12px!important;padding-top:8px!important;padding-bottom:8px!important}
+  .mobile-menu-btn{display:none!important}
+  .nav{display:flex!important;order:20!important;flex:0 0 100%!important;width:100%!important;justify-content:center!important;align-items:center!important;gap:2px!important;padding:5px 0 0!important;border-top:1px solid var(--line)!important;background:#fff!important}
+  .nav>a,.nav-group>button{width:auto!important;text-align:center!important;padding:8px 7px!important;font-size:11px!important;white-space:nowrap!important}
+  .nav-group{width:auto!important;position:relative!important}
+  .nav .nav-group:hover .dropdown,.nav .nav-group:focus-within .dropdown,.nav .nav-group.is-open .dropdown{display:grid!important}
+  .dropdown{position:absolute!important;top:38px!important;left:0!important;min-width:235px!important;width:max-content!important;max-width:320px!important;margin:0!important;padding:8px!important;box-shadow:var(--shadow)!important;border:1px solid var(--line)!important;border-left:1px solid var(--line)!important;border-radius:12px!important;background:#fff!important;z-index:80!important}
+  .top-actions{margin-left:auto!important}
+}
+@media (max-width:760px){
+  .mobile-menu-btn{display:inline-flex!important;margin-left:auto!important}
+  .nav{display:none!important;order:20!important;flex:0 0 100%!important;width:100%!important}
+  .nav.is-open{display:grid!important;grid-template-columns:1fr!important;gap:4px!important}
+  .nav-group{width:100%!important}
+  .nav>a,.nav-group>button{width:100%!important;text-align:left!important}
+  .nav .nav-group:hover .dropdown,.nav .nav-group:focus-within .dropdown{display:none!important}
+  .nav .nav-group.is-open>.dropdown{display:grid!important;position:static!important;width:100%!important;max-width:none!important}
+}
+body[data-module="missions"] .forest-tabs{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important;overflow:visible!important}
+body[data-module="missions"] .forest-tab{min-width:0!important;white-space:normal!important;line-height:1.15!important;min-height:46px!important}
+@media(max-width:760px){body[data-module="missions"] .forest-tabs{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;justify-content:flex-start!important}body[data-module="missions"] .forest-tab{flex:0 0 auto!important;min-width:185px!important;white-space:normal!important}}
+
+/* V1.68 — Ordre de mission : boutons sur une seule ligne sans retour */
+body[data-module="missions"] .forest-tabs{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:7px!important;overflow:visible!important}
+body[data-module="missions"] .forest-tab{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;min-width:0!important;font-size:clamp(8.5px,.92vw,12px)!important;line-height:1.1!important;min-height:44px!important;padding:8px 5px!important}
+@media(max-width:760px){body[data-module="missions"] .forest-tabs{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;justify-content:flex-start!important}body[data-module="missions"] .forest-tab{flex:0 0 auto!important;min-width:max-content!important;white-space:nowrap!important;font-size:11px!important;padding-left:10px!important;padding-right:10px!important}}
+
+
+/* V1.73 — Formulaire Ordre de mission / P-V : 2 colonnes, responsive */
+.editor-dialog.order-mission-editor .dialog-body,
+.editor-dialog.order-mission-pv-editor .dialog-body{overflow-x:hidden!important;overflow-y:auto!important;max-height:calc(100dvh - 150px)!important}
+.editor-dialog.order-mission-editor #dynamicFields,
+.editor-dialog.order-mission-pv-editor #dynamicFields{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px 14px!important;align-items:start!important}
+.editor-dialog.order-mission-editor #dynamicFields .form-section-heading,
+.editor-dialog.order-mission-pv-editor #dynamicFields .form-section-heading,
+.editor-dialog.order-mission-editor #dynamicFields .full,
+.editor-dialog.order-mission-pv-editor #dynamicFields .full{grid-column:1/-1!important}
+.editor-dialog.order-mission-editor #dynamicFields [data-field-key="numero_mission"],
+.editor-dialog.order-mission-pv-editor #dynamicFields [data-field-key="ordre_reference"]{grid-column:1/-1!important;max-width:50%!important;justify-self:center!important;width:100%!important}
+.editor-dialog.order-mission-editor #dynamicFields [data-field-key="objectif_mission"],
+.editor-dialog.order-mission-pv-editor #dynamicFields [data-field-key="objectif_mission"]{grid-column:1/-1!important}
+@media(max-width:700px){
+  .editor-dialog.order-mission-editor #dynamicFields,
+  .editor-dialog.order-mission-pv-editor #dynamicFields{grid-template-columns:1fr!important}
+  .editor-dialog.order-mission-editor #dynamicFields>* ,
+  .editor-dialog.order-mission-pv-editor #dynamicFields>*{grid-column:1!important;max-width:none!important;width:100%!important}
+}
+
+/* SIGAT V1.76 — Mon compte, gestion des accès et permissions */
+.account-page{max-width:1280px}
+.account-section{margin-bottom:20px}
+.account-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:18px}
+.account-section-head h2{margin:4px 0 4px}
+.account-kicker{font-size:.78rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.account-password-form{max-width:980px}
+.account-admin-lock-note{margin-bottom:16px}
+.account-users-table-wrap{margin-top:14px}
+.account-subcard{margin-top:18px}
+.account-subcard h3{margin-top:0}
+.account-plans{margin-top:16px}
+.account-subscription-metrics{margin:0}
+.account-metric-value{font-size:1.08rem!important}
+.permission-editor-block{margin-top:16px}
+.permission-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.permission-grid{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.permission-grid-head,.permission-grid-row{display:grid;grid-template-columns:minmax(220px,1fr) 100px 110px;align-items:center;gap:10px;padding:11px 14px}
+.permission-grid-head{font-weight:800;background:#f8faf9}
+.permission-grid-row{border-top:1px solid var(--line)}
+.permission-check{display:flex;align-items:center;gap:7px;justify-content:center;margin:0}
+.permission-check input{width:18px;height:18px}
+.access-summary{white-space:nowrap}
+@media(max-width:760px){.account-section-head{flex-direction:column}.permission-grid-head,.permission-grid-row{grid-template-columns:minmax(130px,1fr) 72px 78px;padding:10px 8px;font-size:.88rem}.access-summary{white-space:normal}}
+
+
+/* === SIGAT V1.78 — Fond des pages internes + accueil professionnel === */
+body:not(.login-page){
+  min-height:100vh;
+  background-color:#eef5f1;
+  background-image:linear-gradient(180deg,rgba(248,251,249,.91),rgba(239,247,243,.94)),url('/assets/internal-background.jpg');
+  background-size:cover;
+  background-position:center center;
+  background-repeat:no-repeat;
+  background-attachment:fixed;
+}
+body:not(.login-page) .card,
+body:not(.login-page) .forest-workspace,
+body:not(.login-page) .table-wrap{backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+body:not(.login-page) .card{background:rgba(255,255,255,.96)}
+
+/* Reboisement : cinq filtres métier exactement visibles dans cette vue. */
+body[data-module="exploitation-forestiere"] .forest-filters.reboisement-filters{
+  display:grid;grid-template-columns:minmax(165px,.85fr) minmax(220px,1.2fr) minmax(180px,1fr) minmax(220px,1.2fr) minmax(180px,1fr) auto;gap:9px;align-items:center
+}
+body[data-module="exploitation-forestiere"] .forest-filters.reboisement-filters input,
+body[data-module="exploitation-forestiere"] .forest-filters.reboisement-filters select{min-width:0;width:100%}
+#editorDialog [data-field-key="entreprise_responsable"][hidden]{display:none!important}
+@media(max-width:1100px){body[data-module="exploitation-forestiere"] .forest-filters.reboisement-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){body[data-module="exploitation-forestiere"] .forest-filters.reboisement-filters{grid-template-columns:1fr}}
+
+.dashboard-page{background-image:linear-gradient(180deg,rgba(250,252,251,.94),rgba(240,247,244,.94)),url('/assets/internal-background.jpg')!important}
+.dashboard-container{max-width:1960px;padding:0 44px 12px}
+.dashboard-hero{position:relative;min-height:138px;margin:0 -44px 0;padding:28px 62px 26px;display:grid;grid-template-columns:minmax(520px,1.25fr) minmax(260px,.55fr) minmax(220px,.35fr);align-items:center;gap:30px;overflow:hidden;border-bottom:1px solid rgba(24,83,63,.08);background:linear-gradient(90deg,rgba(248,252,250,.98) 0%,rgba(248,252,250,.94) 43%,rgba(235,246,241,.68) 66%,rgba(11,77,59,.32) 100%),url('/assets/internal-background.jpg') center 49%/cover no-repeat}
+.dashboard-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 62%,rgba(4,63,44,.16));pointer-events:none}
+.dashboard-hero>*{position:relative;z-index:1}.dashboard-kicker{font-size:14px;letter-spacing:.04em;font-weight:900;color:#0b6548;margin-bottom:6px}.dashboard-hero h1{margin:0;font-size:clamp(28px,2.45vw,42px);line-height:1.08;color:#101f1a}.dashboard-hero p{margin:7px 0 0;font-size:16px;color:#62736c}.dashboard-hero-quote{justify-self:center;font-style:italic;color:#53665e;font-size:15px;line-height:1.35}.dashboard-hero-quote i,.dashboard-hero-motto i,.territory-picture i,.principle-quote i{display:block;width:42px;height:3px;background:#08734f;margin-top:10px;border-radius:99px}.dashboard-hero-motto{justify-self:end;color:white;letter-spacing:.16em;font-size:14px;line-height:1.55;text-shadow:0 1px 7px rgba(0,0,0,.2)}.dashboard-hero-motto i{background:#fff;width:38px}
+.dashboard-metrics{display:grid;grid-template-columns:repeat(5,minmax(170px,1fr));gap:18px;margin-top:-2px;padding-top:0;transform:translateY(-1px)}
+.dashboard-metric{min-height:122px;display:grid;grid-template-columns:68px 1fr 30px;align-items:center;gap:12px;padding:18px 20px;background:rgba(255,255,255,.97);border:1px solid #dce8e3;border-radius:15px;box-shadow:0 10px 28px rgba(16,73,54,.06)}
+.dashboard-metric-icon{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-size:24px;font-weight:900;background:#dff4e8;color:#087346}.dashboard-metric-copy .k{font-size:12px;text-transform:uppercase;color:#52675f;font-weight:900}.dashboard-metric-copy .v{font-size:34px;line-height:1;font-weight:900;color:#063e2e;margin:6px 0}.dashboard-metric-copy .s{font-size:11px;color:#798780;white-space:nowrap}.metric-bars{display:flex;align-items:flex-end;justify-content:flex-end;gap:2px;height:22px}.metric-bars i{display:block;width:3px;background:currentColor;border-radius:3px}.metric-bars i:nth-child(1){height:7px}.metric-bars i:nth-child(2){height:14px}.metric-bars i:nth-child(3){height:20px}.metric-blue .dashboard-metric-icon{background:#e2f4ff;color:#1674b6}.metric-blue .metric-bars{color:#1674b6}.metric-red .dashboard-metric-icon{background:#ffebe7;color:#c2362f}.metric-red .metric-bars{color:#c2362f}.metric-purple .dashboard-metric-icon{background:#ece7ff;color:#674bc5}.metric-purple .metric-bars{color:#674bc5}.metric-green .metric-bars{color:#11935c}
+.dashboard-grid{display:grid;grid-template-columns:1.05fr .98fr .98fr;gap:18px;margin-top:18px}.dashboard-panel{min-height:290px;background:rgba(255,255,255,.97);border:1px solid #dce8e3;border-radius:15px;box-shadow:0 9px 26px rgba(13,67,49,.05);overflow:hidden}.dashboard-panel-head{min-height:56px;padding:13px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e6eeea}.dashboard-panel-head h2{margin:0;font-size:17px;color:#123e32;display:flex;align-items:center;gap:9px}.panel-icon{font-size:22px;color:#08734f}.panel-link{text-decoration:none;color:#0b6548;font-size:12px;font-weight:900}.panel-link:hover{text-decoration:underline}.recent-list{display:grid}.recent-item{min-height:56px;padding:9px 18px;display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:11px;text-decoration:none;border-bottom:1px solid #eef3f0}.recent-item:last-child{border-bottom:0}.recent-item:hover{background:#f8fbf9}.recent-icon{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#e8f5ee;color:#08734f;font-weight:900}.recent-copy{min-width:0}.recent-copy strong,.recent-copy small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.recent-copy strong{font-size:13px;color:#233b33}.recent-copy small{font-size:11px;color:#77857f;margin-top:2px}.recent-item time{font-size:11px;color:#71817a;text-align:right}.dashboard-empty{padding:28px 18px;text-align:center;color:#71817a;font-size:13px}
+.quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:14px}.quick-action{min-height:100px;border:1px solid #dce6e2;border-radius:10px;text-decoration:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:10px;color:#1d342c;background:#fff;transition:.18s ease}.quick-action:hover{border-color:#86b5a3;box-shadow:0 7px 18px rgba(10,80,56,.08);transform:translateY(-1px)}.quick-icon{font-size:23px;color:#08734f;font-weight:900}.quick-action strong{font-size:11px;line-height:1.25}.quick-arrow{font-weight:900;color:#08734f}
+.territory-chip{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:999px;background:#edf6f1;color:#0d6046;padding:6px 10px;font-size:10px;font-weight:900}.territory-content{display:grid;grid-template-columns:1fr 1.05fr;gap:14px;padding:12px 14px 14px}.territory-stats{display:grid}.territory-row{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid #edf2ef;padding:11px 2px;font-size:11px}.territory-row span{color:#52665e}.territory-row strong{color:#264c3f;text-align:right}.status-normal{padding:6px 12px;border-radius:999px;background:#ccefdc;color:#176342!important}.territory-picture{min-height:198px;border-radius:10px;background:linear-gradient(0deg,rgba(0,70,47,.78),rgba(0,70,47,0) 62%),url('/assets/internal-background.jpg') center/cover no-repeat;display:flex;align-items:flex-end;padding:16px;color:#fff}.territory-picture strong,.territory-picture span{display:block;font-size:12px}.territory-picture span{margin-top:4px}.territory-picture i{background:#fff;width:34px}
+.dashboard-principle{display:grid;grid-template-columns:54px 1fr minmax(280px,.42fr);align-items:center;gap:14px;margin-top:16px;padding:13px 18px;border:1px solid #dce8e3;border-radius:14px;background:rgba(255,255,255,.96);box-shadow:0 8px 20px rgba(13,67,49,.04)}.principle-icon{width:42px;height:42px;border-radius:50%;background:#dcf3e5;color:#08734f;display:grid;place-items:center;font-size:18px}.dashboard-principle>div:nth-child(2)>strong{color:#0d5d43;font-size:15px}.dashboard-principle p{margin:5px 0 0;color:#687871;font-size:11px}.principle-quote{border-left:1px solid #d7e6df;padding:8px 12px 8px 24px;display:grid;grid-template-columns:28px 1fr;align-items:start;background:#eef8f3;border-radius:12px}.principle-quote span{font-size:34px;color:#52a87f;line-height:.8}.principle-quote p{margin:0;color:#365b4e}.principle-quote i{grid-column:2;width:36px;margin-top:7px}.dashboard-footer{display:flex;justify-content:space-between;align-items:center;padding:8px 44px 14px;font-size:10px;color:#6b7d76}
+@media(max-width:1400px){.dashboard-container{padding-left:24px;padding-right:24px}.dashboard-hero{margin-left:-24px;margin-right:-24px;padding-left:34px;padding-right:34px}.dashboard-metrics{grid-template-columns:repeat(5,minmax(150px,1fr));gap:10px}.dashboard-metric{grid-template-columns:50px 1fr 24px;padding:14px}.dashboard-metric-icon{width:44px;height:44px}.dashboard-metric-copy .s{white-space:normal}.dashboard-grid{grid-template-columns:1fr 1fr}.dashboard-territory{grid-column:1/-1}.territory-content{grid-template-columns:1fr 1.3fr}}
+@media(max-width:980px){.dashboard-hero{grid-template-columns:1fr}.dashboard-hero-quote,.dashboard-hero-motto{display:none}.dashboard-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-grid{grid-template-columns:1fr}.dashboard-territory{grid-column:auto}.dashboard-principle{grid-template-columns:50px 1fr}.principle-quote{grid-column:1/-1;border-left:0}.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){body:not(.login-page){background-attachment:scroll}.dashboard-container{padding:0 10px 12px}.dashboard-hero{margin:0 -10px;padding:24px 18px;min-height:126px}.dashboard-hero h1{font-size:28px}.dashboard-hero p{font-size:13px}.dashboard-metrics{grid-template-columns:1fr;gap:9px}.dashboard-metric{min-height:94px}.dashboard-grid{gap:10px;margin-top:10px}.quick-grid{grid-template-columns:1fr 1fr}.territory-content{grid-template-columns:1fr}.territory-picture{min-height:160px}.dashboard-principle{grid-template-columns:1fr;text-align:left}.principle-icon{display:none}.dashboard-footer{padding:10px;display:grid;gap:4px;text-align:center}}
+
+
+/* V1.80 — Personnel : formulaire administratif complet et liste alignée */
+#editorDialog.personnel-editor #recordReference{font-weight:700}
+#editorDialog.personnel-editor .photo-field{min-height:96px}
+.list-print.personnel-list-print .personnel-print-table{font-size:6.2pt!important}
+.list-print.personnel-list-print .personnel-print-table th,
+.list-print.personnel-list-print .personnel-print-table td{font-size:6.2pt!important;padding:1.2mm .55mm!important}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(n),
+.list-print.personnel-list-print .personnel-print-table td:nth-child(n){width:auto!important}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(1){width:3.5%!important}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(2){width:7%!important}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(3){width:11%!important}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(17){width:7%!important}
+
+/* SIGAT V1.94 — Situation de la pépinière structurée */
+body[data-module="exploitation-forestiere"] .nursery-tabs{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  margin-top:-2px;
+  margin-bottom:14px;
+  padding:8px;
+  border:1px solid #dbe8e2;
+  border-radius:14px;
+  background:rgba(247,251,249,.92);
+}
+body[data-module="exploitation-forestiere"] .nursery-tabs .forest-tab{font-size:12px;min-height:44px}
+body[data-module="exploitation-forestiere"] .nursery-summary-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin:0 0 16px;
+}
+body[data-module="exploitation-forestiere"] .nursery-summary-card{
+  border:1px solid #dbe8e2;
+  border-radius:13px;
+  background:linear-gradient(180deg,#fff,#f6faf8);
+  padding:15px 18px;
+  min-height:86px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  box-shadow:0 5px 16px rgba(17,76,56,.05);
+}
+body[data-module="exploitation-forestiere"] .nursery-summary-card span{font-size:12px;font-weight:800;color:#60736b;text-transform:uppercase;letter-spacing:.03em}
+body[data-module="exploitation-forestiere"] .nursery-summary-card strong{font-size:28px;color:#0c5e45;margin-top:5px}
+body[data-module="exploitation-forestiere"] .forest-filters.nursery-filters{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+body[data-module="exploitation-forestiere"] .forest-filters.nursery-filters input:not([hidden]),
+body[data-module="exploitation-forestiere"] .forest-filters.nursery-filters select:not([hidden]){min-width:180px;flex:1 1 190px}
+@media(max-width:800px){
+  body[data-module="exploitation-forestiere"] .nursery-tabs{display:flex;overflow-x:auto;gap:8px}
+  body[data-module="exploitation-forestiere"] .nursery-tabs .forest-tab{flex:0 0 auto;min-width:220px}
+  body[data-module="exploitation-forestiere"] .nursery-summary-grid{grid-template-columns:1fr}
+}
+body[data-module="exploitation-forestiere"] .nursery-tabs[hidden],
+body[data-module="exploitation-forestiere"] .nursery-summary-grid[hidden]{display:none!important}
+
+/* V1.98 — Ressources naturelles : le champ « Préciser le type »
+   doit être strictement masqué sauf lorsque Type = Autre. */
+body[data-module="ressources-naturelles"] #editorDialog [data-field-key="type_autre"][hidden]{display:none!important}
+
+/* === SIGAT V1.99 — Traçabilité, recherche globale, tableau de bord dynamique et dossier agent === */
+.global-search{position:relative;flex:0 1 330px;min-width:230px;margin-left:auto}
+.global-search-box{height:40px;display:flex;align-items:center;gap:7px;border:1px solid #ccd9d3;border-radius:11px;background:#f8fbf9;padding:0 8px;transition:border-color .16s ease,box-shadow .16s ease,background .16s ease}
+.global-search-box:focus-within{background:#fff;border-color:#6ca58f;box-shadow:0 0 0 3px rgba(11,91,66,.10)}
+.global-search-icon{font-size:18px;color:#17674e;line-height:1}
+.global-search-box input{border:0!important;box-shadow:none!important;background:transparent!important;min-width:0;width:100%;height:36px;padding:0!important;font-size:13px}
+.global-search-box input:focus{outline:0}
+.global-search-box button{border:0;background:transparent;color:#6b7c75;font-size:21px;line-height:1;cursor:pointer;padding:2px 5px;border-radius:6px}
+.global-search-box button:hover{background:#e8f0ec;color:#143f33}
+.global-search-results{position:absolute;right:0;top:calc(100% + 8px);z-index:80;width:min(480px,92vw);max-height:430px;overflow:auto;background:#fff;border:1px solid #d6e2dc;border-radius:13px;box-shadow:0 18px 42px rgba(16,58,45,.18);padding:6px}
+.global-search-result{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;text-decoration:none;padding:10px 11px;border-radius:9px;border-bottom:1px solid #edf2ef;color:#213a31}
+.global-search-result:last-child{border-bottom:0}.global-search-result:hover{background:#edf6f1;color:#0a5d43}
+.global-search-result-type{grid-column:1/-1;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:#6c7e76}
+.global-search-result strong{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}.global-search-result small{font-size:10px;color:#718079;align-self:center}
+.global-search-empty{padding:14px 12px;text-align:center;color:#718079;font-size:12px}.global-search-empty.error{color:#9d2c2c}
+
+.dashboard-filterbar{margin:16px 0 13px;display:flex;align-items:end;justify-content:space-between;gap:16px;padding:13px 15px;border:1px solid #dce7e2;border-radius:14px;background:rgba(255,255,255,.96);box-shadow:0 7px 20px rgba(13,67,49,.04)}
+.dashboard-filter-copy{display:grid;gap:3px;min-width:190px}.dashboard-filter-copy strong{font-size:14px;color:#154b3a}.dashboard-filter-copy span{font-size:11px;color:#75847e}
+.dashboard-filter-controls{display:flex;align-items:end;justify-content:flex-end;gap:8px;flex-wrap:wrap}.dashboard-filter-controls label{display:grid;gap:4px}.dashboard-filter-controls label>span{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:#65776f}.dashboard-filter-controls select,.dashboard-filter-controls input{height:34px;min-width:108px;border:1px solid #cbd9d3;border-radius:9px;background:#fff;padding:5px 9px;color:#243d34;font-weight:700}.dashboard-filter-controls input{width:96px;min-width:96px}.dashboard-filter-controls select[hidden]{display:none!important}
+.dashboard-metrics{grid-template-columns:repeat(auto-fit,minmax(185px,1fr))}
+.dashboard-metric{min-height:114px}.dashboard-metric-copy .v{font-size:29px}.dashboard-metric-copy .k{line-height:1.25}
+
+.audit-filters{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr)) minmax(220px,1.5fr);gap:10px;margin:14px 0}.audit-filters .field{margin:0}.audit-filters label{font-size:11px}.audit-table-wrap{max-height:520px}.audit-table-wrap td:first-child{white-space:nowrap}.audit-action-pill{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;background:#e9f4ee;color:#175e45;font-size:10px;font-weight:900}.audit-action-pill.is-delete{background:#fdecea;color:#a53c35}.audit-action-pill.is-print{background:#edf0fb;color:#4c5da5}.audit-action-pill.is-security{background:#fff4dc;color:#855d12}
+
+.agent-dossier{width:min(930px,82vw);max-width:100%;max-height:68vh;overflow:auto;padding:1px 3px 8px}.agent-dossier-identity{display:grid;grid-template-columns:118px 1fr;gap:18px;align-items:start;margin-bottom:15px}.agent-dossier-photo{width:112px;height:132px;object-fit:cover;border:1px solid #d4dfda;border-radius:12px;background:#f4f7f5}.agent-dossier-photo-empty{display:grid;place-items:center;font-size:11px;font-weight:900;color:#819089}.agent-dossier-idgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.agent-dossier-idgrid>div{border:1px solid #e0e8e4;border-radius:9px;padding:9px;background:#fafcfb}.agent-dossier-idgrid span{display:block;color:#75847e;font-size:10px;text-transform:uppercase;font-weight:800}.agent-dossier-idgrid strong{display:block;margin-top:3px;color:#233d33;font-size:12px;word-break:break-word}.agent-dossier-summary{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 15px}.agent-dossier-summary span{border-radius:999px;background:#e8f4ee;color:#215b47;padding:6px 10px;font-size:11px}.agent-dossier-summary strong{font-size:13px}.agent-dossier-section{margin-top:11px;border:1px solid #dfe8e4;border-radius:11px;overflow:hidden;background:#fff}.agent-dossier-section-head{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:#f3f8f5;border-bottom:1px solid #e3ebe7}.agent-dossier-section-head h3{margin:0;font-size:13px;color:#164c39}.agent-dossier-section-head span{min-width:25px;height:25px;border-radius:999px;display:grid;place-items:center;background:#d9eee3;color:#13563e;font-size:10px;font-weight:900}.agent-dossier-events{display:grid}.agent-dossier-event{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:9px 12px;border-bottom:1px solid #edf2ef}.agent-dossier-event:last-child{border-bottom:0}.agent-dossier-event strong{font-size:12px;color:#293e36}.agent-dossier-event small{font-size:10px;color:#75847e}.agent-dossier-event time{grid-row:1/3;grid-column:2;align-self:center;font-size:10px;color:#64746e}.agent-dossier-empty{padding:12px;color:#7a8983;font-size:11px;font-style:italic}
+
+.formation-participants-field{border:1px solid #dae5e0;border-radius:12px;background:#f9fbfa;padding:11px 12px}.formation-participants-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px;max-height:210px;overflow:auto;padding:2px}.formation-participant{display:flex;align-items:flex-start;gap:8px;border:1px solid #e1e9e5;border-radius:9px;padding:8px;background:#fff;cursor:pointer}.formation-participant:hover{background:#f1f7f4}.formation-participant input{width:17px!important;height:17px!important;min-height:17px!important;margin:2px 0 0;padding:0!important;accent-color:#0b6349}.formation-participant span{min-width:0}.formation-participant strong,.formation-participant small{display:block}.formation-participant strong{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.formation-participant small{font-size:9.5px;color:#76847e;margin-top:2px}
+
+@media(max-width:1350px){.global-search{flex-basis:260px;min-width:190px}.dashboard-filterbar{align-items:flex-start;flex-direction:column}.dashboard-filter-controls{justify-content:flex-start;width:100%}}
+@media(max-width:1100px){.global-search{order:14;flex:1 1 330px;min-width:240px}.top-actions{margin-left:auto}.dashboard-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.audit-filters{grid-template-columns:repeat(3,minmax(0,1fr))}.audit-search-field{grid-column:span 2}}
+@media(max-width:700px){.global-search{order:14;flex:1 0 100%;width:100%;min-width:0;margin:0}.global-search-results{left:0;right:auto;width:100%}.top-actions{order:15}.dashboard-filter-controls{display:grid;grid-template-columns:1fr 1fr;width:100%}.dashboard-filter-controls label,.dashboard-filter-controls select,.dashboard-filter-controls input{width:100%;min-width:0}.dashboard-filter-controls .btn{align-self:end}.dashboard-metrics{grid-template-columns:1fr}.audit-filters{grid-template-columns:1fr 1fr}.audit-search-field{grid-column:1/-1}.agent-dossier{width:82vw}.agent-dossier-identity{grid-template-columns:1fr}.agent-dossier-photo{width:92px;height:108px}.agent-dossier-idgrid{grid-template-columns:1fr 1fr}.formation-participants-grid{grid-template-columns:1fr}}
+@media(max-width:460px){.dashboard-filter-controls{grid-template-columns:1fr}.audit-filters{grid-template-columns:1fr}.audit-search-field{grid-column:1}.agent-dossier-idgrid{grid-template-columns:1fr}}
+
+
+/* === SIGAT V2.00 — Mon compte par onglets + navigation horizontale compacte === */
+.account-tabbar{display:flex;align-items:center;gap:7px;width:100%;margin:0 0 18px;padding:7px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.97);box-shadow:0 7px 20px rgba(20,63,50,.06);overflow-x:auto;scrollbar-width:thin}
+.account-tab{flex:1 1 0;min-width:max-content;border:1px solid transparent;background:transparent;color:#29483d;border-radius:10px;padding:11px 13px;font-weight:800;cursor:pointer;white-space:nowrap;transition:.16s ease}
+.account-tab:hover{background:#edf5f1;color:var(--forest)}
+.account-tab.is-active{background:var(--forest);color:#fff;border-color:var(--forest);box-shadow:0 5px 14px rgba(0,59,59,.17)}
+.account-panel[hidden]{display:none!important}
+.subscription-buy-btn.is-disabled{pointer-events:none!important;opacity:.5!important;filter:grayscale(.2);cursor:not-allowed!important;box-shadow:none!important}
+.account-subscription-lock{border-color:#a9cbbb;background:#edf8f2;color:#174e3b}
+.logout-icon-btn{width:38px;height:38px;display:inline-grid;place-items:center;border:0;border-radius:10px;background:var(--forest);color:#fff;cursor:pointer;flex:0 0 auto;transition:.16s ease}
+.logout-icon-btn:hover{transform:translateY(-1px);box-shadow:0 7px 15px rgba(0,59,59,.18)}
+.logout-icon-btn:disabled{opacity:.65;cursor:wait;transform:none}
+.logout-icon-btn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+@media(min-width:1001px){
+  .topbar-inner{max-width:100%!important;min-height:64px!important;display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:7px!important;padding:0 12px!important}
+  .mobile-menu-btn{display:none!important}
+  .logo{flex:0 0 auto!important;gap:7px!important}.sigat-logo-nav{width:40px!important;height:40px!important}.logo strong{font-size:17px!important}.org-chip{max-width:145px!important;font-size:10px!important}
+  .nav{display:flex!important;order:0!important;flex:1 1 auto!important;width:auto!important;min-width:0!important;align-items:center!important;justify-content:flex-start!important;gap:1px!important;padding:0!important;border-top:0!important;background:transparent!important;white-space:nowrap!important}
+  .nav>a,.nav-group>button{width:auto!important;flex:0 0 auto!important;padding:8px clamp(5px,.55vw,9px)!important;font-size:clamp(10px,.82vw,12.5px)!important;white-space:nowrap!important;text-align:center!important}
+  .nav-group{width:auto!important;position:relative!important}
+  .dropdown{top:39px!important}
+  .global-search{order:0!important;flex:0 1 230px!important;min-width:150px!important;max-width:260px!important;margin-left:0!important}
+  .global-search-box{height:37px!important}.global-search-box input{font-size:12px!important}
+  .top-actions{order:0!important;flex:0 0 auto!important;margin-left:0!important;gap:5px!important;white-space:nowrap!important}
+  .top-actions>a.btn{padding:8px 9px!important;font-size:11px!important;white-space:nowrap!important}.avatar{width:34px!important;height:34px!important}
+}
+@media(max-width:1000px){
+  .topbar-inner{flex-wrap:wrap!important}
+  .mobile-menu-btn{display:inline-flex!important;margin-left:auto!important}
+  .nav{display:none!important;order:20!important;flex:0 0 100%!important;width:100%!important}
+  .nav.is-open{display:grid!important;grid-template-columns:1fr!important;gap:4px!important}
+  .nav-group{width:100%!important}.nav>a,.nav-group>button{width:100%!important;text-align:left!important}
+  .nav .nav-group:hover .dropdown,.nav .nav-group:focus-within .dropdown{display:none!important}
+  .nav .nav-group.is-open>.dropdown{display:grid!important;position:static!important;width:100%!important;max-width:none!important}
+}
+@media(max-width:760px){.account-tabbar{align-items:stretch}.account-tab{flex:0 0 auto;padding:10px 12px;font-size:12px}}
+
+@media(min-width:1001px) and (max-width:1150px){
+  .org-chip{display:none!important}
+  .global-search{flex-basis:155px!important;min-width:125px!important;max-width:175px!important}
+  .nav>a,.nav-group>button{font-size:10px!important;padding-left:5px!important;padding-right:5px!important}
+}
+
+
+/* === SIGAT V2.01 — Indicateurs dynamiques sur une seule ligne et cartes cliquables === */
+.dashboard-metrics{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  justify-content:flex-start!important;
+  align-items:stretch;
+  gap:10px!important;
+  width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:2px 2px 10px;
+  scrollbar-width:thin;
+}
+.dashboard-metric{
+  flex:0 0 clamp(145px,11.4vw,205px)!important;
+  min-width:145px;
+  min-height:112px;
+}
+.dashboard-metrics>.dashboard-metric:first-child{margin-left:auto}
+.dashboard-metrics>.dashboard-metric:last-child{margin-right:auto}
+.dashboard-metric-link{
+  color:inherit;
+  text-decoration:none;
+  cursor:pointer;
+  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
+}
+.dashboard-metric-link:hover,
+.dashboard-metric-link:focus-visible{
+  transform:translateY(-3px);
+  box-shadow:0 14px 30px rgba(16,73,54,.13);
+  border-color:#9fc9b7;
+  outline:none;
+}
+.dashboard-metric-link:focus-visible{box-shadow:0 0 0 3px rgba(11,91,66,.13),0 14px 30px rgba(16,73,54,.13)}
+@media(max-width:700px){.dashboard-metrics{display:flex!important;grid-template-columns:none!important;justify-content:flex-start!important}.dashboard-metric{flex-basis:180px!important;min-width:180px}}
+
+/* === SIGAT V2.03 — Indicateurs dynamiques compacts sans débordement === */
+.dashboard-metric{
+  flex:0 0 clamp(128px,10.8vw,178px)!important;
+  min-width:128px!important;
+  min-height:98px!important;
+  grid-template-columns:38px minmax(0,1fr) 12px!important;
+  gap:7px!important;
+  padding:11px 10px!important;
+  overflow:hidden!important;
+}
+.dashboard-metric-icon{
+  width:36px!important;
+  height:36px!important;
+  font-size:17px!important;
+  line-height:1!important;
+}
+.dashboard-metric-copy{
+  min-width:0!important;
+  overflow:hidden!important;
+}
+.dashboard-metric-copy .k{
+  font-size:9px!important;
+  line-height:1.15!important;
+  letter-spacing:.01em!important;
+  overflow-wrap:anywhere!important;
+  word-break:normal!important;
+  display:-webkit-box!important;
+  -webkit-box-orient:vertical!important;
+  -webkit-line-clamp:2!important;
+  overflow:hidden!important;
+}
+.dashboard-metric-copy .v{
+  font-size:24px!important;
+  line-height:1!important;
+  margin:5px 0 4px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.dashboard-metric-copy .s{
+  font-size:8.5px!important;
+  line-height:1.12!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+  display:-webkit-box!important;
+  -webkit-box-orient:vertical!important;
+  -webkit-line-clamp:2!important;
+  overflow:hidden!important;
+}
+.metric-bars{
+  width:10px!important;
+  gap:1px!important;
+  height:16px!important;
+}
+.metric-bars i{width:2px!important}
+.metric-bars i:nth-child(1){height:5px!important}
+.metric-bars i:nth-child(2){height:10px!important}
+.metric-bars i:nth-child(3){height:15px!important}
+@media(max-width:1100px){
+  .dashboard-metric{flex-basis:138px!important;min-width:138px!important}
+  .dashboard-metric-copy .v{font-size:22px!important}
+}
+@media(max-width:700px){
+  .dashboard-metric{flex-basis:150px!important;min-width:150px!important;min-height:92px!important;padding:10px 9px!important}
+  .dashboard-metric-icon{width:34px!important;height:34px!important;font-size:16px!important}
+  .dashboard-metric-copy .k{font-size:8.8px!important}
+  .dashboard-metric-copy .v{font-size:21px!important}
+  .dashboard-metric-copy .s{font-size:8px!important}
+}
+
+
+/* V2.04 — Personnel : sans référence administrative dans la liste + actions agrandies sans débordement */
+body[data-module="personnel"] .personnel-table th:nth-child(1),
+body[data-module="personnel"] .personnel-table td:nth-child(1){width:4%!important;text-align:center!important}
+body[data-module="personnel"] .personnel-table th:nth-child(2),
+body[data-module="personnel"] .personnel-table td:nth-child(2){width:17%!important;text-align:left!important}
+body[data-module="personnel"] .personnel-table th:nth-child(3),
+body[data-module="personnel"] .personnel-table td:nth-child(3){width:8%!important}
+body[data-module="personnel"] .personnel-table th:nth-child(4),
+body[data-module="personnel"] .personnel-table td:nth-child(4){width:10%!important}
+body[data-module="personnel"] .personnel-table th:nth-child(5),
+body[data-module="personnel"] .personnel-table td:nth-child(5){width:10%!important}
+body[data-module="personnel"] .personnel-table th:nth-child(6),
+body[data-module="personnel"] .personnel-table td:nth-child(6){width:7%!important}
+body[data-module="personnel"] .personnel-table th:nth-child(7),
+body[data-module="personnel"] .personnel-table td:nth-child(7){width:8%!important}
+body[data-module="personnel"] .personnel-table th:nth-child(8),
+body[data-module="personnel"] .personnel-table td:nth-child(8){width:10%!important}
+body[data-module="personnel"] .personnel-table th:nth-child(9),
+body[data-module="personnel"] .personnel-table td:nth-child(9){width:10%!important}
+body[data-module="personnel"] .personnel-table th:nth-child(10),
+body[data-module="personnel"] .personnel-table td:nth-child(10){width:16%!important;text-align:center!important;overflow:visible!important}
+body[data-module="personnel"] .personnel-table .personnel-actions{
+  width:100%!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  flex-wrap:nowrap!important;gap:5px!important;overflow:visible!important;white-space:nowrap!important;
+}
+body[data-module="personnel"] .personnel-table .personnel-actions .btn-sm{
+  flex:0 0 auto!important;min-width:32px!important;width:auto!important;min-height:32px!important;
+  padding:7px 8px!important;font-size:12px!important;line-height:1!important;border-radius:8px!important;
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;
+}
+@media(max-width:1050px){
+  body[data-module="personnel"] .personnel-table th:nth-child(2),body[data-module="personnel"] .personnel-table td:nth-child(2){width:16%!important}
+  body[data-module="personnel"] .personnel-table th:nth-child(10),body[data-module="personnel"] .personnel-table td:nth-child(10){width:19%!important}
+  body[data-module="personnel"] .personnel-table .personnel-actions{gap:3px!important}
+  body[data-module="personnel"] .personnel-table .personnel-actions .btn-sm{min-width:30px!important;min-height:30px!important;padding:6px 7px!important;font-size:11px!important}
+}
+@media(max-width:700px){
+  body[data-module="personnel"] .personnel-table th:nth-child(4),body[data-module="personnel"] .personnel-table td:nth-child(4),
+  body[data-module="personnel"] .personnel-table th:nth-child(6),body[data-module="personnel"] .personnel-table td:nth-child(6),
+  body[data-module="personnel"] .personnel-table th:nth-child(7),body[data-module="personnel"] .personnel-table td:nth-child(7){display:none!important}
+  body[data-module="personnel"] .personnel-table th:nth-child(1),body[data-module="personnel"] .personnel-table td:nth-child(1){width:7%!important}
+  body[data-module="personnel"] .personnel-table th:nth-child(2),body[data-module="personnel"] .personnel-table td:nth-child(2){width:24%!important}
+  body[data-module="personnel"] .personnel-table th:nth-child(3),body[data-module="personnel"] .personnel-table td:nth-child(3){width:13%!important}
+  body[data-module="personnel"] .personnel-table th:nth-child(5),body[data-module="personnel"] .personnel-table td:nth-child(5){width:14%!important}
+  body[data-module="personnel"] .personnel-table th:nth-child(8),body[data-module="personnel"] .personnel-table td:nth-child(8){width:14%!important}
+  body[data-module="personnel"] .personnel-table th:nth-child(9),body[data-module="personnel"] .personnel-table td:nth-child(9){width:14%!important}
+  body[data-module="personnel"] .personnel-table th:nth-child(10),body[data-module="personnel"] .personnel-table td:nth-child(10){width:14%!important}
+  body[data-module="personnel"] .personnel-table .personnel-actions{flex-wrap:wrap!important;gap:2px!important}
+  body[data-module="personnel"] .personnel-table .personnel-actions .btn-sm{min-width:27px!important;min-height:27px!important;padding:4px 5px!important;font-size:9.5px!important;border-radius:6px!important}
+}

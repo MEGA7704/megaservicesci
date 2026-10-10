@@ -1,0 +1,3078 @@
+import {api,esc,fmtDate,loadSession,showToast,withButtonLock,professionalAlert,professionalConfirm,professionalDialog} from './common.js?v=2.00';
+import {MODULE_CONFIG} from './module-config.js?v=2.00';
+let session=null,currentPage=1,currentSearch='',lastItems=[],currentStageType='MISE_STAGE',editorStageType='MISE_STAGE',currentDocumentType='CESSATION_SERVICE',editorDocumentType='CESSATION_SERVICE',currentConvocationView='CONVOCATIONS',editorConvocationView='CONVOCATIONS',currentForestType='RECHERCHE_PARCELLAIRE',editorForestType='RECHERCHE_PARCELLAIRE',currentNurseryView='SITES',currentWoodType='EXPLOITANTS_SECONDAIRES',editorWoodType='EXPLOITANTS_SECONDAIRES',currentFireType='CREE',editorFireType='CREE',currentFaunaType='OBSERVATIONS',editorFaunaType='OBSERVATIONS',currentMissionType='ORDRE_MISSION',editorMissionType='ORDRE_MISSION',editorOffensePvRecord=null,editorOrderMissionPvRecord=null,pendingSmartSourceRecord=null;
+const moduleKey=document.body.dataset.module||'';
+const woodContext=document.body.dataset.woodContext||'transformation';
+const config=MODULE_CONFIG[moduleKey];
+const PAGE_FOR_MODULE=Object.freeze({personnel:'personnel',documents:'documents',absences:'documents',stages:'stages',convocations:'convocations',convocation_pv:'convocations','activites-minef':'activites-minef',missions:'missions',offense_pv:'missions','exploitation-forestiere':'exploitation-forestiere','produits-secondaires':'produits-secondaires','transformation-bois':'transformation-bois',sensibilisations:'sensibilisations','ressources-naturelles':'ressources-naturelles','feux-brousse':'feux-brousse',faune:'faune',conflits:'faune',formations:'formations',materiel:'materiel',rapports:'rapports'});
+function userPermissionSet(user=session?.user){return new Set(Array.isArray(user?.permissions)?user.permissions:[])}
+function canViewPage(pageKey,user=session?.user){if(!user)return false;if(user.role==='ORGANIZATION_ADMIN')return true;return userPermissionSet(user).has(`page.${pageKey}.view`)}
+function canEditPage(pageKey,user=session?.user){if(!user)return false;if(user.role==='ORGANIZATION_ADMIN')return true;return userPermissionSet(user).has(`page.${pageKey}.edit`)}
+function currentPermissionPage(){return PAGE_FOR_MODULE[moduleKey]||null}
+function canEditCurrentPage(){const page=currentPermissionPage();return page?canEditPage(page):false}
+function modulePermissionPage(module){return PAGE_FOR_MODULE[module]||module}
+function stageTypeOf(record){
+  const t=String(record?.data?._stage_type||'').toUpperCase();
+  return t==='MISE_STAGE'||t==='FIN_STAGE'?t:'FIN_STAGE';
+}
+function stageConfig(type=currentStageType){return config?.stageTypes?.[type]||null}
+function documentTypeOf(record){
+  const t=String(record?.data?._document_type||'').toUpperCase();
+  if(['CESSATION_SERVICE','CESSATION_CONGE','REPRISE_SERVICE','PRISE_SERVICE_MUTATION','DEMANDE_EXPLICATION','ABSENCE'].includes(t))return t;
+  const legacy=String(record?.data?.type||'').toUpperCase();
+  if(legacy.includes('CESSATION'))return 'CESSATION_SERVICE';
+  if(legacy.includes('REPRISE'))return 'REPRISE_SERVICE';
+  return currentDocumentType;
+}
+function documentConfig(type=currentDocumentType){return config?.documentTypes?.[type]||null}
+function forestTypeOf(record){const t=String(record?.data?._forest_type||'').toUpperCase();if(t==='PEPINIERE')return 'PEPINIERE_PRODUCTION';return ['RECHERCHE_PARCELLAIRE','PEPINIERE_SITE','PEPINIERE_PRODUCTION','PLANTATION_CREEE','REBOISEMENT'].includes(t)?t:'RECHERCHE_PARCELLAIRE'}
+function forestConfig(type=currentForestType){return config?.exploitationTypes?.[type]||null}
+const FOREST_NO_ADMIN_REFERENCE_TYPES=new Set(['RECHERCHE_PARCELLAIRE','PEPINIERE_SITE','PEPINIERE_PRODUCTION','PLANTATION_CREEE','REBOISEMENT']);
+function forestSuppressesAdministrativeReference(type){return FOREST_NO_ADMIN_REFERENCE_TYPES.has(String(type||'').toUpperCase())}
+function woodTypeOf(record){const t=String(record?.data?._wood_type||'').toUpperCase();return ['EXPLOITANTS_SECONDAIRES','PRODUITS_QTE','UNITES_BOIS'].includes(t)?t:'UNITES_BOIS'}
+function woodConfig(type=currentWoodType){return config?.woodTypes?.[type]||null}
+function fireTypeOf(record){const t=String(record?.data?._fire_type||'').toUpperCase();return ['REDYNAMISE','CREE','RENOUVELE','DEGATS'].includes(t)?t:'DEGATS'}
+function fireConfig(type=currentFireType){return config?.fireTypes?.[type]||null}
+function faunaTypeOf(record){const t=String(record?.data?._fauna_type||'').toUpperCase();return ['OBSERVATIONS','CONFLITS'].includes(t)?t:'OBSERVATIONS'}
+function faunaConfig(type=currentFaunaType){return config?.faunaTypes?.[type]||null}
+// V1.97 — Ces registres ne portent plus de Référence administrative dans leurs formulaires ni leurs PDF.
+const WOOD_NO_ADMIN_REFERENCE_TYPES=new Set(['EXPLOITANTS_SECONDAIRES','PRODUITS_QTE','UNITES_BOIS']);
+const FIRE_NO_ADMIN_REFERENCE_TYPES=new Set(['CREE','REDYNAMISE','RENOUVELE','DEGATS']);
+const FAUNA_NO_ADMIN_REFERENCE_TYPES=new Set(['OBSERVATIONS','CONFLITS']);
+const MODULES_NO_ADMIN_REFERENCE=new Set(['sensibilisations','ressources-naturelles','formations','materiel']);
+function suppressesAdministrativeReference(record=null){
+  if(moduleKey==='exploitation-forestiere')return forestSuppressesAdministrativeReference(record?forestTypeOf(record):editorForestType);
+  if(moduleKey==='transformation-bois')return WOOD_NO_ADMIN_REFERENCE_TYPES.has(record?woodTypeOf(record):editorWoodType);
+  if(moduleKey==='feux-brousse')return FIRE_NO_ADMIN_REFERENCE_TYPES.has(record?fireTypeOf(record):editorFireType);
+  if(moduleKey==='faune')return FAUNA_NO_ADMIN_REFERENCE_TYPES.has(record?faunaTypeOf(record):editorFaunaType);
+  return MODULES_NO_ADMIN_REFERENCE.has(moduleKey);
+}
+function missionTypeOf(record){const t=String(record?.data?._mission_type||record?.data?._offense_type||'').toUpperCase();return ['ORDRE_MISSION','PV_ORDRE_MISSION','REPRESSION','PV_INFRACTION'].includes(t)?t:'ORDRE_MISSION'}
+function missionConfig(type=currentMissionType){return config?.missionTypes?.[type]||null}
+function normalizeWoodText(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase()}
+function woodVisibleFields(type=currentWoodType,data={}){
+  const fields=(woodConfig(type)?.fields||[]).filter(([, , fieldType])=>fieldType!=='section');
+  if(type!=='UNITES_BOIS')return fields;
+  const exercant=normalizeWoodText(data?.type_exercant);
+  const isUnit=exercant==='unites de transformation'||!exercant;
+  const unitKeys=new Set(['type_exercant','region','departement','localite','nom_usine','activites_principales','nom_operateur','contact_operateur','coord_x','coord_y']);
+  const otherKeys=new Set(['type_exercant','service_rattachement','localite','nom_operateur','contact_operateur','coord_x','coord_y','numero_permis','date_delivrance']);
+  return fields.filter(([key])=>(isUnit?unitKeys:otherKeys).has(key));
+}
+function effectiveModule(type=null){
+  if(moduleKey==='documents')return documentConfig(type||currentDocumentType)?.backendModule||'documents';
+  if(moduleKey==='convocations'&&currentConvocationView==='PV')return 'convocation_pv';
+  if(moduleKey==='missions'){
+    const t=String(type||currentMissionType).toUpperCase();
+    if(t==='PV_INFRACTION')return 'offense_pv';
+    return 'missions';
+  }
+  return moduleKey;
+}
+function activeFields(record=null){
+  if(moduleKey==='stages')return stageConfig(record?stageTypeOf(record):editorStageType)?.fields||[];
+  if(moduleKey==='documents')return documentConfig(record?documentTypeOf(record):editorDocumentType)?.fields||[];
+  if(moduleKey==='convocations'&&editorConvocationView==='PV')return config?.pvFields||[];
+  if(moduleKey==='exploitation-forestiere')return forestConfig(record?forestTypeOf(record):editorForestType)?.fields||[];
+  if(moduleKey==='transformation-bois')return woodConfig(record?woodTypeOf(record):editorWoodType)?.fields||[];
+  if(moduleKey==='feux-brousse')return fireConfig(record?fireTypeOf(record):editorFireType)?.fields||[];
+  if(moduleKey==='faune')return faunaConfig(record?faunaTypeOf(record):editorFaunaType)?.fields||[];
+  if(moduleKey==='missions'){
+    const t=record?missionTypeOf(record):editorMissionType;
+    if(t==='PV_INFRACTION')return config?.offensePvFields||[];
+    if(t==='PV_ORDRE_MISSION')return config?.orderMissionPvFields||[];
+    const fields=missionConfig(t)?.fields||[];
+    // V1.92 — Répression d’infraction : à la création, le chef de mission
+    // est choisi uniquement avec le champ intelligent « Chef de mission ».
+    // Le sélecteur simple historique est retiré sans affecter la modification
+    // des anciens enregistrements ni les impressions.
+    if(t==='REPRESSION'&&!record)return fields.filter(([key,,type])=>!(key==='chef_mission'&&type==='agent-select'));
+    return fields;
+  }
+  return config?.fields||[];
+}
+function activeSingular(record=null){
+  if(moduleKey==='stages')return stageConfig(record?stageTypeOf(record):editorStageType)?.singular||'Stage';
+  if(moduleKey==='documents')return documentConfig(record?documentTypeOf(record):editorDocumentType)?.singular||'Document administratif';
+  if(moduleKey==='convocations'&&editorConvocationView==='PV')return config?.pvSingular||'Procès-verbal de rencontre';
+  if(moduleKey==='exploitation-forestiere')return forestConfig(record?forestTypeOf(record):editorForestType)?.singular||'Enregistrement forestier';
+  if(moduleKey==='transformation-bois')return woodConfig(record?woodTypeOf(record):editorWoodType)?.singular||'Enregistrement';
+  if(moduleKey==='feux-brousse')return fireConfig(record?fireTypeOf(record):editorFireType)?.singular||'Enregistrement feux de brousse';
+  if(moduleKey==='faune')return faunaConfig(record?faunaTypeOf(record):editorFaunaType)?.singular||'Enregistrement faune';
+  if(moduleKey==='missions'){
+    const t=record?missionTypeOf(record):editorMissionType;
+    if(t==='PV_INFRACTION')return 'Procès-verbal d’infraction';
+    if(t==='PV_ORDRE_MISSION')return 'Procès-verbal de mission';
+    return missionConfig(t)?.singular||'Mission';
+  }
+  return config?.singular||'Document';
+}
+
+
+/* V1.28 — Préremplissage intelligent transversal.
+   Les liaisons ci-dessous réutilisent uniquement les données de la structure connectée.
+   Les valeurs injectées restent toujours modifiables par l'utilisateur. */
+const SMART_AUTOFILL={
+  documents:{
+    CESSATION_SERVICE:{sourceModule:'personnel',label:'Agent concerné',help:"Sélectionnez l’agent concerné pour reprendre automatiquement son identité et sa situation administrative. Les autres champs restent modifiables.",copyTitle:true,map:{grade_appellation:'data.grade',matricule:'data.matricule',emploi:'data.emploi',classe:'data.classe',echelon:'data.echelon',ancien_service:'$source_organization'}},
+    CESSATION_CONGE:{sourceModule:'personnel',label:'Agent concerné',help:"Sélectionnez un agent pour reprendre automatiquement son identité et sa situation administrative. Les informations du congé restent à compléter et tous les champs sont modifiables.",copyTitle:true,map:{grade_appellation:'data.grade',matricule:'data.matricule',emploi:'data.emploi',classe:'data.classe',echelon:'data.echelon'}},
+    REPRISE_SERVICE:{sourceModule:'documents',sourceDocumentType:'CESSATION_CONGE',label:'Cessation de service / congé existante',help:"Sélectionnez une cessation de service / congé déjà enregistrée : SIGAT reprend automatiquement l’agent, la période, la décision et la date prévue de reprise. Tous les champs restent modifiables.",copyTitle:true,map:{grade_appellation:'data.grade_appellation',matricule:'data.matricule',emploi:'data.emploi',option_emploi:'data.option_emploi',classe:'data.classe',echelon:'data.echelon',service_reprise:'$source_organization',date_cessation:'data.date_cessation',certificat_cessation_numero:'$reference',certificat_cessation_date:'$event_date',certificat_cessation_origine:'$source_responsible',duree_conge_jours:'data.duree_conge_jours',type_conge:'data.type_conge',decision_numero:'data.decision_numero',decision_date:'data.decision_date',decision_autorite:'data.decision_autorite',date_reprise:'data.date_reprise_prevue',heure_reprise:'data.heure_reprise_prevue'}},
+    DEMANDE_EXPLICATION:{sourceModule:'personnel',label:'Agent concerné',help:"Sélectionnez un agent pour reprendre automatiquement son nom, son matricule, son emploi / qualité et son service. Les autres champs de la demande restent modifiables.",copyTitle:true,map:{matricule:'data.matricule',emploi_qualite:'data.emploi',service_affectation:'$source_organization'}},
+    ABSENCE:{sourceModule:'personnel',label:'Agent existant',help:"Sélectionnez un agent pour reprendre automatiquement son nom, son matricule, son emploi et son grade. Les autres champs de l’autorisation restent modifiables.",copyTitle:true,map:{grade:'data.grade',matricule:'data.matricule',emploi:'data.emploi'}}
+  },
+  absences:{sourceModule:'personnel',label:'Agent existant',help:"Sélectionnez un agent pour reprendre automatiquement son nom, son matricule, son emploi et son grade. Les autres champs de l’autorisation restent modifiables.",copyTitle:true,map:{grade:'data.grade',matricule:'data.matricule',emploi:'data.emploi'}},
+  convocations:{
+    // V1.89 — La convocation est saisie manuellement : aucun sélecteur intelligent de personnel.
+    // Le préremplissage intelligent est conservé uniquement pour le procès-verbal lié à une convocation.
+    PV:{sourceModule:'convocations',label:'Convocation à l’origine de la rencontre',help:"Sélectionnez la convocation concernée : la personne, la date, l’heure, l’objet et le responsable sont préremplis. Tous les champs restent modifiables.",copyTitle:true,map:{convocation_reference:'$reference',profession:'data.profession',domicile:'data.domicile',date_rencontre:'data.date_presentation',heure_debut:'data.heure',objet_rencontre:'data.objet_convocation',personne_a_voir:'data.personne_a_voir'},sourceIdKey:'_source_convocation_id'}
+  },
+  missions:{sourceModule:'personnel',label:'Chef de mission',help:"Choisissez un agent pour renseigner le chef de mission. Le champ reste modifiable.",map:{chef_mission:'$title'}},
+  materiel:{sourceModule:'personnel',label:'Responsable du matériel',help:"Choisissez l’agent responsable du matériel. Son nom est enregistré automatiquement.",map:{responsable:'$title'}},
+  sensibilisations:{sourceModule:'personnel',label:'Agent en charge',help:"Choisissez l’agent en charge de la sensibilisation. Son nom est enregistré automatiquement.",map:{agent_charge:'$title'}},
+  stages:{
+    FIN_STAGE:{sourceModule:'stages',sourceStageType:'MISE_STAGE',ongoingOnly:true,label:'Stage en cours à clôturer',help:"SIGAT présente les stages en cours de votre structure. La sélection préremplit l’attestation de fin de stage ; tous les champs restent modifiables.",copyTitle:true,map:{qualite_stagiaire:'data.qualite_stagiaire',matricule_stagiaire:'data.matricule_stagiaire',date_debut:'data.date_debut',date_fin:'data.date_fin',lettre_mise_stage_numero:'data.note_service_numero',lettre_mise_stage_date:'data.note_service_date'},sourceIdKey:'_source_stage_id'}
+  }
+};
+
+function smartProfile(){
+  const entry=SMART_AUTOFILL[moduleKey];
+  if(!entry)return null;
+  if(moduleKey==='stages')return entry[editorStageType]||null;
+  if(moduleKey==='documents')return entry[editorDocumentType]||null;
+  if(moduleKey==='convocations')return entry[editorConvocationView]||null;
+  // Les P-V de mission et d’infraction sont déjà liés à leur enregistrement source.
+  // V1.91 — Ne pas ajouter un second sélecteur intelligent « Chef de mission »
+  // dans le P-V de mission : le chef est repris automatiquement de la mission liée.
+  if(moduleKey==='missions'&&['PV_INFRACTION','PV_ORDRE_MISSION'].includes(editorMissionType))return null;
+  return entry;
+}
+function ownLoadUrl(module,{stageType='',documentType='',limit=100}={}){
+  const q=new URLSearchParams({module,page:'1',limit:String(limit),search:''});
+  if(stageType)q.set('stageType',stageType);
+  if(documentType)q.set('documentType',documentType);
+  return `/api/load?${q.toString()}`;
+}
+function smartStageKey(r){
+  const data=r?.data||{};
+  const matricule=String(data.matricule_stagiaire||'').trim().toLowerCase().replace(/\s+/g,'');
+  if(matricule)return `m:${matricule}`;
+  return `n:${String(r?.title||'').trim().toLowerCase()}|${String(data.date_debut||'').slice(0,10)}`;
+}
+async function loadSmartCandidates(profile,record=null){
+  if(profile.sourceModule==='convocations'&&moduleKey==='convocations'&&editorConvocationView==='PV'){
+    const [convResp,pvResp]=await Promise.all([
+      api(ownLoadUrl('convocations',{limit:100})),
+      api(ownLoadUrl('convocation_pv',{limit:100}))
+    ]);
+    const currentPvId=Number(record?.id||0);
+    const currentSourceId=Number(record?.data?._source_convocation_id||0);
+    const used=new Set((pvResp.items||[]).filter(x=>Number(x.id)!==currentPvId&&String(x.status||'').toUpperCase()!=='ANNULÉ').map(x=>Number(x.data?._source_convocation_id||0)).filter(Boolean));
+    return (convResp.items||[]).filter(x=>Number(x.id)===currentSourceId||!used.has(Number(x.id)));
+  }
+  if(profile.ongoingOnly&&profile.sourceModule==='stages'){
+    const [startsResp,endsResp]=await Promise.all([
+      api(ownLoadUrl('stages',{stageType:'MISE_STAGE'})),
+      api(ownLoadUrl('stages',{stageType:'FIN_STAGE'}))
+    ]);
+    const currentId=Number(record?.id||0);
+    const currentSourceId=Number(record?.data?._source_stage_id||0);
+    const finals=(endsResp.items||[]).filter(r=>Number(r.id)!==currentId&&String(r.status||'').toUpperCase()!=='ANNULÉE');
+    const endedIds=new Set(finals.map(r=>Number(r.data?._source_stage_id||0)).filter(Boolean));
+    const endedKeys=new Set(finals.map(smartStageKey));
+    return (startsResp.items||[]).filter(r=>{
+      const status=String(r.status||'').toUpperCase();
+      if(Number(r.id)===currentSourceId)return true;
+      if(['ANNULÉE','ARCHIVED','TERMINÉ'].includes(status))return false;
+      if(endedIds.has(Number(r.id)))return false;
+      return !endedKeys.has(smartStageKey(r));
+    });
+  }
+  const resp=await api(ownLoadUrl(profile.sourceModule,{stageType:profile.sourceStageType||'',documentType:profile.sourceDocumentType||''}));
+  return resp.items||[];
+}
+function smartCandidateLabel(profile,r){
+  if(profile.sourceModule==='stages'){
+    const d=r.data||{};
+    const parts=[r.title,d.matricule_stagiaire,d.date_debut&&d.date_fin?`${fmtDate(d.date_debut)} → ${fmtDate(d.date_fin)}`:d.date_debut?fmtDate(d.date_debut):''].filter(Boolean);
+    return parts.join(' — ');
+  }
+  if(profile.sourceModule==='personnel'){
+    const d=r.data||{};return [r.title,d.matricule,d.fonction||d.emploi].filter(Boolean).join(' — ');
+  }
+  if(profile.sourceModule==='documents')return [r.title,r.reference,r.event_date?fmtDate(r.event_date):''].filter(Boolean).join(' — ');
+  if(profile.sourceModule==='convocations'){const d=r.data||{};return [r.title,r.reference,d.date_presentation?fmtDate(d.date_presentation):'',d.objet_convocation].filter(Boolean).join(' — ')}
+  return [r.reference,r.title].filter(Boolean).join(' — ');
+}
+function smartGet(r,path){
+  if(path==='$title')return r?.title??'';
+  if(path==='$reference')return r?.reference??'';
+  if(path==='$event_date')return String(r?.event_date||'').slice(0,10);
+  if(path==='$source_organization')return r?.source_organization??session?.user?.organizationName??'';
+  if(path==='$source_responsible')return stageResponsibleIntro(r);
+  if(path.startsWith('data.'))return r?.data?.[path.slice(5)]??'';
+  return '';
+}
+function setEditorDataValue(key,value,{append=false}={}){
+  const el=document.querySelector(`#dynamicFields [data-key="${CSS.escape(key)}"]`);
+  if(!el)return;
+  const next=String(value??'');
+  if(append&&el.value&&next&&!el.value.split(/\n|,/).map(x=>x.trim().toLowerCase()).includes(next.trim().toLowerCase())) el.value=`${el.value.trim()}\n${next}`;
+  else if(!append||!el.value) el.value=next;
+  el.dispatchEvent(new Event('change',{bubbles:true}));
+}
+function applySmartCandidate(profile,r){
+  if(!r)return;
+  if(profile.copyTitle)document.getElementById('recordTitle').value=r.title||'';
+  for(const [target,source] of Object.entries(profile.map||{})){
+    const append=['participants','equipe'].includes(target);
+    setEditorDataValue(target,smartGet(r,source),{append});
+  }
+  const sourceKey=profile.sourceIdKey||'_smart_source_id';
+  const hidden=document.querySelector(`#dynamicFields [data-key="${CSS.escape(sourceKey)}"]`);
+  if(hidden)hidden.value=String(r.id||'');
+  const sourceModule=document.querySelector('#dynamicFields [data-key="_smart_source_module"]');
+  if(sourceModule)sourceModule.value=profile.sourceModule||'';
+  showToast('Champs préremplis. Vous pouvez les modifier avant l’enregistrement.');
+}
+async function mountSmartAutofill(record=null){
+  const profile=smartProfile();
+  const area=document.getElementById('dynamicFields');
+  if(!area)return;
+  if(!profile)return;
+  const wrap=document.createElement('div');wrap.className='field full smart-autofill-field';
+  const label=document.createElement('label');label.textContent=profile.label||'Préremplissage intelligent';
+  const select=document.createElement('select');select.className='smart-source-select';select.disabled=true;
+  select.innerHTML='<option value="">Chargement des données…</option>';
+  const help=document.createElement('small');help.className='smart-help';help.textContent=profile.help||'';
+  const sourceId=document.createElement('input');sourceId.type='hidden';sourceId.dataset.key=profile.sourceIdKey||'_smart_source_id';sourceId.value=record?.data?.[profile.sourceIdKey||'_smart_source_id']||'';
+  const sourceModule=document.createElement('input');sourceModule.type='hidden';sourceModule.dataset.key='_smart_source_module';sourceModule.value=profile.sourceModule||'';
+  wrap.append(label,select,help,sourceId,sourceModule);area.prepend(wrap);
+  try{
+    const candidates=await loadSmartCandidates(profile,record);
+    const cessationMutation=moduleKey==='documents'&&editorDocumentType==='CESSATION_SERVICE';
+    const smartAgentRequired=!record&&(cessationMutation||(moduleKey==='documents'&&editorDocumentType==='DEMANDE_EXPLICATION')||(moduleKey==='absences'||(moduleKey==='documents'&&editorDocumentType==='ABSENCE'))||(moduleKey==='convocations'&&editorConvocationView==='PV')||(moduleKey==='stages'&&editorStageType==='FIN_STAGE')||moduleKey==='sensibilisations'||moduleKey==='materiel');
+    const requiredSmartPlaceholder=(moduleKey==='convocations'&&editorConvocationView==='PV')?'— Sélectionner une convocation —':'— Sélectionner un agent —';
+    const repressionChiefOnly=moduleKey==='missions'&&editorMissionType==='REPRESSION'&&!record;
+    select.innerHTML=smartAgentRequired?`<option value="">${requiredSmartPlaceholder}</option>`:(repressionChiefOnly?'<option value="">— Sélectionner un chef de mission —</option>':'<option value="">— Saisie manuelle / ne pas préremplir —</option>');
+    if(smartAgentRequired)select.required=true;
+    for(const r of candidates){const op=document.createElement('option');op.value=String(r.id);op.textContent=smartCandidateLabel(profile,r);select.appendChild(op)}
+    const current=String(sourceId.value||'');if(current&&candidates.some(r=>String(r.id)===current))select.value=current;
+    select.disabled=false;
+    if(!candidates.length){help.textContent=`${profile.help||''} Aucun enregistrement correspondant n’est actuellement disponible.`.trim()}
+    select.addEventListener('change',()=>{
+      const selected=candidates.find(r=>String(r.id)===select.value);
+      if(!selected){sourceId.value='';return}
+      applySmartCandidate(profile,selected);
+    });
+    if(pendingSmartSourceRecord){
+      const wanted=candidates.find(r=>String(r.id)===String(pendingSmartSourceRecord.id));
+      if(wanted){select.value=String(wanted.id);applySmartCandidate(profile,wanted)}
+      pendingSmartSourceRecord=null;
+    }
+  }catch(err){select.innerHTML='<option value="">Préremplissage indisponible — saisie manuelle possible</option>';help.textContent=err.message||'Impossible de charger les données existantes.'}
+}
+
+async function mountHistorySuggestions(record=null){
+  try{
+    const stageType=moduleKey==='stages'?editorStageType:'';
+    const historyModule=moduleKey==='documents'?effectiveModule(editorDocumentType):(moduleKey==='convocations'&&editorConvocationView==='PV'?'convocation_pv':moduleKey);
+    const documentType=moduleKey==='documents'&&historyModule==='documents'?editorDocumentType:'';
+    const resp=await api(ownLoadUrl(historyModule,{stageType,documentType}));
+    const items=(resp.items||[]).filter(r=>Number(r.id)!==Number(record?.id||0));
+    const title=document.getElementById('recordTitle');
+    if(title&&items.length){
+      const id=`smart-title-${moduleKey}`;let dl=document.getElementById(id);if(dl)dl.remove();dl=document.createElement('datalist');dl.id=id;
+      [...new Set(items.map(r=>String(r.title||'').trim()).filter(Boolean))].slice(0,80).forEach(v=>{const o=document.createElement('option');o.value=v;dl.appendChild(o)});
+      document.body.appendChild(dl);title.setAttribute('list',id);
+    }
+    for(const el of document.querySelectorAll('#dynamicFields input[data-key][type="text"]')){
+      if(String(el.dataset.key||'').startsWith('_'))continue;
+      const key=el.dataset.key,values=[...new Set(items.map(r=>String(r.data?.[key]??'').trim()).filter(Boolean))].slice(0,80);
+      if(!values.length)continue;
+      const id=`smart-${moduleKey}-${key}`;let dl=document.getElementById(id);if(dl)dl.remove();dl=document.createElement('datalist');dl.id=id;values.forEach(v=>{const o=document.createElement('option');o.value=v;dl.appendChild(o)});document.body.appendChild(dl);el.setAttribute('list',id);
+    }
+  }catch{/* Les suggestions sont une aide : la saisie manuelle reste disponible. */}
+}
+
+const TYPE_LABEL={PEF:'Poste des Eaux et Forêts',CANTONNEMENT:'Cantonnement'};
+function withScope(path){return path;}
+function navHTML(user){
+  const A=p=>withScope(p);
+  const can=(key)=>canViewPage(key,user);
+  const link=(key,path,label)=>can(key)?`<a href="${A(path)}">${label}</a>`:'';
+  const group=(title,links)=>{const content=links.filter(Boolean).join('');return content?`<div class="nav-group"><button type="button">${title} ▾</button><div class="dropdown">${content}</div></div>`:''};
+  const administration=group('Administration',[link('personnel','/personnel/','Personnel'),link('documents','/documents/','Documents administratifs'),link('stages','/stages/','Stages'),link('convocations','/convocations/','Convocations')]);
+  const technical=group('Activités techniques',[link('activites-minef','/activites-minef/','Activités du MINEF'),link('missions','/missions/','Missions'),link('exploitation-forestiere','/exploitation-forestiere/','Exploitation forestière'),link('produits-secondaires','/produits-secondaires/','Produits secondaires'),link('transformation-bois','/transformation-bois/','Transformation du bois'),link('sensibilisations','/sensibilisations/','Sensibilisations')]);
+  const environment=group('Environnement',[link('ressources-naturelles','/ressources-naturelles/','Ressources naturelles'),link('feux-brousse','/feux-brousse/','Feux de brousse'),link('faune','/faune/','Faune')]);
+  const journal=user.role==='ORGANIZATION_ADMIN'?'<a href="/mon-compte/#journal-operations">Journal des opérations</a>':'';
+  const management=group('Gestion',[link('formations','/formations/','Formations'),link('materiel','/materiel/','Matériel'),link('rapports','/rapports/','Rapports'),journal]);
+  const settings=user.role==='ORGANIZATION_ADMIN'?'<a href="/parametres/">Paramètres</a>':'';
+  const search=`<div class="global-search" id="globalSearch"><div class="global-search-box"><span class="global-search-icon">⌕</span><input id="globalSearchInput" type="search" autocomplete="off" placeholder="Recherche SIGAT…" aria-label="Recherche globale SIGAT"><button id="globalSearchClear" type="button" aria-label="Effacer" hidden>×</button></div><div id="globalSearchResults" class="global-search-results" hidden></div></div>`;
+  return `<div class="topbar"><div class="topbar-inner"><a class="logo" href="${A('/dashboard/')}" style="text-decoration:none"><img class="sigat-logo-nav" src="/assets/sigat-logo.png" alt="Logo SIGAT"><span><strong>SIGAT</strong><div class="org-chip" id="orgName">${esc(user.organizationName||'Structure SIGAT')}</div></span></a><button class="mobile-menu-btn" id="mobileMenuBtn" type="button" aria-expanded="false" aria-controls="mainNav"><span aria-hidden="true">☰</span><span>Menu</span></button><nav class="nav" id="mainNav"><a href="${A('/dashboard/')}">Tableau de bord</a>${administration}${technical}${environment}${management}${settings}</nav>${search}<div class="top-actions"><a class="btn btn-secondary btn-sm" href="/mon-compte/">Mon compte</a><button id="logoutBtn" class="logout-icon-btn" type="button" aria-label="Déconnexion" title="Déconnexion"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M7.2 5.7A8 8 0 1 0 16.8 5.7"/></svg></button><div class="avatar" id="avatar">U</div></div></div></div>`
+}
+
+function bindGlobalSearch(){
+  const input=document.getElementById('globalSearchInput'),results=document.getElementById('globalSearchResults'),clear=document.getElementById('globalSearchClear');
+  if(!input||!results)return;let timer=0,seq=0;
+  const hide=()=>{results.hidden=true;results.innerHTML=''};
+  const render=items=>{
+    if(!items.length){results.innerHTML='<div class="global-search-empty">Aucun résultat trouvé.</div>';results.hidden=false;return}
+    results.innerHTML=items.map(x=>`<a class="global-search-result" href="${esc(x.href)}"><span class="global-search-result-type">${esc(x.label||x.module)}</span><strong>${esc(x.title||'Sans titre')}</strong>${x.reference?`<small>N° ${esc(x.reference)}</small>`:''}</a>`).join('');results.hidden=false;
+  };
+  const run=async()=>{const q=input.value.trim();clear.hidden=!q;if(q.length<2){hide();return}const my=++seq;results.innerHTML='<div class="global-search-empty">Recherche…</div>';results.hidden=false;try{const d=await api(`/api/global-search?q=${encodeURIComponent(q)}`);if(my!==seq)return;render(d.items||[])}catch(e){if(my!==seq)return;results.innerHTML=`<div class="global-search-empty error">${esc(e.message)}</div>`;results.hidden=false}};
+  input.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(run,260)});
+  input.addEventListener('focus',()=>{if(input.value.trim().length>=2)run()});
+  input.addEventListener('keydown',e=>{if(e.key==='Escape'){hide();input.blur()}else if(e.key==='Enter'){const first=results.querySelector('a');if(first){e.preventDefault();location.href=first.href}}});
+  clear?.addEventListener('click',()=>{input.value='';clear.hidden=true;hide();input.focus()});
+  document.addEventListener('click',e=>{if(!e.target.closest('#globalSearch'))hide()});
+}
+
+function bindResponsiveNav(){
+  const toggle=document.getElementById('mobileMenuBtn');
+  const nav=document.getElementById('mainNav');
+  if(!toggle||!nav)return;
+  const mobile=()=>matchMedia('(max-width:1000px)').matches;
+  const closeGroups=(except=null)=>nav.querySelectorAll('.nav-group.is-open').forEach(g=>{if(g!==except)g.classList.remove('is-open')});
+  const closeMobile=()=>{nav.classList.remove('is-open');toggle.setAttribute('aria-expanded','false')};
+  const closeAll=()=>{closeMobile();closeGroups()};
+  toggle.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const open=!nav.classList.contains('is-open');nav.classList.toggle('is-open',open);toggle.setAttribute('aria-expanded',open?'true':'false');if(!open)closeGroups()});
+  nav.querySelectorAll('.nav-group>button').forEach(btn=>btn.addEventListener('click',e=>{
+    e.preventDefault();e.stopPropagation();
+    const group=btn.closest('.nav-group');if(!group)return;
+    const willOpen=!group.classList.contains('is-open');closeGroups(group);group.classList.toggle('is-open',willOpen);
+  }));
+  nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{if(mobile())closeAll();else closeGroups()}));
+  document.addEventListener('click',e=>{if(!e.target.closest('.nav-group')&&!e.target.closest('#mobileMenuBtn'))closeGroups();if(mobile()&&!e.target.closest('#mainNav')&&!e.target.closest('#mobileMenuBtn'))closeMobile()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAll()});
+  addEventListener('resize',()=>{if(!mobile())closeMobile();else closeGroups()});
+}
+
+
+async function boot(){
+  try{session=await loadSession()}catch(e){console.error('SIGAT session init',e);if(location.pathname!=='/')location.replace('/');return}
+  if(session.user.role==='SUPER_ADMIN'){location.href='/superadmin/dashboard/';return}
+  document.body.insertAdjacentHTML('afterbegin',navHTML(session.user));
+  bindResponsiveNav();
+  bindGlobalSearch();
+  document.getElementById('logoutBtn').onclick=e=>withButtonLock(e.currentTarget,logout,null);
+  document.getElementById('avatar').textContent=(session.user.displayName||'U').trim()[0]?.toUpperCase()||'U';
+  if(session.user.role!=='ORGANIZATION_ADMIN') document.querySelectorAll('[data-admin-only]').forEach(el=>el.remove());
+  if(session.user.forcePasswordChange && location.pathname!='/mon-compte/'){location.href='/mon-compte/';return}
+  handleSubscription();
+  if(moduleKey==='dashboard') loadDashboard(); else if(moduleKey==='rapports') setupReportsModule(); else if(config){setupModule();applyPageEditMode();}
+}
+
+function applyPageEditMode(){
+  if(canEditCurrentPage())return;
+  document.body.classList.add('read-only-page');
+  const addBtn=document.getElementById('addBtn');if(addBtn)addBtn.remove();
+  const form=document.getElementById('recordForm');if(form)form.dataset.readOnly='1';
+}
+
+async function logout(){try{await api('/api/logout',{method:'POST'})}catch{}sessionStorage.clear();location.href='/'}
+
+function handleSubscription(){
+  const s=session.subscription;if(!s)return;
+  if(s.expired && location.pathname!='/mon-compte/'){location.href=session.user.role==='ORGANIZATION_ADMIN'?'/mon-compte/#abonnement':'/mon-compte/';return}
+  if(session.user.role==='ORGANIZATION_ADMIN'&&s.plan==='FREE'&&!s.expired){const now=Date.now(),last=Number(sessionStorage.getItem('sigat_last_free_popup')||0);if(!last||now-last>=15*60*1000)showFreePopup();setInterval(()=>{const l=Number(sessionStorage.getItem('sigat_last_free_popup')||0);if(Date.now()-l>=15*60*1000)showFreePopup()},60*1000)}
+}
+function showFreePopup(){const d=document.getElementById('freePlanDialog');if(!d||d.open)return;sessionStorage.setItem('sigat_last_free_popup',String(Date.now()));d.showModal()}
+
+function dashboardFilterQuery(){
+  const period=document.getElementById('dashboardPeriod')?.value||'year';const year=document.getElementById('dashboardYear')?.value||String(new Date().getFullYear());const month=document.getElementById('dashboardMonth')?.value||String(new Date().getMonth()+1);const quarter=document.getElementById('dashboardQuarter')?.value||String(Math.floor(new Date().getMonth()/3)+1);
+  return new URLSearchParams({period,year,month,quarter});
+}
+function bindDashboardFilters(){
+  const period=document.getElementById('dashboardPeriod'),year=document.getElementById('dashboardYear'),month=document.getElementById('dashboardMonth'),quarter=document.getElementById('dashboardQuarter');if(!period||period.dataset.bound==='1')return;period.dataset.bound='1';
+  const now=new Date();year.value=String(now.getFullYear());month.value=String(now.getMonth()+1);quarter.value=String(Math.floor(now.getMonth()/3)+1);
+  const updateVisibility=()=>{const monthLabel=month?.closest('label'),quarterLabel=quarter?.closest('label');if(monthLabel)monthLabel.hidden=period.value!=='month';if(quarterLabel)quarterLabel.hidden=period.value!=='quarter';month.hidden=period.value!=='month';quarter.hidden=period.value!=='quarter'};updateVisibility();
+  [period,year,month,quarter].forEach(el=>el?.addEventListener('change',()=>{updateVisibility();loadDashboard()}));
+  document.getElementById('dashboardRefresh')?.addEventListener('click',e=>withButtonLock(e.currentTarget,loadDashboard,'Actualisation…'));
+}
+async function loadDashboard(){
+  bindDashboardFilters();
+  try{
+    const d=await api(`/api/dashboard?${dashboardFilterQuery().toString()}`);
+    const metricDefs=[
+      ['agents','Agents actifs','personnel','/personnel/','●','metric-green',v=>fmtNumber(v)],
+      ['missions','Missions réalisées','missions','/missions/?view=ORDRE_MISSION','▣','metric-blue',v=>fmtNumber(v)],
+      ['superficie_reboisee','Superficie reboisée (ha)','exploitation-forestiere','/exploitation-forestiere/?view=REBOISEMENT','▰','metric-green',v=>fmtNumber(v,2)],
+      ['plants_produits','Plants produits','exploitation-forestiere','/exploitation-forestiere/?view=PEPINIERE&nursery=PRODUCTION','♧','metric-blue',v=>fmtNumber(v)],
+      ['plants_distribues','Plants distribués','exploitation-forestiere','/exploitation-forestiere/?view=PEPINIERE&nursery=SITUATION','↗','metric-purple',v=>fmtNumber(v)],
+      ['plants_disponibles','Plants disponibles','exploitation-forestiere','/exploitation-forestiere/?view=PEPINIERE&nursery=SITUATION','✓','metric-green',v=>fmtNumber(v)],
+      ['plantations','Plantations créées','exploitation-forestiere','/exploitation-forestiere/?view=PLANTATION_CREEE','♠','metric-green',v=>fmtNumber(v)],
+      ['sensibilisations','Sensibilisations','sensibilisations','/sensibilisations/','◖','metric-blue',v=>fmtNumber(v)]
+    ].filter(([, ,page])=>canViewPage(page));
+    const cards=document.getElementById('metricCards');
+    if(cards)cards.innerHTML=metricDefs.map(([k,l,,href,icon,tone,formatter])=>`<a class="dashboard-metric dashboard-metric-link ${tone}" href="${href}" title="Ouvrir ${esc(l)}" aria-label="Ouvrir la section ${esc(l)}"><div class="dashboard-metric-icon">${icon}</div><div class="dashboard-metric-copy"><div class="k">${esc(l)}</div><div class="v">${esc(formatter(d.summary[k]||0))}</div><div class="s">${k==='agents'?'Effectif actuel':esc(d.period?.label||'Période sélectionnée')}</div></div><div class="metric-bars" aria-hidden="true"><i></i><i></i><i></i></div></a>`).join('')||'<div class="notice">Aucun indicateur métier n’est autorisé pour ce compte.</div>';
+    const periodLabel=document.getElementById('dashboardPeriodLabel');if(periodLabel)periodLabel.textContent=d.period?.label||'';
+    const label=TYPE_LABEL[d.organization.type]||d.organization.type;
+    const title=document.getElementById('dashboardTitle');if(title)title.textContent=`Tableau de bord — ${label}`;
+    const scopeText=`Suivi des activités, des ressources et de la gestion durable — ${d.organization.name}.`;
+    const orgScope=document.getElementById('orgScope');if(orgScope)orgScope.textContent=scopeText;
+    const principle=document.getElementById('principleText');if(principle)principle.textContent='Chaque service SIGAT gère ses propres données dans un espace indépendant et sécurisé, sans rattachement à une autre structure.';
+    const chip=document.getElementById('territoryChip');if(chip)chip.textContent=d.organization.name||'Structure SIGAT';
+    const territoryType=document.getElementById('territoryType');if(territoryType)territoryType.textContent=label||'—';
+    const territoryChildren=document.getElementById('territoryChildren');if(territoryChildren)territoryChildren.textContent='Indépendant';
+    const territoryScope=document.getElementById('territoryScope');if(territoryScope)territoryScope.textContent='Votre service';
+    const footerOrg=document.getElementById('dashboardFooterOrg');if(footerOrg)footerOrg.textContent=`SIGAT — ${d.organization.name||label||'Structure'}`;
+    document.querySelectorAll('[data-dashboard-action-page]').forEach(el=>{if(!canViewPage(el.dataset.dashboardActionPage))el.remove()});
+    const recentAll=document.getElementById('recentAllLink');if(recentAll&&!canViewPage('rapports'))recentAll.remove();
+    await loadDashboardRecentActivities();
+  }catch(e){showToast(e.message,'error')}
+}
+function fmtNumber(v,digits=0){return new Intl.NumberFormat('fr-FR',{maximumFractionDigits:digits,minimumFractionDigits:0}).format(Number(v||0))}
+
+async function loadDashboardRecentActivities(){
+  const host=document.getElementById('recentActivities');if(!host)return;
+  const defs=[
+    {module:'sensibilisations',page:'sensibilisations',label:'Sensibilisation',path:'/sensibilisations/',icon:'◖'},
+    {module:'missions',page:'missions',label:'Mission',path:'/missions/',icon:'▣'},
+    {module:'personnel',page:'personnel',label:'Personnel',path:'/personnel/',icon:'●'},
+    {module:'formations',page:'formations',label:'Formation',path:'/formations/',icon:'◆'},
+    {module:'exploitation-forestiere',page:'exploitation-forestiere',label:'Exploitation forestière',path:'/exploitation-forestiere/',icon:'◒'}
+  ].filter(x=>canViewPage(x.page));
+  if(!defs.length){host.innerHTML='<div class="dashboard-empty">Aucune activité n’est autorisée pour ce compte.</div>';return}
+  try{
+    const settled=await Promise.allSettled(defs.map(async def=>{
+      const q=new URLSearchParams({module:def.module,page:'1',limit:'4'});
+      const data=await api(`/api/load?${q.toString()}`);
+      return (data.items||[]).map(item=>({...item,__def:def}));
+    }));
+    const items=settled.flatMap(x=>x.status==='fulfilled'?x.value:[]).sort((a,b)=>new Date(b.event_date||b.updated_at||b.created_at||0)-new Date(a.event_date||a.updated_at||a.created_at||0)).slice(0,4);
+    if(!items.length){host.innerHTML='<div class="dashboard-empty">Aucune activité récente enregistrée.</div>';return}
+    host.innerHTML=items.map(item=>{
+      const def=item.__def,d=item.data||{},when=item.event_date||d.date_activite||d.date_constat||d.date_observation||item.created_at;
+      const subtitle=d.theme||d.localite||d.lieu||d.lieu_mission||d.fonction||d.essence||item.reference||def.label;
+      return `<a class="recent-item" href="${withScope(def.path)}"><span class="recent-icon">${def.icon}</span><span class="recent-copy"><strong>${esc(item.title||def.label)}</strong><small>${esc(subtitle||def.label)}</small></span><time>${esc(fmtDate(when))}</time></a>`;
+    }).join('');
+  }catch{
+    host.innerHTML='<div class="dashboard-empty">Les activités récentes ne sont pas disponibles pour le moment.</div>';
+  }
+}
+
+function bindCommonModuleControls(){
+  const initialSearch=String(new URLSearchParams(location.search).get('search')||'').trim();const searchBox=document.getElementById('searchInput');if(initialSearch&&searchBox){currentSearch=initialSearch;searchBox.value=initialSearch;}
+  document.getElementById('searchInput').addEventListener('input',e=>{clearTimeout(window.__s);window.__s=setTimeout(()=>{currentSearch=e.target.value;currentPage=1;loadRecords()},300)});
+  const recordForm=document.getElementById('recordForm');
+  if(recordForm)recordForm.addEventListener('submit',e=>{
+    Promise.resolve(saveRecord(e)).catch(async err=>{
+      console.error('SIGAT — erreur inattendue pendant l’enregistrement',err);
+      try{await professionalAlert('Enregistrement impossible',err?.message||"Une erreur inattendue a empêché l’enregistrement. Rechargez la page et réessayez.")}catch{}
+    });
+  });
+  document.querySelectorAll('[data-close-editor]').forEach(b=>b.onclick=()=>document.getElementById('editorDialog').close());
+  document.getElementById('prevBtn').onclick=()=>{if(currentPage>1){currentPage--;loadRecords()}};
+  document.getElementById('nextBtn').onclick=()=>{currentPage++;loadRecords()};
+}
+
+function setupStageModule(){
+  document.getElementById('pageTitle').textContent=config.title;
+  document.getElementById('pageSubtitle').textContent=config.subtitle;
+  bindCommonModuleControls();
+  const printBtn=document.getElementById('printListBtn');
+  if(printBtn)printBtn.onclick=e=>withButtonLock(e.currentTarget,()=>printCurrentList(),'Préparation…');
+  document.querySelectorAll('[data-stage-tab]').forEach(btn=>btn.addEventListener('click',()=>setStageView(btn.dataset.stageTab)));
+  setStageView('MISE_STAGE');
+}
+
+function setStageView(type){
+  if(!['MISE_STAGE','FIN_STAGE'].includes(type))type='MISE_STAGE';
+  currentStageType=type;editorStageType=type;currentPage=1;
+  document.querySelectorAll('[data-stage-tab]').forEach(btn=>{const on=btn.dataset.stageTab===type;btn.classList.toggle('is-active',on);btn.setAttribute('aria-selected',on?'true':'false')});
+  const cfg=stageConfig(type)||{};
+  const title=document.getElementById('stageViewTitle');if(title)title.textContent=cfg.label||'Stages';
+  const sub=document.getElementById('stageViewSubtitle');if(sub)sub.textContent=type==='MISE_STAGE'?'Enregistrement et édition des attestations de mise en stage.':'Enregistrement et édition des attestations de fin de stage.';
+  const addBtn=document.getElementById('addBtn');
+  if(addBtn){addBtn.textContent=cfg.addLabel||'Ajouter';addBtn.onclick=()=>openEditor(null,type)}
+  loadRecords();
+}
+
+function setupDocumentsModule(){
+  document.getElementById('pageTitle').textContent=config.title;
+  document.getElementById('pageSubtitle').textContent=config.subtitle;
+  bindCommonModuleControls();
+  const printBtn=document.getElementById('printListBtn');
+  if(printBtn)printBtn.onclick=e=>withButtonLock(e.currentTarget,()=>printCurrentList(),'Préparation…');
+  document.querySelectorAll('[data-document-tab]').forEach(btn=>btn.addEventListener('click',()=>setDocumentView(btn.dataset.documentTab)));
+  const requested=String(new URLSearchParams(location.search).get('view')||'').toUpperCase();
+  setDocumentView(['CESSATION_SERVICE','CESSATION_CONGE','REPRISE_SERVICE','PRISE_SERVICE_MUTATION','DEMANDE_EXPLICATION','ABSENCE'].includes(requested)?requested:'CESSATION_SERVICE');
+}
+
+function setDocumentView(type){
+  if(!['CESSATION_SERVICE','CESSATION_CONGE','REPRISE_SERVICE','PRISE_SERVICE_MUTATION','DEMANDE_EXPLICATION','ABSENCE'].includes(type))type='CESSATION_SERVICE';
+  currentDocumentType=type;editorDocumentType=type;currentPage=1;
+  document.querySelectorAll('[data-document-tab]').forEach(btn=>{const on=btn.dataset.documentTab===type;btn.classList.toggle('is-active',on);btn.setAttribute('aria-selected',on?'true':'false')});
+  const cfg=documentConfig(type)||{};
+  const title=document.getElementById('documentViewTitle');if(title)title.textContent=cfg.label||'Documents administratifs';
+  const sub=document.getElementById('documentViewSubtitle');
+  if(sub)sub.textContent=type==='CESSATION_SERVICE'?'Rédaction et gestion des certificats de cessation de service liés aux mutations.':type==='CESSATION_CONGE'?'Rédaction et gestion des certificats de cessation de service pour congé.':type==='REPRISE_SERVICE'?'Rédaction et gestion des certificats de reprise de service après congé.':type==='PRISE_SERVICE_MUTATION'?'Rédaction et gestion des certificats de prise de service après mutation.':type==='DEMANDE_EXPLICATION'?"Rédaction, impression et suivi des demandes d’explication écrite adressées aux agents.":"Rédaction, édition PDF et gestion des autorisations d’absence.";
+  const addBtn=document.getElementById('addBtn');
+  if(addBtn){addBtn.textContent=cfg.addLabel||'Ajouter';addBtn.onclick=()=>openEditor(null,null,type)}
+  const url=new URL(location.href);url.searchParams.set('view',type);history.replaceState(null,'',url.pathname+url.search);
+  loadRecords();
+}
+
+
+function setupForestModule(){
+  document.getElementById('pageTitle').textContent=config.title;
+  document.getElementById('pageSubtitle').textContent=config.subtitle;
+  bindCommonModuleControls();
+  const printBtn=document.getElementById('printListBtn');
+  if(printBtn)printBtn.onclick=e=>withButtonLock(e.currentTarget,()=>printCurrentList(),'Préparation…');
+  document.querySelectorAll('[data-forest-tab]').forEach(btn=>btn.addEventListener('click',()=>setForestView(btn.dataset.forestTab)));
+  document.querySelectorAll('[data-nursery-tab]').forEach(btn=>btn.addEventListener('click',()=>setNurseryView(btn.dataset.nurseryTab)));
+  bindForestFilters();
+  const params=new URLSearchParams(location.search);
+  const requested=String(params.get('view')||'').toUpperCase();
+  const nurseryRequested=String(params.get('nursery')||'SITES').toUpperCase();
+  if(['SITES','PRODUCTION','SITUATION'].includes(nurseryRequested))currentNurseryView=nurseryRequested;
+  setForestView(['RECHERCHE_PARCELLAIRE','PEPINIERE','PLANTATION_CREEE','REBOISEMENT'].includes(requested)?requested:'RECHERCHE_PARCELLAIRE');
+}
+
+function nurseryEditorForestType(view=currentNurseryView){return view==='PRODUCTION'?'PEPINIERE_PRODUCTION':'PEPINIERE_SITE'}
+function effectiveForestType(){return currentForestType==='PEPINIERE'?nurseryEditorForestType():currentForestType}
+
+function setForestView(type){
+  if(!['RECHERCHE_PARCELLAIRE','PEPINIERE','PLANTATION_CREEE','REBOISEMENT'].includes(type))type='RECHERCHE_PARCELLAIRE';
+  currentForestType=type;currentPage=1;
+  document.querySelectorAll('[data-forest-tab]').forEach(btn=>{const on=btn.dataset.forestTab===type;btn.classList.toggle('is-active',on);btn.setAttribute('aria-selected',on?'true':'false')});
+  const nurseryTabs=document.getElementById('nurserySubTabs');if(nurseryTabs)nurseryTabs.hidden=type!=='PEPINIERE';
+  const summaryCards=document.getElementById('nurserySummaryCards');if(summaryCards)summaryCards.hidden=true;
+  if(type==='PEPINIERE'){setNurseryView(currentNurseryView);return}
+  editorForestType=type;
+  const cfg=forestConfig(type)||{};
+  const title=document.getElementById('forestViewTitle');if(title)title.textContent=cfg.label||'Exploitation forestière';
+  const sub=document.getElementById('forestViewSubtitle');if(sub)sub.textContent=type==='RECHERCHE_PARCELLAIRE'?'Localisation et suivi des parcelles forestières.':type==='PLANTATION_CREEE'?'Enregistrement des plantations forestières créées.':'Suivi des reboisements particuliers, agro forestiers, antérieurs et compensatoires.';
+  const addBtn=document.getElementById('addBtn');if(addBtn){addBtn.hidden=false;addBtn.textContent=cfg.addLabel||'Ajouter';addBtn.onclick=()=>openEditor(null,null,null,null,type)}
+  updateForestTableHead(type);updateForestFilterVisibility(type);
+  const url=new URL(location.href);url.searchParams.set('view',type);url.searchParams.delete('nursery');history.replaceState(null,'',url.pathname+url.search);
+  loadRecords();
+}
+
+function setNurseryView(view){
+  if(!['SITES','PRODUCTION','SITUATION'].includes(view))view='SITES';
+  currentForestType='PEPINIERE';currentNurseryView=view;currentPage=1;
+  document.querySelectorAll('[data-nursery-tab]').forEach(btn=>{const on=btn.dataset.nurseryTab===view;btn.classList.toggle('is-active',on);btn.setAttribute('aria-selected',on?'true':'false')});
+  const meta={
+    SITES:{title:'Sites de pépinière et responsables',subtitle:'Enregistrement des sites de pépinière, de leurs coordonnées et de leurs responsables.',add:'Ajouter un site de pépinière'},
+    PRODUCTION:{title:'Production de pépinières',subtitle:'Production des plants par site, avec sélection intelligente de la sous-préfecture et de la localité.',add:'Ajouter une production de pépinière'},
+    SITUATION:{title:'Distribution et situation de la pépinière',subtitle:'Résumé automatique par essence : plants produits, distribués et disponibles.',add:''}
+  }[view];
+  const title=document.getElementById('forestViewTitle');if(title)title.textContent=meta.title;
+  const sub=document.getElementById('forestViewSubtitle');if(sub)sub.textContent=meta.subtitle;
+  const addBtn=document.getElementById('addBtn');if(addBtn){addBtn.hidden=view==='SITUATION';if(view!=='SITUATION'){editorForestType=nurseryEditorForestType(view);addBtn.textContent=meta.add;addBtn.onclick=()=>openEditor(null,null,null,null,editorForestType)}}
+  const summaryCards=document.getElementById('nurserySummaryCards');if(summaryCards)summaryCards.hidden=view!=='SITUATION';
+  updateForestTableHead('PEPINIERE');updateForestFilterVisibility('PEPINIERE');
+  const url=new URL(location.href);url.searchParams.set('view','PEPINIERE');url.searchParams.set('nursery',view);history.replaceState(null,'',url.pathname+url.search);
+  loadRecords();
+}
+
+function updateForestTableHead(type){
+  const head=document.getElementById('forestTableHead');if(!head)return;
+  let cols;
+  if(type==='PEPINIERE'){
+    cols=currentNurseryView==='SITES'?['Sous-préfecture','Localité','Coordonnées X / Y','Nom du responsable','Contacts du responsable','Actions']:
+      currentNurseryView==='PRODUCTION'?['Sous-préfecture','Localité','Coordonnées X / Y','Essence','Nbr. de plants produits','Actions']:
+      ['Essence','Nbr. de Plants produits','Nbr. de Plants distribués','Plants disponibles','Actions'];
+  }else{
+    const map={
+      RECHERCHE_PARCELLAIRE:['Date','Sous-préfecture','Localité','Essence','Superficie (ha)','Contact propriétaire','Actions'],
+      PLANTATION_CREEE:['Date','Localité','Bénéficiaire','Superficie (ha)','Essence','Total plants','Actions'],
+      REBOISEMENT:['Date','Type','Localité','Bénéficiaire','Essence','Superficie (ha)','Total plants','Entreprise','Actions']
+    };cols=map[type]||[];
+  }
+  head.innerHTML='<tr>'+cols.map(v=>`<th>${esc(v)}</th>`).join('')+'</tr>';
+}
+
+function bindForestFilters(){
+  const ids=['forestYearFilter','forestDateFilter','forestSousPrefFilter','forestLocaliteFilter','forestEssenceFilter','forestReboisementTypeFilter','forestBeneficiaryFilter'];
+  ids.forEach(id=>{const el=document.getElementById(id);if(!el)return;const ev=el.tagName==='INPUT'&&['text','number'].includes(el.type)?'input':'change';el.addEventListener(ev,()=>{clearTimeout(window.__forestFilterTimer);window.__forestFilterTimer=setTimeout(()=>{currentPage=1;loadRecords()},220)})});
+  document.getElementById('forestResetFilters')?.addEventListener('click',()=>{ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});currentSearch='';const q=document.getElementById('searchInput');if(q)q.value='';currentPage=1;loadRecords()});
+}
+function updateForestFilterVisibility(type){
+  const set=(id,on)=>{const el=document.getElementById(id);if(el){el.hidden=!on;if(!on)el.value=''}};
+  const isReboisement=type==='REBOISEMENT';
+  if(isReboisement)currentSearch='';
+  if(type==='PEPINIERE'){
+    set('searchInput',true);set('forestYearFilter',false);set('forestDateFilter',false);
+    set('forestSousPrefFilter',currentNurseryView!=='SITUATION');
+    set('forestLocaliteFilter',currentNurseryView!=='SITUATION');
+    set('forestEssenceFilter',currentNurseryView!=='SITES');
+    set('forestReboisementTypeFilter',false);set('forestBeneficiaryFilter',false);
+  }else{
+    set('searchInput',!isReboisement);set('forestYearFilter',!isReboisement);set('forestDateFilter',true);
+    set('forestSousPrefFilter',!isReboisement&&type==='RECHERCHE_PARCELLAIRE');
+    set('forestLocaliteFilter',true);set('forestEssenceFilter',true);
+    set('forestReboisementTypeFilter',isReboisement);set('forestBeneficiaryFilter',isReboisement);
+  }
+  const toolbar=document.getElementById('forestFilters');if(toolbar){toolbar.classList.toggle('reboisement-filters',isReboisement);toolbar.classList.toggle('nursery-filters',type==='PEPINIERE')}
+}
+
+
+function woodAllowedTypes(){
+  return woodContext==='produits-secondaires'?['EXPLOITANTS_SECONDAIRES','PRODUITS_QTE']:['UNITES_BOIS'];
+}
+function woodDefaultType(){return woodContext==='produits-secondaires'?'EXPLOITANTS_SECONDAIRES':'UNITES_BOIS'}
+
+function setupWoodModule(){
+  const isSecondary=woodContext==='produits-secondaires';
+  document.getElementById('pageTitle').textContent=isSecondary?'Produits secondaires':'Transformation du bois';
+  document.getElementById('pageSubtitle').textContent=isSecondary?'Exploitants et productions des produits secondaires.':'Unités de transformation du bois, déligneuses, menuiseries et dépôts-ventes.';
+  bindCommonModuleControls();
+  const printBtn=document.getElementById('printListBtn');
+  if(printBtn)printBtn.onclick=e=>withButtonLock(e.currentTarget,()=>printCurrentList(),'Préparation…');
+  document.querySelectorAll('[data-wood-tab]').forEach(btn=>btn.addEventListener('click',()=>setWoodView(btn.dataset.woodTab)));
+  bindWoodFilters();
+  const requested=String(new URLSearchParams(location.search).get('view')||'').toUpperCase();
+  const allowed=woodAllowedTypes();
+  setWoodView(allowed.includes(requested)?requested:woodDefaultType());
+}
+
+function setWoodView(type){
+  const allowed=woodAllowedTypes();
+  if(!allowed.includes(type))type=woodDefaultType();
+  currentWoodType=type;editorWoodType=type;currentPage=1;
+  document.querySelectorAll('[data-wood-tab]').forEach(btn=>{const on=btn.dataset.woodTab===type;btn.classList.toggle('is-active',on);btn.setAttribute('aria-selected',on?'true':'false')});
+  const cfg=woodConfig(type)||{};
+  const title=document.getElementById('woodViewTitle');if(title)title.textContent=cfg.label||(woodContext==='produits-secondaires'?'Produits secondaires':'Transformation du bois');
+  const sub=document.getElementById('woodViewSubtitle');if(sub)sub.textContent=type==='EXPLOITANTS_SECONDAIRES'?'Répertoire des opérateurs, produits exploités et références de leurs autorisations.':type==='PRODUITS_QTE'?'Suivi des quantités de produits secondaires exploités et des carnets associés.':'Unités de transformation, déligneuses, menuiseries et dépôts-ventes.';
+  const addBtn=document.getElementById('addBtn');if(addBtn){addBtn.textContent=cfg.addLabel||'Ajouter';addBtn.onclick=()=>openEditor()}
+  updateWoodTableHead(type);updateWoodFilterVisibility(type);
+  const url=new URL(location.href);url.searchParams.set('view',type);history.replaceState(null,'',url.pathname+url.search);
+  loadRecords();
+}
+
+function updateWoodTableHead(type){
+  const head=document.getElementById('woodTableHead');if(!head)return;
+  const map={
+    EXPLOITANTS_SECONDAIRES:['Opérateur','Contact','Produit exploité','N° permis','Localité','Actions'],
+    PRODUITS_QTE:['Statut opérateur','Charbon de bois','Bois de feu','Autres produits','Actions'],
+    UNITES_BOIS:["Type d’exerçant",'Localité','Usine / Opérateur','Activité / Service','Contact','Permis / Date','Actions']
+  };
+  head.innerHTML='<tr>'+map[type].map(v=>`<th>${esc(v)}</th>`).join('')+'</tr>';
+}
+
+function bindWoodFilters(){
+  const ids=['woodYearFilter','woodDateFilter','woodLocaliteFilter','woodNatureFilter','woodStatusFilter','woodExercantFilter','woodRegionFilter','woodDepartementFilter'];
+  ids.forEach(id=>{const el=document.getElementById(id);if(!el)return;const ev=el.tagName==='INPUT'&&el.type==='text'?'input':'change';el.addEventListener(ev,()=>{clearTimeout(window.__woodFilterTimer);window.__woodFilterTimer=setTimeout(()=>{currentPage=1;loadRecords()},220)})});
+  document.getElementById('woodYearFilter')?.addEventListener('input',()=>{clearTimeout(window.__woodYearTimer);window.__woodYearTimer=setTimeout(()=>{currentPage=1;loadRecords()},220)});
+  document.getElementById('woodResetFilters')?.addEventListener('click',()=>{ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});currentSearch='';const q=document.getElementById('searchInput');if(q)q.value='';currentPage=1;loadRecords()});
+}
+function updateWoodFilterVisibility(type){
+  const set=(id,on)=>{const el=document.getElementById(id);if(el){el.hidden=!on;if(!on)el.value=''}};
+  set('woodYearFilter',type!=='PRODUITS_QTE');
+  set('woodDateFilter',type!=='PRODUITS_QTE');
+  set('woodLocaliteFilter',type!=='PRODUITS_QTE');
+  set('woodNatureFilter',type==='EXPLOITANTS_SECONDAIRES');
+  set('woodStatusFilter',type==='PRODUITS_QTE');
+  set('woodExercantFilter',type==='UNITES_BOIS');
+  set('woodRegionFilter',type==='UNITES_BOIS');
+  set('woodDepartementFilter',type==='UNITES_BOIS');
+}
+
+function woodProductSummary(qty,carnet,unit){
+  const q=String(qty??'').trim(),c=String(carnet??'').trim();
+  if(!q&&!c)return '—';
+  return `${q||'0'} ${unit}${c?` · carnet ${c}`:''}`;
+}
+
+function mountWoodEditorLogic(record=null){
+  if(editorWoodType!=='UNITES_BOIS')return;
+  const typeEl=document.querySelector('#dynamicFields [data-key="type_exercant"]');if(!typeEl)return;
+  const unitKeys=new Set(['region','departement','nom_usine','activites_principales']);
+  const otherKeys=new Set(['service_rattachement','numero_permis','date_delivrance']);
+  const section=document.querySelector('#dynamicFields [data-section-key="__section_autorisation"]');
+  const update=()=>{
+    const isUnit=normalizeWoodText(typeEl.value)==='unites de transformation';
+    unitKeys.forEach(k=>{const w=document.querySelector(`#dynamicFields [data-field-key="${k}"]`);if(w){w.hidden=!isUnit;if(!isUnit){const e=w.querySelector('[data-key]');if(e)e.value=''}}});
+    otherKeys.forEach(k=>{const w=document.querySelector(`#dynamicFields [data-field-key="${k}"]`);if(w){w.hidden=isUnit;if(isUnit){const e=w.querySelector('[data-key]');if(e)e.value=''}}});
+    if(section)section.hidden=isUnit;
+  };
+  typeEl.addEventListener('change',update);update();
+}
+
+function setupConvocationsModule(){
+  document.getElementById('pageTitle').textContent=config.title;
+  document.getElementById('pageSubtitle').textContent=config.subtitle;
+  bindCommonModuleControls();
+  const printBtn=document.getElementById('printListBtn');
+  if(printBtn)printBtn.onclick=e=>withButtonLock(e.currentTarget,()=>printCurrentList(),'Préparation…');
+  document.querySelectorAll('[data-convocation-tab]').forEach(btn=>btn.addEventListener('click',()=>setConvocationView(btn.dataset.convocationTab)));
+  const requested=String(new URLSearchParams(location.search).get('view')||'').toUpperCase();
+  setConvocationView(requested==='PV'?'PV':'CONVOCATIONS');
+}
+
+function setConvocationView(type){
+  if(!['CONVOCATIONS','PV'].includes(type))type='CONVOCATIONS';
+  currentConvocationView=type;editorConvocationView=type;currentPage=1;
+  document.querySelectorAll('[data-convocation-tab]').forEach(btn=>{const on=btn.dataset.convocationTab===type;btn.classList.toggle('is-active',on);btn.setAttribute('aria-selected',on?'true':'false')});
+  const title=document.getElementById('convocationViewTitle');if(title)title.textContent=type==='PV'?'Procès-verbaux des rencontres':'Convocations';
+  const sub=document.getElementById('convocationViewSubtitle');if(sub)sub.textContent=type==='PV'?'Rédaction, modification, impression et suppression des procès-verbaux issus des convocations.':'Rédaction, impression et suivi des convocations administratives.';
+  const head=document.getElementById('convocationNameHeader');if(head)head.textContent=type==='PV'?'Personne concernée':'Personne / intitulé';
+  const addBtn=document.getElementById('addBtn');
+  if(addBtn){addBtn.textContent=type==='PV'?'Ajouter procès-verbal':'Ajouter convocation';addBtn.onclick=()=>openEditor()}
+  const url=new URL(location.href);url.searchParams.set('view',type);history.replaceState(null,'',url.pathname+url.search);
+  loadRecords();
+}
+
+async function manageConvocationPv(convocation){
+  try{
+    const q=new URLSearchParams({module:'convocation_pv',page:'1',limit:'10',search:'',sourceConvocationId:String(convocation.id)});
+    const resp=await api(`/api/load?${q.toString()}`);
+    const existing=(resp.items||[])[0]||null;
+    setConvocationView('PV');
+    if(existing){
+      editorConvocationView='PV';
+      if(existing.owned)openEditor(existing);
+      else openDetails(existing);
+      return;
+    }
+    if(!convocation.owned){await professionalAlert('Procès-verbal','Aucun procès-verbal n’est encore enregistré pour cette convocation.');return}
+    pendingSmartSourceRecord=convocation;
+    openEditor(null,null,null,convocation);
+  }catch(e){await professionalAlert('Procès-verbal',e.message||'Impossible d’ouvrir le procès-verbal lié à cette convocation.')}
+}
+
+
+function setupFireModule(){
+  document.getElementById('pageTitle').textContent=config.title;
+  document.getElementById('pageSubtitle').textContent=config.subtitle;
+  bindCommonModuleControls();
+  document.getElementById('printListBtn')?.addEventListener('click',e=>withButtonLock(e.currentTarget,()=>printCurrentList(),'Préparation…'));
+  document.querySelectorAll('[data-fire-tab]').forEach(btn=>btn.addEventListener('click',()=>setFireView(btn.dataset.fireTab)));
+  bindFireFilters();
+  const requested=String(new URLSearchParams(location.search).get('view')||'').toUpperCase();
+  setFireView(['CREE','REDYNAMISE','RENOUVELE','DEGATS'].includes(requested)?requested:'CREE');
+}
+function setFireView(type){
+  if(!['CREE','REDYNAMISE','RENOUVELE','DEGATS'].includes(type))type='CREE';
+  currentFireType=type;editorFireType=type;currentPage=1;
+  document.querySelectorAll('[data-fire-tab]').forEach(btn=>{const on=btn.dataset.fireTab===type;btn.classList.toggle('is-active',on);btn.setAttribute('aria-selected',on?'true':'false')});
+  const cfg=fireConfig(type)||{};
+  document.getElementById('fireViewTitle').textContent=cfg.label||'Feux de brousse';
+  document.getElementById('fireViewSubtitle').textContent=type==='DEGATS'?'Enregistrement, localisation et suivi des dégâts causés par les feux de brousse.':'Gestion des comités villageois de lutte contre les feux de brousse.';
+  const addBtn=document.getElementById('addBtn');if(addBtn){addBtn.textContent=cfg.addLabel||'Ajouter';addBtn.onclick=()=>openEditor(null,null,null,null,null,type)}
+  updateFireTableHead(type);updateFireFilterVisibility(type);
+  const url=new URL(location.href);url.searchParams.set('view',type);history.replaceState(null,'',url.pathname+url.search);loadRecords();
+}
+function updateFireTableHead(type){
+  const head=document.getElementById('fireTableHead');if(!head)return;
+  const cols=type==='DEGATS'?['Date constat','Sous-préfecture','Village','Nature des dégâts','Superficie détruite (ha)','Personnes impactées','Actions']:['Département','Sous-préfecture','Village','Acte de création','Président du comité','Contact','Actions'];
+  head.innerHTML='<tr>'+cols.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>';
+}
+function bindFireFilters(){
+  const ids=['fireDepartmentFilter','fireSousPrefFilter','fireVillageFilter','fireDateFilter','fireNatureFilter'];
+  ids.forEach(id=>{const el=document.getElementById(id);if(!el)return;const ev=el.type==='text'?'input':'change';el.addEventListener(ev,()=>{clearTimeout(window.__fireFilterTimer);window.__fireFilterTimer=setTimeout(()=>{currentPage=1;loadRecords()},220)})});
+  document.getElementById('fireResetFilters')?.addEventListener('click',()=>{ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});currentSearch='';const q=document.getElementById('searchInput');if(q)q.value='';currentPage=1;loadRecords()});
+}
+function updateFireFilterVisibility(type){
+  const set=(id,on)=>{const el=document.getElementById(id);if(el){el.hidden=!on;if(!on)el.value=''}};
+  set('fireDepartmentFilter',type!=='DEGATS');set('fireSousPrefFilter',true);set('fireVillageFilter',true);set('fireDateFilter',type==='DEGATS');set('fireNatureFilter',type==='DEGATS');
+}
+
+function setupFaunaModule(){
+  document.getElementById('pageTitle').textContent=config.title;document.getElementById('pageSubtitle').textContent=config.subtitle;bindCommonModuleControls();
+  document.getElementById('printListBtn')?.addEventListener('click',e=>withButtonLock(e.currentTarget,()=>printCurrentList(),'Préparation…'));
+  document.querySelectorAll('[data-fauna-tab]').forEach(btn=>btn.addEventListener('click',()=>setFaunaView(btn.dataset.faunaTab)));bindFaunaFilters();
+  const requested=String(new URLSearchParams(location.search).get('view')||'').toUpperCase();setFaunaView(['OBSERVATIONS','CONFLITS'].includes(requested)?requested:'OBSERVATIONS');
+}
+function setFaunaView(type){
+  if(!['OBSERVATIONS','CONFLITS'].includes(type))type='OBSERVATIONS';currentFaunaType=type;editorFaunaType=type;currentPage=1;
+  document.querySelectorAll('[data-fauna-tab]').forEach(btn=>{const on=btn.dataset.faunaTab===type;btn.classList.toggle('is-active',on);btn.setAttribute('aria-selected',on?'true':'false')});
+  const cfg=faunaConfig(type)||{};document.getElementById('faunaViewTitle').textContent=cfg.label||'Faune';document.getElementById('faunaViewSubtitle').textContent=type==='OBSERVATIONS'?'Suivi des espèces animales rencontrées et de leurs zones d’observation.':'Enregistrement et suivi des conflits homme-faune et des actions menées.';
+  const addBtn=document.getElementById('addBtn');if(addBtn){addBtn.textContent=cfg.addLabel||'Ajouter';addBtn.onclick=()=>openEditor(null,null,null,null,null,null,type)}
+  updateFaunaTableHead(type);updateFaunaFilterVisibility(type);const url=new URL(location.href);url.searchParams.set('view',type);history.replaceState(null,'',url.pathname+url.search);loadRecords();
+}
+function updateFaunaTableHead(type){const head=document.getElementById('faunaTableHead');if(!head)return;const cols=type==='OBSERVATIONS'?['Date d’observation','Espèces animales','Zone d’observation','Commentaires utiles','Actions']:['S/Préfecture','Village','Type de conflit','Dégâts recensés','Personnes impactées H/F','Action menée','Actions'];head.innerHTML='<tr>'+cols.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>'}
+function bindFaunaFilters(){const ids=['faunaDateFilter','faunaSpeciesFilter','faunaZoneFilter','faunaSousPrefFilter','faunaVillageFilter','faunaConflictFilter'];ids.forEach(id=>{const el=document.getElementById(id);if(!el)return;const ev=el.type==='text'?'input':'change';el.addEventListener(ev,()=>{clearTimeout(window.__faunaFilterTimer);window.__faunaFilterTimer=setTimeout(()=>{currentPage=1;loadRecords()},220)})});document.getElementById('faunaResetFilters')?.addEventListener('click',()=>{ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});currentSearch='';const q=document.getElementById('searchInput');if(q)q.value='';currentPage=1;loadRecords()})}
+function updateFaunaFilterVisibility(type){const set=(id,on)=>{const el=document.getElementById(id);if(el){el.hidden=!on;if(!on)el.value=''}};set('faunaDateFilter',type==='OBSERVATIONS');set('faunaSpeciesFilter',type==='OBSERVATIONS');set('faunaZoneFilter',type==='OBSERVATIONS');set('faunaSousPrefFilter',type==='CONFLITS');set('faunaVillageFilter',type==='CONFLITS');set('faunaConflictFilter',type==='CONFLITS')}
+
+function setupMissionsModule(){
+  document.getElementById('pageTitle').textContent=config.title;document.getElementById('pageSubtitle').textContent=config.subtitle;bindCommonModuleControls();
+  document.getElementById('printListBtn')?.addEventListener('click',e=>withButtonLock(e.currentTarget,()=>printCurrentList(),'Préparation…'));
+  document.querySelectorAll('[data-mission-tab]').forEach(btn=>btn.addEventListener('click',e=>{if(btn.tagName==='A')e.preventDefault();setMissionView(String(btn.dataset.missionTab||'').toUpperCase())}));
+  const requested=String(new URLSearchParams(location.search).get('view')||document.body.dataset.defaultMissionView||'').toUpperCase();setMissionView(['ORDRE_MISSION','REPRESSION'].includes(requested)?requested:'ORDRE_MISSION');
+}
+function setMissionView(type){
+  if(!['ORDRE_MISSION','REPRESSION'].includes(type))type='ORDRE_MISSION';currentMissionType=type;editorMissionType=type;currentPage=1;
+  document.querySelectorAll('[data-mission-tab]').forEach(btn=>{const on=btn.dataset.missionTab===type;btn.classList.toggle('is-active',on);btn.setAttribute('aria-selected',on?'true':'false')});
+  const cfg=missionConfig(type)||{};document.getElementById('missionViewTitle').textContent=cfg.label||'Missions';document.getElementById('missionViewSubtitle').textContent=type==='ORDRE_MISSION'?'Édition, suivi et impression des ordres de mission avec procès-verbal lié.':'Enregistrement des infractions constatées, saisies associées et procès-verbaux.';
+  const addBtn=document.getElementById('addBtn');if(addBtn){addBtn.textContent=cfg.addLabel||'Ajouter';addBtn.onclick=()=>openEditor(null,null,null,null,null,null,null,type)}
+  updateMissionTableHead(type);const url=new URL(location.href);url.searchParams.set('view',type);history.replaceState(null,'',url.pathname+url.search);loadRecords();
+}
+function updateMissionTableHead(type){const head=document.getElementById('missionTableHead');if(!head)return;const cols=type==='ORDRE_MISSION'?['N° mission','Chef de mission','Agents de la mission','Objectif','Départ','Retour','Actions']:['Objet de l’infraction','Personne mise en cause','Contact','Saisies','Observations','Actions'];head.innerHTML='<tr>'+cols.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>'}
+
+function setEditorFieldValue(key,value){const el=document.querySelector(`#dynamicFields [data-key="${key}"]`);if(el&&value!==undefined&&value!==null)el.value=String(value)}
+async function manageOffensePv(offense){
+  try{
+    const q=new URLSearchParams({module:'offense_pv',page:'1',limit:'10',search:'',sourceOffenseId:String(offense.id)});
+    const resp=await api(`/api/load?${q.toString()}`);const existing=(resp.items||[])[0]||null;
+    if(existing){editorMissionType='PV_INFRACTION';editorOffensePvRecord=existing;if(existing.owned)openEditor(existing,null,null,null,null,null,null,'PV_INFRACTION');else openDetails(existing);return}
+    if(!offense.owned){await professionalAlert('Procès-verbal','Aucun P-V n’est encore enregistré pour cette affaire.');return}
+    editorOffensePvRecord=null;openEditor(null,null,null,null,null,null,null,'PV_INFRACTION');
+    const d=offense.data||{};setEditorFieldValue('_source_offense_id',offense.id);document.getElementById('recordTitle').value=d.personne_mise_cause||offense.title||'Infraction';
+    const sourceMap={
+      chef_mission:d.chef_mission||'',agents_arrestation:d.agents_arrestation||'',date_controle:d.date_controle,heure_controle:d.heure_controle,lieu_controle:d.lieu_controle,arrestation:d.arrestation,
+      domicile_mis_cause:d.domicile_mis_cause,contact_mis_cause:d.contact_mis_cause,type_piece_identite:d.type_piece_identite||String(d.type_numero_piece||'').split(/[-–—]/)[0]?.trim(),
+      numero_piece_identite:d.numero_piece_identite||String(d.type_numero_piece||'').split(/[-–—]/).slice(1).join('-').trim(),objet_infraction:d.objet_infraction,
+      objets_saisis:d.objets_saisis,produits_saisis:d.produits_saisis,materiels_saisis:d.materiels_saisis,sort_biens:d.sort_biens,lieu_conservation:d.lieu_conservation,
+      expose_faits:d.expose_faits,constatations:d.constatations,declaration_mis_cause:d.declaration_mis_cause,observations_pv:d.observations,
+      resume_infraction:d.resume_infraction||d.objet_infraction,mesures_prises:d.mesures_prises,autorite_transmission:d.autorite_transmission
+    };
+    Object.entries(sourceMap).forEach(([k,v])=>setEditorFieldValue(k,v));
+  }catch(e){await professionalAlert('Procès-verbal',e.message||'Impossible d’ouvrir le P-V lié à cette affaire.')}
+}
+
+
+async function manageOrderMissionPv(orderMission){
+  try{
+    const q=new URLSearchParams({module:'missions',page:'1',limit:'10',search:'',missionType:'PV_ORDRE_MISSION',sourceOrderMissionId:String(orderMission.id)});
+    const resp=await api(`/api/load?${q.toString()}`);const existing=(resp.items||[])[0]||null;
+    if(existing){const sd=orderMission.data||{};existing.data={...(existing.data||{}),_source_order_mission_id:orderMission.id,ordre_reference:sd.numero_mission||orderMission.reference||'',chef_mission:sd.chef_mission||'',_chef_mission_grade:sd._chef_mission_grade||'',_chef_mission_fonction:sd._chef_mission_fonction||'',agents_mission:[1,2,3,4].map(i=>{const n=sd[`agent_mission_${i}`];if(!n)return '';return [n,sd[`_agent_mission_${i}_grade`],sd[`_agent_mission_${i}_fonction`]].filter(Boolean).join(' – ')}).filter(Boolean).join('\n'),residence_affectation:sd.residence_affectation||'',lieu_mission:sd.lieu_mission||'',objectif_mission:sd.objectif_mission||'',date_depart:sd.date_depart||'',date_retour:sd.date_retour||'',moyen_deplacement_1:sd.moyen_deplacement_1||'',immatriculation_1:sd.immatriculation_1||'',moyen_deplacement_2:sd.moyen_deplacement_2||'',immatriculation_2:sd.immatriculation_2||'',moyens_deplacement:[[sd.moyen_deplacement_1,sd.immatriculation_1],[sd.moyen_deplacement_2,sd.immatriculation_2]].filter(x=>x.some(Boolean)).map(x=>x.filter(Boolean).join(' — ')).join('\n'),_chef_mission_matricule:sd._chef_mission_matricule||'',_chef_mission_corps:sd._chef_mission_corps||'',agent_mission_1:sd.agent_mission_1||'',_agent_mission_1_matricule:sd._agent_mission_1_matricule||'',_agent_mission_1_corps:sd._agent_mission_1_corps||'',_agent_mission_1_fonction:sd._agent_mission_1_fonction||'',agent_mission_2:sd.agent_mission_2||'',_agent_mission_2_matricule:sd._agent_mission_2_matricule||'',_agent_mission_2_corps:sd._agent_mission_2_corps||'',_agent_mission_2_fonction:sd._agent_mission_2_fonction||'',agent_mission_3:sd.agent_mission_3||'',_agent_mission_3_matricule:sd._agent_mission_3_matricule||'',_agent_mission_3_corps:sd._agent_mission_3_corps||'',_agent_mission_3_fonction:sd._agent_mission_3_fonction||'',agent_mission_4:sd.agent_mission_4||'',_agent_mission_4_matricule:sd._agent_mission_4_matricule||'',_agent_mission_4_corps:sd._agent_mission_4_corps||'',_agent_mission_4_fonction:sd._agent_mission_4_fonction||''};editorMissionType='PV_ORDRE_MISSION';editorOrderMissionPvRecord=existing;if(existing.owned)openEditor(existing,null,null,null,null,null,null,'PV_ORDRE_MISSION');else openDetails(existing);return}
+    if(!orderMission.owned){await professionalAlert('Procès-verbal','Aucun P-V n’est encore enregistré pour cet ordre de mission.');return}
+    editorOrderMissionPvRecord=null;openEditor(null,null,null,null,null,null,null,'PV_ORDRE_MISSION');
+    const d=orderMission.data||{};setEditorFieldValue('_source_order_mission_id',orderMission.id);
+    const team=[d.agent_mission_1,d.agent_mission_2,d.agent_mission_3,d.agent_mission_4].filter(Boolean).join('\n');
+    const means=[[d.moyen_deplacement_1,d.immatriculation_1],[d.moyen_deplacement_2,d.immatriculation_2]].filter(x=>x.some(Boolean)).map(([m,i])=>[m,i].filter(Boolean).join(' — ')).join('\n');
+    const auto={ordre_reference:d.numero_mission||orderMission.reference||'',chef_mission:d.chef_mission||'',agents_mission:team,residence_affectation:d.residence_affectation||'',lieu_mission:d.lieu_mission||'',objectif_mission:d.objectif_mission||'',date_depart:d.date_depart||'',date_retour:d.date_retour||'',moyen_deplacement_1:d.moyen_deplacement_1||'',immatriculation_1:d.immatriculation_1||'',moyen_deplacement_2:d.moyen_deplacement_2||'',immatriculation_2:d.immatriculation_2||'',moyens_deplacement:means,_chef_mission_matricule:d._chef_mission_matricule||'',_chef_mission_corps:d._chef_mission_corps||'',agent_mission_1:d.agent_mission_1||'',_agent_mission_1_matricule:d._agent_mission_1_matricule||'',_agent_mission_1_corps:d._agent_mission_1_corps||'',_agent_mission_1_fonction:d._agent_mission_1_fonction||'',agent_mission_2:d.agent_mission_2||'',_agent_mission_2_matricule:d._agent_mission_2_matricule||'',_agent_mission_2_corps:d._agent_mission_2_corps||'',_agent_mission_2_fonction:d._agent_mission_2_fonction||'',agent_mission_3:d.agent_mission_3||'',_agent_mission_3_matricule:d._agent_mission_3_matricule||'',_agent_mission_3_corps:d._agent_mission_3_corps||'',_agent_mission_3_fonction:d._agent_mission_3_fonction||'',agent_mission_4:d.agent_mission_4||'',_agent_mission_4_matricule:d._agent_mission_4_matricule||'',_agent_mission_4_corps:d._agent_mission_4_corps||'',_agent_mission_4_fonction:d._agent_mission_4_fonction||''};
+    Object.entries(auto).forEach(([k,v])=>setEditorFieldValue(k,v));
+    const lieu=document.querySelector('#dynamicFields [data-key="lieu_pv"]');if(lieu&&!lieu.value)lieu.value=d.lieu_mission||d.residence_affectation||'';
+  }catch(e){await professionalAlert('Procès-verbal',e.message||'Impossible d’ouvrir le P-V lié à cet ordre de mission.')}
+}
+
+/* V1.59 — Rapports et bilans consolidés.
+   La page agrège les registres imprimables de votre service
+   et compose un seul document pour la période sélectionnée. */
+let reportCache=new Map(),reportCurrentSections=[],reportLoadingPromise=null;
+const reportCol=(label,get)=>({label,get});
+const reportData=r=>r?.data||{};
+const reportText=v=>{const x=String(v??'').trim();return x||'—'};
+const reportDateValue=v=>v?fmtDate(String(v).slice(0,10)):'—';
+const reportSum=(...vals)=>vals.reduce((a,v)=>a+(Number(v)||0),0);
+function reportDocType(r){const t=String(r?.data?._document_type||'').toUpperCase();if(t)return t;const x=String(r?.data?.type||'').toUpperCase();if(x.includes('CESSATION'))return 'CESSATION_SERVICE';if(x.includes('REPRISE'))return 'REPRISE_SERVICE';return ''}
+function reportStageType(r){return String(r?.data?._stage_type||'FIN_STAGE').toUpperCase()}
+function reportForestType(r){const t=String(r?.data?._forest_type||'RECHERCHE_PARCELLAIRE').toUpperCase();return t==='PEPINIERE'?'PEPINIERE_PRODUCTION':t}
+function reportWoodType(r){return String(r?.data?._wood_type||'UNITES_BOIS').toUpperCase()}
+function reportFireType(r){return String(r?.data?._fire_type||'DEGATS').toUpperCase()}
+function reportFaunaType(r){return String(r?.data?._fauna_type||'OBSERVATIONS').toUpperCase()}
+function reportMissionType(r){return String(r?.data?._mission_type||r?.data?._offense_type||'ORDRE_MISSION').toUpperCase()}
+function reportRecordDate(r){
+  const d=reportData(r);
+  const keys=['date_activite','date_observation','date_constat','date_rencontre','date_presentation','date_debut','date_fin','date_depart','date_retour','date_cessation','date_reprise','date_prise_service','date_demande','date_delivrance','note_service_date','lettre_mise_stage_date','decision_date','date_naissance'];
+  for(const k of keys){const v=String(d[k]||'').slice(0,10);if(/^\d{4}-\d{2}-\d{2}$/.test(v))return v}
+  const v=String(r?.event_date||r?.created_at||'').slice(0,10);return /^\d{4}-\d{2}-\d{2}$/.test(v)?v:'';
+}
+function reportCoordinate(d){return [d.coord_x,d.coord_y].filter(v=>String(v??'').trim()).join(' / ')||'—'}
+function reportPermit(d){return [d.numero_permis,d.date_delivrance?reportDateValue(d.date_delivrance):''].filter(Boolean).join(' / ')||'—'}
+const REPORT_SECTIONS=[
+  {module:'personnel',label:'Situation du personnel',snapshot:true,columns:[reportCol('N°',(r,i)=>i+1),reportCol('Référence administrative',r=>reportData(r).reference_administrative||r.reference),reportCol('Nom et prénoms',r=>r.title),reportCol('Matricule',r=>reportData(r).matricule),reportCol('Emploi',r=>reportData(r).emploi),reportCol('Fonction',r=>reportData(r).fonction),reportCol('Catégorie',r=>reportData(r).categorie),reportCol('Grade',r=>reportData(r).grade),reportCol('Téléphone',r=>reportData(r).telephone)]},
+  {module:'documents',label:'Cessations de service / mutation',match:r=>reportDocType(r)==='CESSATION_SERVICE',columns:[reportCol('Date',r=>reportDateValue(reportData(r).date_cessation||r.event_date)),reportCol('Agent',r=>r.title),reportCol('Matricule',r=>reportData(r).matricule),reportCol('Emploi',r=>reportData(r).emploi),reportCol('Nouvelle affectation',r=>reportData(r).nouvelle_affectation)]},
+  {module:'documents',label:'Cessations de service / congé',match:r=>reportDocType(r)==='CESSATION_CONGE',columns:[reportCol('Date',r=>reportDateValue(reportData(r).date_cessation||r.event_date)),reportCol('Agent',r=>r.title),reportCol('Matricule',r=>reportData(r).matricule),reportCol('Nature du congé',r=>reportData(r).type_conge),reportCol('Reprise prévue',r=>reportDateValue(reportData(r).date_reprise_prevue))]},
+  {module:'documents',label:'Reprises de service / congé',match:r=>reportDocType(r)==='REPRISE_SERVICE',columns:[reportCol('Date',r=>reportDateValue(reportData(r).date_reprise||r.event_date)),reportCol('Agent',r=>r.title),reportCol('Matricule',r=>reportData(r).matricule),reportCol('Nature',r=>reportData(r).type_conge),reportCol('Service de reprise',r=>reportData(r).service_reprise)]},
+  {module:'documents',label:'Prises de service / mutation',match:r=>reportDocType(r)==='PRISE_SERVICE_MUTATION',columns:[reportCol('Date',r=>reportDateValue(reportData(r).date_prise_service||r.event_date)),reportCol('Agent',r=>r.title),reportCol('Matricule',r=>reportData(r).matricule),reportCol('Ancien service',r=>reportData(r).ancien_service),reportCol('Nouvelle affectation',r=>reportData(r).nouvelle_affectation)]},
+  {module:'documents',label:'Demandes d’explication',match:r=>reportDocType(r)==='DEMANDE_EXPLICATION',columns:[reportCol('Date',r=>reportDateValue(r.event_date)),reportCol('Agent',r=>r.title),reportCol('Matricule',r=>reportData(r).matricule),reportCol('Emploi / qualité',r=>reportData(r).emploi_qualite),reportCol('Service',r=>reportData(r).service_affectation)]},
+  {module:'absences',label:'Autorisations d’absence',columns:[reportCol('Demande',r=>reportDateValue(reportData(r).date_demande||r.event_date)),reportCol('Agent',r=>r.title),reportCol('Matricule',r=>reportData(r).matricule),reportCol('Début',r=>reportDateValue(reportData(r).date_debut)),reportCol('Fin',r=>reportDateValue(reportData(r).date_fin)),reportCol('Jours',r=>reportData(r).nombre_jours)]},
+  {module:'stages',label:'Mises en stage',match:r=>reportStageType(r)==='MISE_STAGE',columns:[reportCol('Stagiaire',r=>r.title),reportCol('Matricule',r=>reportData(r).matricule_stagiaire),reportCol('Début',r=>reportDateValue(reportData(r).date_debut)),reportCol('Fin',r=>reportDateValue(reportData(r).date_fin)),reportCol('Thème',r=>reportData(r).theme)]},
+  {module:'stages',label:'Fins de stage',match:r=>reportStageType(r)==='FIN_STAGE',columns:[reportCol('Stagiaire',r=>r.title),reportCol('Matricule',r=>reportData(r).matricule_stagiaire),reportCol('Début',r=>reportDateValue(reportData(r).date_debut)),reportCol('Fin',r=>reportDateValue(reportData(r).date_fin)),reportCol('Niveau',r=>reportData(r).niveau_recrutement)]},
+  {module:'convocations',label:'Convocations administratives',columns:[reportCol('Date',r=>reportDateValue(reportData(r).date_presentation||r.event_date)),reportCol('Personne convoquée',r=>r.title),reportCol('Profession',r=>reportData(r).profession),reportCol('Domicile',r=>reportData(r).domicile),reportCol('Objet',r=>reportData(r).objet_convocation)]},
+  {module:'convocation_pv',label:'Procès-verbaux de rencontres',columns:[reportCol('Date',r=>reportDateValue(reportData(r).date_rencontre||r.event_date)),reportCol('Personne concernée',r=>r.title),reportCol('Lieu',r=>reportData(r).lieu_rencontre),reportCol('Objet',r=>reportData(r).objet_rencontre),reportCol('Décisions',r=>reportData(r).conclusions_decisions)]},
+  {module:'activites-minef',label:'Activités du MINEF et activités externes',columns:[reportCol('Date',r=>reportDateValue(reportData(r).date_activite||r.event_date)),reportCol('Type',r=>reportData(r).type_activite),reportCol('Cadre MINEF',r=>reportData(r).categorie_minef),reportCol('Intitulé',r=>reportData(r).intitule_activite||r.title),reportCol('Organisateur',r=>reportData(r).organisateur),reportCol('Commentaire',r=>reportData(r).commentaire)]},
+  {module:'missions',label:'Ordres de mission',match:r=>reportMissionType(r)==='ORDRE_MISSION',columns:[reportCol('N° mission',r=>reportData(r).numero_mission||r.reference),reportCol('Chef de mission',r=>reportData(r).chef_mission),reportCol('Objectif',r=>reportData(r).objectif_mission),reportCol('Départ',r=>reportDateValue(reportData(r).date_depart)),reportCol('Retour',r=>reportDateValue(reportData(r).date_retour)),reportCol('Résidence',r=>reportData(r).residence_affectation)]},
+  {module:'missions',label:'Procès-verbaux de mission',match:r=>reportMissionType(r)==='PV_ORDRE_MISSION',columns:[reportCol('N° mission',r=>reportData(r).ordre_reference),reportCol('Chef de mission',r=>reportData(r).chef_mission),reportCol('Lieu',r=>reportData(r).lieu_pv),reportCol('Départ',r=>reportDateValue(reportData(r).date_depart)),reportCol('Retour',r=>reportDateValue(reportData(r).date_retour)),reportCol('Conclusion',r=>reportData(r).conclusion)]},
+  {module:'missions',label:'Répression des infractions',match:r=>reportMissionType(r)==='REPRESSION',columns:[reportCol('Date',r=>reportDateValue(r.event_date)),reportCol('Objet',r=>reportData(r).objet_infraction||r.title),reportCol('Personne mise en cause',r=>reportData(r).personne_mise_cause||reportData(r).personne),reportCol('Contact',r=>reportData(r).contact_mis_cause),reportCol('Objets saisis',r=>reportData(r).objets_saisis),reportCol('Observations',r=>reportData(r).observations)]},
+  {module:'offense_pv',label:'Procès-verbaux d’infraction',columns:[reportCol('Date',r=>reportDateValue(r.event_date)),reportCol('Affaire',r=>r.title),reportCol('Objet',r=>reportData(r).objet_infraction),reportCol('Chef de mission',r=>reportData(r).chef_mission),reportCol('Agents',r=>reportData(r).agents_arrestation)]},
+  {module:'exploitation-forestiere',label:'Recherche parcellaire',match:r=>reportForestType(r)==='RECHERCHE_PARCELLAIRE',columns:[reportCol('Date',r=>reportDateValue(reportData(r).date_activite||r.event_date)),reportCol('Sous-préfecture',r=>reportData(r).sous_prefecture),reportCol('Localité',r=>reportData(r).localite),reportCol('Essence',r=>reportData(r).essence),reportCol('Superficie (ha)',r=>reportData(r).superficie_parcelle),reportCol('Coordonnées',r=>reportCoordinate(reportData(r)))]},
+  {module:'exploitation-forestiere',label:'Sites de pépinière et responsables',match:r=>reportForestType(r)==='PEPINIERE_SITE',columns:[reportCol('Sous-préfecture',r=>reportData(r).sous_prefecture),reportCol('Localité',r=>reportData(r).localite),reportCol('Coordonnées',r=>reportCoordinate(reportData(r))),reportCol('Responsable',r=>reportData(r).responsable_nom),reportCol('Contacts',r=>reportData(r).responsable_contact)]},
+  {module:'exploitation-forestiere',label:'Production de pépinières',match:r=>reportForestType(r)==='PEPINIERE_PRODUCTION',columns:[reportCol('Sous-préfecture',r=>reportData(r).sous_prefecture),reportCol('Localité',r=>reportData(r).localite||reportData(r).localisation),reportCol('Coordonnées',r=>reportCoordinate(reportData(r))),reportCol('Essence',r=>reportData(r).essence),reportCol('Plants produits',r=>reportData(r).nbr_plants_produits)]},
+  {module:'exploitation-forestiere',label:'Plantations forestières créées',match:r=>reportForestType(r)==='PLANTATION_CREEE',columns:[reportCol('Date',r=>reportDateValue(reportData(r).date_activite||r.event_date)),reportCol('Localité',r=>reportData(r).localite),reportCol('Bénéficiaire',r=>reportData(r).beneficiaire),reportCol('Superficie',r=>reportData(r).superficie),reportCol('Essence',r=>reportData(r).essence),reportCol('Total plants',r=>reportData(r).nombre_total_plants)]},
+  {module:'exploitation-forestiere',label:'Reboisements suivis',match:r=>reportForestType(r)==='REBOISEMENT',columns:[reportCol('Date',r=>reportDateValue(reportData(r).date_activite||r.event_date)),reportCol('Type',r=>reportData(r).type_reboisement),reportCol('Localité',r=>reportData(r).localite),reportCol('Bénéficiaire',r=>reportData(r).beneficiaire),reportCol('Superficie',r=>reportData(r).superficie),reportCol('Essence',r=>reportData(r).essence),reportCol('Plants',r=>reportData(r).nombre_total_plants),reportCol('Entreprise',r=>reportData(r).entreprise_responsable)]},
+  {module:'transformation-bois',label:'Exploitants de produits secondaires',match:r=>reportWoodType(r)==='EXPLOITANTS_SECONDAIRES',columns:[reportCol('Opérateur',r=>reportData(r).nom_operateur||r.title),reportCol('Contact',r=>reportData(r).contact),reportCol('Produit',r=>reportData(r).nature_produit),reportCol('N° permis',r=>reportData(r).numero_permis),reportCol('Localité',r=>reportData(r).localite),reportCol('Service de suivi',r=>reportData(r).service_suivi)]},
+  {module:'transformation-bois',label:'Quantités de produits secondaires exploités',match:r=>reportWoodType(r)==='PRODUITS_QTE',columns:[reportCol('Statut opérateur',r=>reportData(r).statut_operateur),reportCol('Charbon (sacs)',r=>reportData(r).charbon_qte_sacs),reportCol('Bois de feu (T)',r=>reportData(r).bois_feu_qte_t),reportCol('Mortiers (T)',r=>reportData(r).mortiers_qte_t),reportCol('Kinkeliba (T)',r=>reportData(r).kinkeliba_qte_t),reportCol('Karité (T)',r=>reportData(r).karite_qte_t)]},
+  {module:'transformation-bois',label:'Unités de transformation, déligneuses, menuiseries et dépôts-ventes',match:r=>reportWoodType(r)==='UNITES_BOIS',columns:[reportCol('Type',r=>reportData(r).type_exercant),reportCol('Localité',r=>reportData(r).localite),reportCol('Usine / opérateur',r=>reportData(r).nom_usine||reportData(r).nom_operateur||r.title),reportCol('Activité / service',r=>reportData(r).activites_principales||reportData(r).service_rattachement),reportCol('Contact',r=>reportData(r).contact_operateur),reportCol('Permis / date',r=>reportPermit(reportData(r)))]},
+  {module:'sensibilisations',label:'Actions de sensibilisation',columns:[reportCol('Date',r=>reportDateValue(reportData(r).date_activite||r.event_date)),reportCol('Type',r=>reportData(r).type_sensibilisation||reportData(r).theme),reportCol('Lieu',r=>reportData(r).lieu),reportCol('Cible',r=>reportData(r).cible),reportCol('H/F/Total',r=>`${Number(reportData(r).hommes||0)}/${Number(reportData(r).femmes||0)}/${reportSum(reportData(r).hommes,reportData(r).femmes)}`),reportCol('Agent',r=>reportData(r).agent_charge)]},
+  {module:'ressources-naturelles',label:'Ressources naturelles',columns:[reportCol('Date',r=>reportDateValue(r.event_date)),reportCol('Intitulé',r=>r.title),reportCol('Type',r=>reportData(r).type),reportCol('Localité',r=>reportData(r).localite),reportCol('Observation',r=>reportData(r).observations||reportData(r).description)]},
+  {module:'feux-brousse',label:'Comités de lutte contre les feux de brousse créés',match:r=>reportFireType(r)==='CREE',columns:[reportCol('Département',r=>reportData(r).departement),reportCol('Sous-préfecture',r=>reportData(r).sous_prefecture),reportCol('Village',r=>reportData(r).village),reportCol('N° acte',r=>reportData(r).acte_creation),reportCol('Président',r=>reportData(r).president_nom),reportCol('Contact',r=>reportData(r).president_contact)]},
+  {module:'feux-brousse',label:'Comités redynamisés',match:r=>reportFireType(r)==='REDYNAMISE',columns:[reportCol('Département',r=>reportData(r).departement),reportCol('Sous-préfecture',r=>reportData(r).sous_prefecture),reportCol('Village',r=>reportData(r).village),reportCol('N° acte',r=>reportData(r).acte_creation),reportCol('Président',r=>reportData(r).president_nom),reportCol('Contact',r=>reportData(r).president_contact)]},
+  {module:'feux-brousse',label:'Comités renouvelés',match:r=>reportFireType(r)==='RENOUVELE',columns:[reportCol('Département',r=>reportData(r).departement),reportCol('Sous-préfecture',r=>reportData(r).sous_prefecture),reportCol('Village',r=>reportData(r).village),reportCol('N° acte',r=>reportData(r).acte_creation),reportCol('Président',r=>reportData(r).president_nom),reportCol('Contact',r=>reportData(r).president_contact)]},
+  {module:'feux-brousse',label:'Dégâts des feux de brousse',match:r=>reportFireType(r)==='DEGATS',columns:[reportCol('Date',r=>reportDateValue(reportData(r).date_constat||r.event_date)),reportCol('Sous-préfecture',r=>reportData(r).sous_prefecture),reportCol('Village',r=>reportData(r).village),reportCol('Nature des dégâts',r=>reportData(r).nature_degats),reportCol('Superficie (ha)',r=>reportData(r).superficie_detruite),reportCol('Personnes impactées',r=>reportData(r).personnes_impactees)]},
+  {module:'faune',label:'Animaux rencontrés',match:r=>reportFaunaType(r)==='OBSERVATIONS',columns:[reportCol('Date',r=>reportDateValue(reportData(r).date_observation||r.event_date)),reportCol('Espèces',r=>reportData(r).especes_animales),reportCol('Zone',r=>reportData(r).zone_observation),reportCol('Commentaires',r=>reportData(r).commentaires_utiles)]},
+  {module:'faune',label:'Gestion des conflits homme-faune',match:r=>reportFaunaType(r)==='CONFLITS',columns:[reportCol('Sous-préfecture',r=>reportData(r).sous_prefecture),reportCol('Village',r=>reportData(r).village),reportCol('Type de conflit',r=>reportData(r).type_conflit),reportCol('Animaux',r=>reportData(r).nombre_animaux),reportCol('Personnes H/F',r=>`${Number(reportData(r).hommes_impactes||0)}/${Number(reportData(r).femmes_impactees||0)}`),reportCol('Action menée',r=>reportData(r).action_menee)]},
+  {module:'formations',label:'Formations / renforcement des capacités',columns:[reportCol('Date',r=>reportDateValue(reportData(r).date_activite||r.event_date)),reportCol('Thème',r=>String(reportData(r).theme||'').toLowerCase().startsWith('autres')?(reportData(r).theme_autre||reportData(r).theme):reportData(r).theme),reportCol('Hommes',r=>reportData(r).hommes),reportCol('Femmes',r=>reportData(r).femmes),reportCol('Total',r=>reportSum(reportData(r).hommes,reportData(r).femmes)),reportCol('Observations',r=>reportData(r).observations)]},
+  {module:'materiel',label:'Situation du matériel et du patrimoine',snapshot:true,columns:[reportCol('Équipement',r=>r.title),reportCol('Catégorie',r=>reportData(r).categorie),reportCol('Marque',r=>reportData(r).marque),reportCol('N° / marquage',r=>reportData(r).numero),reportCol('État',r=>reportData(r).etat),reportCol('Responsable',r=>reportData(r).responsable)]},
+];
+let reportSelectedTables=new Set();
+function reportSectionKey(section,index){return String(index)}
+function reportAvailableSections(){return REPORT_SECTIONS.map((section,index)=>({section,index})).filter(({section})=>canViewPage(modulePermissionPage(section.module)))}
+function reportSelectedCount(){return reportSelectedTables.size}
+function reportRenderTableSelector(){
+  const box=document.getElementById('reportTableSelector');if(!box)return;
+  const available=reportAvailableSections();
+  box.innerHTML=available.map(({section,index})=>{const key=reportSectionKey(section,index);return `<label class="report-table-choice"><input type="checkbox" value="${key}" ${reportSelectedTables.has(key)?'checked':''}><span>${esc(section.label)}</span></label>`}).join('')||'<div class="notice">Aucune rubrique de rapport n’est autorisée pour ce compte.</div>';
+  box.querySelectorAll('input[type="checkbox"]').forEach(input=>input.addEventListener('change',()=>{if(input.checked)reportSelectedTables.add(input.value);else reportSelectedTables.delete(input.value);reportRenderPreview()}));
+}
+function reportSetAllTables(selected){reportSelectedTables=selected?new Set(reportAvailableSections().map(({section,index})=>reportSectionKey(section,index))):new Set();reportRenderTableSelector();reportRenderPreview()}
+function reportUniqueModules(){return [...new Set(reportAvailableSections().map(({section})=>section.module))]}
+async function reportLoadAllModule(module){
+  let page=1,totalPages=1;const items=[];
+  do{const q=new URLSearchParams({module,page:String(page),limit:'100',search:''});const d=await api(`/api/load?${q.toString()}`);items.push(...(d.items||[]));totalPages=Number(d.totalPages||1);page++}while(page<=totalPages&&page<=250);
+  return items;
+}
+function reportIso(y,m,d){return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
+function reportPeriodRange(){
+  const mode=document.getElementById('reportPeriodType')?.value||'MONTH';const now=new Date();const y=Number(document.getElementById('reportYear')?.value||now.getFullYear());let from='',to='',label='';
+  if(mode==='MONTH'){const m=Number(document.getElementById('reportMonth')?.value||now.getMonth()+1);from=reportIso(y,m,1);to=reportIso(y,m,new Date(y,m,0).getDate());label=new Date(y,m-1,1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}
+  else if(mode==='QUARTER'){const q=Number(document.getElementById('reportQuarter')?.value||1),m=(q-1)*3+1;from=reportIso(y,m,1);to=reportIso(y,m+2,new Date(y,m+2,0).getDate());label=`${q}${q===1?'er':'e'} trimestre ${y}`}
+  else if(mode==='SEMESTER'){const sem=Number(document.getElementById('reportSemester')?.value||1),m=sem===1?1:7;from=reportIso(y,m,1);to=reportIso(y,m+5,new Date(y,m+5,0).getDate());label=`${sem}${sem===1?'er':'e'} semestre ${y}`}
+  else if(mode==='YEAR'){from=reportIso(y,1,1);to=reportIso(y,12,31);label=`Année ${y}`}
+  else {from=document.getElementById('reportStartDate')?.value||'';to=document.getElementById('reportEndDate')?.value||'';label=from&&to?`Du ${reportDateValue(from)} au ${reportDateValue(to)}`:'Période personnalisée'}
+  return {mode,year:y,from,to,label};
+}
+function reportUpdatePeriodFields(){
+  const mode=document.getElementById('reportPeriodType')?.value||'MONTH';const show=(id,on)=>{const el=document.getElementById(id);if(el)el.hidden=!on};
+  show('reportYearField',mode!=='CUSTOM');show('reportMonthField',mode==='MONTH');show('reportQuarterField',mode==='QUARTER');show('reportSemesterField',mode==='SEMESTER');show('reportStartField',mode==='CUSTOM');show('reportEndField',mode==='CUSTOM');
+}
+function reportRecordInRange(record,section,range){if(section.snapshot)return true;const d=reportRecordDate(record);if(!range.from||!range.to)return true;if(!d)return false;return d>=range.from&&d<=range.to}
+function reportBuildSections(){
+  const range=reportPeriodRange();const includeEmpty=document.getElementById('reportIncludeEmpty')?.checked!==false;
+  const sections=reportAvailableSections().map(({section,index})=>{let rows=(reportCache.get(section.module)||[]).filter(r=>!section.match||section.match(r));rows=rows.filter(r=>reportRecordInRange(r,section,range));return {...section,_reportKey:reportSectionKey(section,index),rows}}).filter(s=>reportSelectedTables.has(s._reportKey)).filter(s=>includeEmpty||s.rows.length);
+  reportCurrentSections=sections;return {sections,range};
+}
+function reportCell(v){return esc(reportText(v))}
+function reportSectionTable(section,{print=false}={}){
+  const head=section.columns.map(c=>`<th>${esc(c.label)}</th>`).join('');
+  const rows=section.rows.map((r,i)=>`<tr>${section.columns.map(c=>`<td>${reportCell(c.get(r,i))}</td>`).join('')}</tr>`).join('');
+  const empty=section.rows.length?'':`<tr><td colspan="${section.columns.length}" class="report-empty-cell">Aucune donnée pour la période sélectionnée.</td></tr>`;
+  return `<section class="${print?'report-print-section':'report-preview-section'}"><div class="report-section-head"><h3>${esc(section.label)}</h3><span>${section.rows.length} enregistrement(s)</span></div><table class="report-table"><thead><tr>${head}</tr></thead><tbody>${rows||empty}</tbody></table></section>`;
+}
+function reportRenderPreview(){
+  const {sections,range}=reportBuildSections();const box=document.getElementById('reportSections');const loading=document.getElementById('reportLoading');if(!box)return;
+  const total=sections.reduce((n,s)=>n+s.rows.length,0),active=sections.filter(s=>s.rows.length).length;
+  document.getElementById('reportPeriodBadge').textContent=range.label;
+  document.getElementById('reportPreviewTitle').textContent=`Bilan — ${range.label}`;
+  document.getElementById('reportPreviewSubtitle').textContent=`${reportSelectedCount()} tableau(x) sélectionné(s) · ${active} rubrique(s) avec données · ${total} enregistrement(s) consolidé(s).`;
+  document.getElementById('reportMetrics').innerHTML=`<div class="card report-metric"><span>Période</span><strong>${esc(range.label)}</strong></div><div class="card report-metric"><span>Tableaux sélectionnés</span><strong>${reportSelectedCount()}</strong></div><div class="card report-metric"><span>Enregistrements</span><strong>${total}</strong></div>`;
+  box.innerHTML=sections.length?sections.map(s=>reportSectionTable(s)).join(''):'<div class="report-no-selection">Aucun tableau sélectionné. Cochez au moins une rubrique à intégrer au bilan.</div>';box.hidden=false;if(loading)loading.hidden=true;
+}
+async function reportLoadDataset(force=false){
+  if(reportLoadingPromise&&!force)return reportLoadingPromise;
+  if(force){reportCache=new Map();reportLoadingPromise=null}
+  const loading=document.getElementById('reportLoading');const box=document.getElementById('reportSections');if(loading){loading.hidden=false;loading.textContent='Chargement et consolidation des travaux du service…'}if(box)box.hidden=true;
+  reportLoadingPromise=(async()=>{const modules=reportUniqueModules();let done=0;await Promise.all(modules.map(async m=>{try{reportCache.set(m,await reportLoadAllModule(m))}catch(e){reportCache.set(m,[]);console.warn('Rapport module',m,e)}finally{done++;if(loading)loading.textContent=`Chargement des rubriques… ${done}/${modules.length}`}}));reportRenderPreview()})();
+  try{await reportLoadingPromise}finally{reportLoadingPromise=null}
+}
+function reportBindReactiveFilters(){
+  const ids=['reportPeriodType','reportYear','reportMonth','reportQuarter','reportSemester','reportStartDate','reportEndDate','reportIncludeEmpty'];
+  ids.forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{reportUpdatePeriodFields();clearTimeout(window.__reportFilterTimer);window.__reportFilterTimer=setTimeout(reportRenderPreview,80)}));
+  document.getElementById('reportYear')?.addEventListener('input',()=>{clearTimeout(window.__reportFilterTimer);window.__reportFilterTimer=setTimeout(reportRenderPreview,220)});
+}
+async function printConsolidatedReport(){
+  if(!reportCache.size)await reportLoadDataset();const {sections,range}=reportBuildSections();if(!reportSelectedTables.size){await professionalAlert('Aucun tableau sélectionné','Sélectionnez au moins un tableau à intégrer au rapport avant l’impression.');return}if(!range.from||!range.to){await professionalAlert('Période incomplète','Renseignez une date de début et une date de fin avant l’impression.');return}
+  if(range.from>range.to){await professionalAlert('Période invalide','La date de début doit être antérieure ou égale à la date de fin.');return}
+  const settings=await ensurePrintSettings();const structure=String(session?.user?.organizationName||'Structure SIGAT');const total=sections.reduce((n,s)=>n+s.rows.length,0);
+  const summary=`<div class="report-print-summary"><div><strong>Structure :</strong> ${esc(structure)}</div><div><strong>Période :</strong> ${esc(range.label)}</div><div><strong>Enregistrements consolidés :</strong> ${total}</div></div>`;
+  const tables=sections.map(s=>reportSectionTable(s,{print:true})).join('');const conclusion=String(document.getElementById('reportConclusion')?.value||'').trim();
+  const conclusionHtml=conclusion?`<section class="report-print-conclusion"><h3>OBSERVATIONS GÉNÉRALES / CONCLUSION</h3><p>${esc(conclusion).replace(/\n/g,'<br>')}</p></section>`:'';
+  const title=`RAPPORT ET BILAN DES ACTIVITÉS — ${range.label.toUpperCase()}`;
+  const body=`<div class="document-title report-bundle-title">${esc(title)}</div>${summary}<div class="official-body wide report-bundle-body">${tables}${conclusionHtml}</div>`;
+  const html=buildPrintDocument({title,body,settings,signature:true,reference:'',date:range.to,hideReference:false,documentClass:'report-bundle-print',showAmpliations:false});await launchPrint(html);
+}
+async function setupReportsModule(){
+  if(!reportSelectedTables.size)reportSelectedTables=new Set(reportAvailableSections().map(({section,index})=>reportSectionKey(section,index)));
+  const now=new Date();document.getElementById('reportYear').value=String(now.getFullYear());document.getElementById('reportMonth').value=String(now.getMonth()+1);document.getElementById('reportQuarter').value=String(Math.floor(now.getMonth()/3)+1);document.getElementById('reportSemester').value=String(now.getMonth()<6?1:2);
+  document.getElementById('reportStartDate').value=reportIso(now.getFullYear(),now.getMonth()+1,1);document.getElementById('reportEndDate').value=reportIso(now.getFullYear(),now.getMonth()+1,now.getDate());
+  reportUpdatePeriodFields();reportBindReactiveFilters();reportRenderTableSelector();document.getElementById('reportSelectAllBtn')?.addEventListener('click',()=>reportSetAllTables(true));document.getElementById('reportSelectNoneBtn')?.addEventListener('click',()=>reportSetAllTables(false));document.getElementById('reportReloadBtn')?.addEventListener('click',e=>withButtonLock(e.currentTarget,()=>reportLoadDataset(true),'Actualisation…'));document.getElementById('reportPrintBtn')?.addEventListener('click',e=>withButtonLock(e.currentTarget,printConsolidatedReport,'Préparation…'));await reportLoadDataset();
+}
+
+function setupModule(){
+  if(moduleKey==='stages'){setupStageModule();return}
+  if(moduleKey==='documents'){setupDocumentsModule();return}
+  if(moduleKey==='convocations'){setupConvocationsModule();return}
+  if(moduleKey==='exploitation-forestiere'){setupForestModule();return}
+  if(moduleKey==='transformation-bois'){setupWoodModule();return}
+  if(moduleKey==='feux-brousse'){setupFireModule();return}
+  if(moduleKey==='faune'){setupFaunaModule();return}
+  if(moduleKey==='missions'){setupMissionsModule();return}
+  document.getElementById('pageTitle').textContent=config.title;
+  document.getElementById('pageSubtitle').textContent=config.subtitle;
+  const addBtn=document.getElementById('addBtn');
+  addBtn.textContent=`Ajouter ${config.singular.toLowerCase()}`;
+  addBtn.onclick=()=>openEditor();
+  const printBtn=document.createElement('button');
+  printBtn.className='btn btn-secondary';printBtn.type='button';printBtn.innerHTML='Imprimer la liste / PDF';
+  printBtn.onclick=e=>withButtonLock(e.currentTarget,()=>printCurrentList(),'Préparation…');
+  addBtn.parentElement.insertBefore(printBtn,addBtn);
+  bindCommonModuleControls();
+  if(moduleKey==='sensibilisations') bindAwarenessFilters();
+  if(moduleKey==='activites-minef') bindMinefActivityFilters();
+  loadRecords();
+}
+
+function bindMinefActivityFilters(){
+  const ids=['minefActivityYearFilter','minefActivityDateFilter','minefActivityTypeFilter','minefActivityCategoryFilter'];
+  ids.forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{currentPage=1;loadRecords()}));
+  for(const id of ['minefActivityYearFilter']){
+    const el=document.getElementById(id);
+    el?.addEventListener('input',()=>{clearTimeout(window.__minefActivityFilterTimer);window.__minefActivityFilterTimer=setTimeout(()=>{currentPage=1;loadRecords()},250)});
+  }
+  document.getElementById('minefActivityResetFilters')?.addEventListener('click',()=>{
+    ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
+    currentSearch='';const q=document.getElementById('searchInput');if(q)q.value='';currentPage=1;loadRecords();
+  });
+}
+
+function bindAwarenessFilters(){
+  const ids=['awarenessYearFilter','awarenessDateFilter','awarenessTypeFilter'];
+  ids.forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{currentPage=1;loadRecords()}));
+  const year=document.getElementById('awarenessYearFilter');
+  year?.addEventListener('input',()=>{clearTimeout(window.__awarenessYearTimer);window.__awarenessYearTimer=setTimeout(()=>{currentPage=1;loadRecords()},250)});
+  document.getElementById('awarenessResetFilters')?.addEventListener('click',()=>{
+    ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});currentSearch='';const q=document.getElementById('searchInput');if(q)q.value='';currentPage=1;loadRecords();
+  });
+}
+
+function nurseryEssenceKey(value){return normalizeForestText(value)}
+function nurseryNumber(value){const n=Number(value||0);return Number.isFinite(n)?Math.max(0,n):0}
+function formatNurseryNumber(value){return new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(Number(value||0))}
+async function loadNurserySituation(){
+  try{
+    const [productions,reboisements,plantations]=await Promise.all([
+      fetchOwnModuleItems('exploitation-forestiere',{forestType:'PEPINIERE_PRODUCTION'}),
+      fetchOwnModuleItems('exploitation-forestiere',{forestType:'REBOISEMENT'}),
+      fetchOwnModuleItems('exploitation-forestiere',{forestType:'PLANTATION_CREEE'})
+    ]);
+    const byEssence=new Map();
+    productions.forEach(r=>{const d=r.data||{},label=String(d.essence||'').trim();if(!label)return;const key=nurseryEssenceKey(label);if(!key)return;const row=byEssence.get(key)||{essence:label,produced:0,distributedReboisement:0,distributedPlantation:0};row.produced+=nurseryNumber(d.nbr_plants_produits);byEssence.set(key,row)});
+    reboisements.forEach(r=>{const d=r.data||{},key=nurseryEssenceKey(d.essence);const row=byEssence.get(key);if(row)row.distributedReboisement+=nurseryNumber(d.nombre_total_plants)});
+    plantations.forEach(r=>{const d=r.data||{},key=nurseryEssenceKey(d.essence);const row=byEssence.get(key);if(row)row.distributedPlantation+=nurseryNumber(d.nombre_total_plants)});
+    let rows=[...byEssence.values()].map((x,i)=>{const distributed=x.distributedReboisement+x.distributedPlantation;return {id:`nursery-summary-${i}`,owned:false,_nurserySummary:true,title:x.essence,data:{essence:x.essence,nbr_plants_produits:Math.round(x.produced),nbr_plants_distribues_reboisement:Math.round(x.distributedReboisement),nbr_plants_distribues_plantation:Math.round(x.distributedPlantation),nbr_plants_distribues:Math.round(distributed),nbr_plants_disponibles:Math.round(x.produced-distributed)}}}).sort((a,b)=>String(a.data.essence).localeCompare(String(b.data.essence),'fr',{sensitivity:'base'}));
+    const totalProduced=rows.reduce((a,r)=>a+nurseryNumber(r.data.nbr_plants_produits),0);
+    const totalDistributed=rows.reduce((a,r)=>a+nurseryNumber(r.data.nbr_plants_distribues),0);
+    document.getElementById('nurseryTotalProduced').textContent=formatNurseryNumber(totalProduced);
+    document.getElementById('nurseryTotalDistributed').textContent=formatNurseryNumber(totalDistributed);
+    document.getElementById('nurseryTotalAvailable').textContent=formatNurseryNumber(totalProduced-totalDistributed);
+    const essenceFilter=normalizeForestText(document.getElementById('forestEssenceFilter')?.value||'');
+    const search=normalizeForestText(currentSearch||document.getElementById('searchInput')?.value||'');
+    if(essenceFilter)rows=rows.filter(r=>nurseryEssenceKey(r.data.essence).includes(essenceFilter));
+    if(search)rows=rows.filter(r=>nurseryEssenceKey(r.data.essence).includes(search));
+    const total=rows.length,totalPages=Math.max(1,Math.ceil(total/25));if(currentPage>totalPages)currentPage=totalPages;
+    const start=(currentPage-1)*25;lastItems=rows.slice(start,start+25);renderRows(lastItems);
+    document.getElementById('pageInfo').textContent=`Page ${currentPage} / ${totalPages} — ${total} essence(s)`;
+    document.getElementById('prevBtn').disabled=currentPage<=1;document.getElementById('nextBtn').disabled=currentPage>=totalPages;
+  }catch(e){showToast(e.message||'Impossible de calculer la situation de la pépinière.','error')}
+}
+
+async function loadRecords(){
+  try{
+    if(moduleKey==='exploitation-forestiere'&&currentForestType==='PEPINIERE'&&currentNurseryView==='SITUATION')return await loadNurserySituation();
+    const dataModule=effectiveModule();
+    const stageFilter=moduleKey==='stages'?`&stageType=${encodeURIComponent(currentStageType)}`:'';
+    const documentFilter=moduleKey==='documents'&&dataModule==='documents'?`&documentType=${encodeURIComponent(currentDocumentType)}`:'';
+    const minefActivityFilter=moduleKey==='activites-minef'?`&year=${encodeURIComponent(document.getElementById('minefActivityYearFilter')?.value||'')}&activityDate=${encodeURIComponent(document.getElementById('minefActivityDateFilter')?.value||'')}&activityType=${encodeURIComponent(document.getElementById('minefActivityTypeFilter')?.value||'')}&activityCategory=${encodeURIComponent(document.getElementById('minefActivityCategoryFilter')?.value||'')}`:'';
+    const awarenessFilter=moduleKey==='sensibilisations'?`&year=${encodeURIComponent(document.getElementById('awarenessYearFilter')?.value||'')}&activityDate=${encodeURIComponent(document.getElementById('awarenessDateFilter')?.value||'')}&awarenessType=${encodeURIComponent(document.getElementById('awarenessTypeFilter')?.value||'')}`:'';
+    const forestFilter=moduleKey==='exploitation-forestiere'?`&forestType=${encodeURIComponent(effectiveForestType())}&year=${encodeURIComponent(document.getElementById('forestYearFilter')?.value||'')}&activityDate=${encodeURIComponent(document.getElementById('forestDateFilter')?.value||'')}&sousPrefecture=${encodeURIComponent(document.getElementById('forestSousPrefFilter')?.value||'')}&localite=${encodeURIComponent(document.getElementById('forestLocaliteFilter')?.value||'')}&essence=${encodeURIComponent(document.getElementById('forestEssenceFilter')?.value||'')}&reboisementType=${encodeURIComponent(document.getElementById('forestReboisementTypeFilter')?.value||'')}&beneficiary=${encodeURIComponent(document.getElementById('forestBeneficiaryFilter')?.value||'')}`:'';
+    const woodFilter=moduleKey==='transformation-bois'?`&woodType=${encodeURIComponent(currentWoodType)}&year=${encodeURIComponent(document.getElementById('woodYearFilter')?.value||'')}&activityDate=${encodeURIComponent(document.getElementById('woodDateFilter')?.value||'')}&localite=${encodeURIComponent(document.getElementById('woodLocaliteFilter')?.value||'')}&natureProduit=${encodeURIComponent(document.getElementById('woodNatureFilter')?.value||'')}&operatorStatus=${encodeURIComponent(document.getElementById('woodStatusFilter')?.value||'')}&exercantType=${encodeURIComponent(document.getElementById('woodExercantFilter')?.value||'')}&region=${encodeURIComponent(document.getElementById('woodRegionFilter')?.value||'')}&departement=${encodeURIComponent(document.getElementById('woodDepartementFilter')?.value||'')}`:'';
+    const fireFilter=moduleKey==='feux-brousse'?`&fireType=${encodeURIComponent(currentFireType)}&department=${encodeURIComponent(document.getElementById('fireDepartmentFilter')?.value||'')}&sousPrefecture=${encodeURIComponent(document.getElementById('fireSousPrefFilter')?.value||'')}&village=${encodeURIComponent(document.getElementById('fireVillageFilter')?.value||'')}&activityDate=${encodeURIComponent(document.getElementById('fireDateFilter')?.value||'')}&natureDegats=${encodeURIComponent(document.getElementById('fireNatureFilter')?.value||'')}`:'';
+    const faunaFilter=moduleKey==='faune'?`&faunaType=${encodeURIComponent(currentFaunaType)}&activityDate=${encodeURIComponent(document.getElementById('faunaDateFilter')?.value||'')}&species=${encodeURIComponent(document.getElementById('faunaSpeciesFilter')?.value||'')}&zone=${encodeURIComponent(document.getElementById('faunaZoneFilter')?.value||'')}&sousPrefecture=${encodeURIComponent(document.getElementById('faunaSousPrefFilter')?.value||'')}&village=${encodeURIComponent(document.getElementById('faunaVillageFilter')?.value||'')}&conflictType=${encodeURIComponent(document.getElementById('faunaConflictFilter')?.value||'')}`:'';
+    const missionFilter=moduleKey==='missions'?`&missionType=${encodeURIComponent(currentMissionType)}`:'';
+    const d=await api(`/api/load?module=${encodeURIComponent(dataModule)}&page=${currentPage}&limit=25&search=${encodeURIComponent(currentSearch)}${stageFilter}${documentFilter}${minefActivityFilter}${awarenessFilter}${forestFilter}${woodFilter}${fireFilter}${faunaFilter}${missionFilter}`);
+    if(currentPage>d.totalPages){currentPage=d.totalPages;return loadRecords()}
+    lastItems=d.items||[];renderRows(lastItems);
+    document.getElementById('pageInfo').textContent=`Page ${d.page} / ${d.totalPages} — ${d.total} enregistrement(s)`;
+    document.getElementById('prevBtn').disabled=d.page<=1;document.getElementById('nextBtn').disabled=d.page>=d.totalPages;
+  }catch(e){showToast(e.message,'error')}
+}
+
+
+function genericTableSpec(){
+  const title=(label='Intitulé / nom')=>({key:'$title',label});
+  const field=(key,label,kind='text')=>({key,label,kind});
+  if(moduleKey==='stages'){
+    return currentStageType==='MISE_STAGE'?[title('Stagiaire'),field('matricule_stagiaire','Matricule'),field('date_debut','Début','date'),field('date_fin','Fin','date'),field('theme','Thème')]:[title('Stagiaire'),field('matricule_stagiaire','Matricule'),field('niveau_recrutement','Niveau'),field('date_debut','Début','date'),field('date_fin','Fin','date')];
+  }
+  if(moduleKey==='documents'){
+    const map={
+      CESSATION_SERVICE:[title('Agent'),field('matricule','Matricule'),field('emploi','Emploi'),field('nouvelle_affectation','Nouvelle affectation'),field('date_cessation','Date cessation','date')],
+      CESSATION_CONGE:[title('Agent'),field('matricule','Matricule'),field('type_conge','Nature du congé'),field('date_cessation','Date cessation','date'),field('date_reprise_prevue','Reprise prévue','date')],
+      REPRISE_SERVICE:[title('Agent'),field('matricule','Matricule'),field('type_conge','Nature du congé'),field('date_reprise','Date reprise','date'),field('heure_reprise','Heure reprise')],
+      PRISE_SERVICE_MUTATION:[title('Agent'),field('matricule','Matricule'),field('ancien_service','Ancien service'),field('nouvelle_affectation','Nouvelle affectation'),field('date_prise_service','Prise de service','date')],
+      DEMANDE_EXPLICATION:[title('Agent'),field('matricule','Matricule'),field('emploi_qualite','Emploi / qualité'),field('service_affectation','Service'),field('delai_reponse_heures','Délai (h)')],
+      ABSENCE:[title('Agent'),field('matricule','Matricule'),field('date_debut','Début','date'),field('date_fin','Fin','date'),field('nombre_jours','Jours')]
+    };return map[currentDocumentType]||[title('Document')];
+  }
+  if(moduleKey==='convocations'){
+    return currentConvocationView==='PV'?[title('Personne concernée'),field('date_rencontre','Date rencontre','date'),field('lieu_rencontre','Lieu'),field('objet_rencontre','Objet'),field('personne_a_voir','Responsable')]:[title('Personne convoquée'),field('profession','Profession'),field('domicile','Domicile'),field('date_presentation','Date présentation','date'),field('heure','Heure')];
+  }
+  const overrides={
+    formations:[field('date_activite','Date','date'),field('theme','Thème'),field('hommes','Hommes'),field('femmes','Femmes'),field('observations','Observations')],
+    materiel:[title('Équipement'),field('categorie','Catégorie'),field('marque','Marque'),field('numero','N° immatriculation / marquage'),field('etat','État')],
+    rapports:[title('Rapport'),field('type','Type'),field('periode','Période'),field('conclusion','Conclusion')],
+    'ressources-naturelles':[field('type','Type'),field('localite','Localité'),field('superficie','Superficie (ha)'),field('coordonnees','Coordonnées'),field('observations','Observations')],
+  };
+  if(overrides[moduleKey])return overrides[moduleKey];
+  const fields=(config?.fields||[]).filter(x=>!['section','image','computed'].includes(x[2]));
+  const compact=fields.filter(x=>x[2]!=='textarea').slice(0,4);
+  if(compact.length<4)compact.push(...fields.filter(x=>x[2]==='textarea').slice(0,4-compact.length));
+  return [title(config?.singular||'Intitulé'),...compact.map(([key,label,kind])=>field(key,label,kind))].slice(0,5);
+}
+function genericCellValue(record,col){
+  const d=record?.data||{};let v=col.key==='$title'?record?.title:d[col.key];
+  if(col.kind==='date')v=fmtDate(v);return displayValue(v);
+}
+function updateGenericTableHead(spec){
+  const table=document.getElementById('recordsBody')?.closest('table');const head=table?.querySelector('thead');if(!table||!head)return;
+  table.classList.add('adaptive-data-table');
+  head.innerHTML='<tr>'+spec.map(c=>`<th title="${esc(c.label)}">${esc(c.label)}</th>`).join('')+'<th class="actions-col">Actions</th></tr>';
+}
+function renderRows(items){
+  const tb=document.getElementById('recordsBody');
+  const isPersonnelRegister=moduleKey==='personnel';
+  const isAwarenessRegister=moduleKey==='sensibilisations';
+  const isMinefActivityRegister=moduleKey==='activites-minef';
+  const isForestRegister=moduleKey==='exploitation-forestiere';
+  const isWoodRegister=moduleKey==='transformation-bois';
+  const isFireRegister=moduleKey==='feux-brousse';
+  const isFaunaRegister=moduleKey==='faune';
+  const isMissionRegister=moduleKey==='missions';
+  const genericSpec=(!isPersonnelRegister&&!isMinefActivityRegister&&!isAwarenessRegister&&!isForestRegister&&!isWoodRegister&&!isFireRegister&&!isFaunaRegister&&!isMissionRegister)?genericTableSpec():null;
+  if(genericSpec)updateGenericTableHead(genericSpec);
+  if(!items.length){const visibleHeadCols=tb.closest('table')?.querySelectorAll('thead th')?.length||0;const emptyCols=visibleHeadCols||(genericSpec?genericSpec.length+1:(isPersonnelRegister?10:12));tb.innerHTML=`<tr><td colspan="${emptyCols}" class="muted">Aucune donnée enregistrée.</td></tr>`;return}
+  const isConvocationRegister=moduleKey==='convocations'&&currentConvocationView==='CONVOCATIONS';
+  const isPvRegister=moduleKey==='convocations'&&currentConvocationView==='PV';
+  const actionsHtml=r=>`<div class="actions"><button class="btn btn-secondary btn-sm" data-view="${r.id}">Voir</button><button class="btn btn-secondary btn-sm" data-print="${r.id}">PDF</button>${isConvocationRegister&&canEditCurrentPage()?`<button class="btn btn-primary btn-sm" data-pv="${r.id}">Procès-verbal</button>`:''}${r.owned&&canEditCurrentPage()?`<button class="btn btn-secondary btn-sm" data-edit="${r.id}">Modifier</button><button class="btn btn-danger btn-sm" data-delete="${r.id}">Supprimer</button>`:'<span class="muted">Consultation</span>'}</div>`;
+  const personnelActionsHtml=r=>`<div class="actions personnel-actions"><button class="btn btn-secondary btn-sm" data-view="${r.id}" title="Voir la fiche complète" aria-label="Voir la fiche complète">👁</button><button class="btn btn-secondary btn-sm" data-print="${r.id}" title="Imprimer PDF" aria-label="Imprimer PDF">PDF</button>${r.owned&&canEditCurrentPage()?`<button class="btn btn-secondary btn-sm" data-edit="${r.id}" title="Modifier" aria-label="Modifier">✎</button><button class="btn btn-danger btn-sm" data-delete="${r.id}" title="Supprimer" aria-label="Supprimer">×</button>`:'<span class="muted">Consult.</span>'}</div>`;
+  if(isPersonnelRegister){
+    tb.innerHTML=items.map((r,i)=>{const d=r.data||{};const order=(currentPage-1)*25+i+1;return `<tr><td class="personnel-order">${order}</td><td><strong>${esc(r.title)}</strong></td><td>${esc(displayValue(d.matricule))}</td><td>${esc(displayValue(d.emploi))}</td><td>${esc(displayValue(d.fonction))}</td><td>${esc(displayValue(d.categorie))}</td><td>${esc(displayValue(d.grade))}</td><td>${esc(displayValue(d.telephone))}</td><td>${esc(fmtDate(d.date_prise_service_gbeke))}</td><td>${personnelActionsHtml(r)}</td></tr>`}).join('');
+  }else if(isMinefActivityRegister){
+    const activityActionsHtml=r=>`<div class="actions compact-actions"><button class="btn btn-secondary btn-sm" data-view="${r.id}">Voir</button><button class="btn btn-secondary btn-sm" data-print="${r.id}">PDF</button>${r.owned&&canEditCurrentPage()?`<button class="btn btn-secondary btn-sm" data-edit="${r.id}">Modifier</button><button class="btn btn-danger btn-sm" data-delete="${r.id}">Supprimer</button>`:'<span class="muted">Consult.</span>'}</div>`;
+    tb.innerHTML=items.map(r=>{const d=r.data||{};return `<tr><td>${esc(fmtDate(d.date_activite||r.event_date))}</td><td><strong>${esc(displayValue(d.type_activite))}</strong></td><td>${esc(displayValue(d.categorie_minef))}</td><td title="${esc(d.intitule_activite||r.title||'')}">${esc(displayValue(d.intitule_activite||r.title))}</td><td>${esc(displayValue(d.organisateur))}</td><td title="${esc(d.commentaire||'')}">${esc(displayValue(d.commentaire))}</td><td>${activityActionsHtml(r)}</td></tr>`}).join('');
+  }else if(isAwarenessRegister){
+    const awarenessActionsHtml=r=>`<div class="actions awareness-actions"><button class="btn btn-secondary btn-sm" data-view="${r.id}" title="Voir">Voir</button><button class="btn btn-secondary btn-sm" data-print="${r.id}" title="PDF">PDF</button>${r.owned&&canEditCurrentPage()?`<button class="btn btn-secondary btn-sm" data-edit="${r.id}" title="Modifier">✎</button><button class="btn btn-danger btn-sm" data-delete="${r.id}" title="Supprimer">×</button>`:'<span class="muted">Consult.</span>'}</div>`;
+    tb.innerHTML=items.map(r=>{const d=r.data||{};const hommes=Number(d.hommes||0),femmes=Number(d.femmes||0),total=hommes+femmes;const type=d.type_sensibilisation||d.theme||r.title||'—';return `<tr><td>${esc(fmtDate(d.date_activite||r.event_date))}</td><td title="${esc(type)}"><strong>${esc(type)}</strong></td><td title="${esc(displayValue(d.lieu))}">${esc(displayValue(d.lieu))}</td><td title="${esc(displayValue(d.cible))}">${esc(displayValue(d.cible))}</td><td class="awareness-count">H : ${hommes} · F : ${femmes} · Total : <strong>${total}</strong></td><td>${awarenessActionsHtml(r)}</td></tr>`}).join('');
+  }else if(isForestRegister){
+    const forestActionsHtml=r=>`<div class="actions forest-actions"><button class="btn btn-secondary btn-sm" data-view="${r.id}" title="Voir">Voir</button><button class="btn btn-secondary btn-sm" data-print="${r.id}" title="PDF">PDF</button>${r.owned&&canEditCurrentPage()?`<button class="btn btn-secondary btn-sm" data-edit="${r.id}" title="Modifier">✎</button><button class="btn btn-danger btn-sm" data-delete="${r.id}" title="Supprimer">×</button>`:'<span class="muted">Consult.</span>'}</div>`;
+    if(currentForestType==='PEPINIERE'&&currentNurseryView==='SITUATION'){
+      tb.innerHTML=items.map(r=>{const d=r.data||{};return `<tr><td><strong>${esc(displayValue(d.essence))}</strong></td><td>${esc(formatNurseryNumber(d.nbr_plants_produits))}</td><td>${esc(formatNurseryNumber(d.nbr_plants_distribues))}</td><td><strong>${esc(formatNurseryNumber(d.nbr_plants_disponibles))}</strong></td><td><div class="actions forest-actions"><button class="btn btn-secondary btn-sm" data-nursery-detail="${esc(d.essence||'')}">Détails</button></div></td></tr>`}).join('');
+      tb.querySelectorAll('[data-nursery-detail]').forEach(btn=>btn.addEventListener('click',async()=>{const essence=btn.dataset.nurseryDetail||'';const r=items.find(x=>String(x.data?.essence||'')===essence);if(!r)return;const d=r.data||{};await professionalAlert(`Situation — ${essence}`,`Plants produits : ${formatNurseryNumber(d.nbr_plants_produits)}\nDistribués — Reboisement : ${formatNurseryNumber(d.nbr_plants_distribues_reboisement)}\nDistribués — Plantations forestières créées : ${formatNurseryNumber(d.nbr_plants_distribues_plantation)}\nTotal plants distribués : ${formatNurseryNumber(d.nbr_plants_distribues)}\nPlants disponibles : ${formatNurseryNumber(d.nbr_plants_disponibles)}`)}));
+      return;
+    }
+    tb.innerHTML=items.map(r=>{const d=r.data||{};const coord=[d.coord_x,d.coord_y].filter(v=>v!==null&&v!==undefined&&String(v).trim()!=='').join(' / ')||'—';const a=forestActionsHtml(r);
+      if(currentForestType==='PEPINIERE'&&currentNurseryView==='SITES')return `<tr><td>${esc(displayValue(d.sous_prefecture))}</td><td>${esc(displayValue(d.localite))}</td><td>${esc(coord)}</td><td><strong>${esc(displayValue(d.responsable_nom))}</strong></td><td>${esc(displayValue(d.responsable_contact))}</td><td>${a}</td></tr>`;
+      if(currentForestType==='PEPINIERE'&&currentNurseryView==='PRODUCTION')return `<tr><td>${esc(displayValue(d.sous_prefecture))}</td><td>${esc(displayValue(d.localite||d.localisation))}</td><td>${esc(coord)}</td><td><strong>${esc(displayValue(d.essence))}</strong></td><td>${esc(displayValue(d.nbr_plants_produits))}</td><td>${a}</td></tr>`;
+      if(currentForestType==='PLANTATION_CREEE')return `<tr><td>${esc(fmtDate(d.date_activite||r.event_date))}</td><td>${esc(displayValue(d.localite))}</td><td>${esc(displayValue(d.beneficiaire))}</td><td>${esc(displayValue(d.superficie))}</td><td>${esc(displayValue(d.essence))}</td><td>${esc(displayValue(d.nombre_total_plants))}</td><td>${a}</td></tr>`;
+      if(currentForestType==='REBOISEMENT')return `<tr><td>${esc(fmtDate(d.date_activite||r.event_date))}</td><td>${esc(displayValue(d.type_reboisement))}</td><td>${esc(displayValue(d.localite))}</td><td>${esc(displayValue(d.beneficiaire))}</td><td>${esc(displayValue(d.essence))}</td><td>${esc(displayValue(d.superficie))}</td><td>${esc(displayValue(d.nombre_total_plants))}</td><td>${esc(displayValue(d.entreprise_responsable))}</td><td>${a}</td></tr>`;
+      return `<tr><td>${esc(fmtDate(d.date_activite||r.event_date))}</td><td>${esc(displayValue(d.sous_prefecture))}</td><td>${esc(displayValue(d.localite))}</td><td>${esc(displayValue(d.essence))}</td><td>${esc(displayValue(d.superficie_parcelle))}</td><td>${esc(displayValue(d.contact_proprietaire))}</td><td>${a}</td></tr>`}).join('');
+  }else if(isWoodRegister){
+    const woodActionsHtml=r=>`<div class="actions wood-actions"><button class="btn btn-secondary btn-sm" data-view="${r.id}" title="Voir">Voir</button><button class="btn btn-secondary btn-sm" data-print="${r.id}" title="PDF">PDF</button>${r.owned&&canEditCurrentPage()?`<button class="btn btn-secondary btn-sm" data-edit="${r.id}" title="Modifier">✎</button><button class="btn btn-danger btn-sm" data-delete="${r.id}" title="Supprimer">×</button>`:'<span class="muted">Consult.</span>'}</div>`;
+    tb.innerHTML=items.map(r=>{const d=r.data||{},a=woodActionsHtml(r);if(currentWoodType==='EXPLOITANTS_SECONDAIRES')return `<tr><td title="${esc(displayValue(d.nom_operateur||r.title))}"><strong>${esc(displayValue(d.nom_operateur||r.title))}</strong></td><td>${esc(displayValue(d.contact))}</td><td title="${esc(displayValue(d.nature_produit))}">${esc(displayValue(d.nature_produit))}</td><td>${esc(displayValue(d.numero_permis))}</td><td>${esc(displayValue(d.localite))}</td><td>${a}</td></tr>`;if(currentWoodType==='PRODUITS_QTE'){const autres=[woodProductSummary(d.mortiers_qte_t,d.mortiers_nbr_carnet,'T'),woodProductSummary(d.kinkeliba_qte_t,d.kinkeliba_nbr_carnet,'T'),woodProductSummary(d.karite_qte_t,d.karite_nbr_carnet,'T'),woodProductSummary(d.bambou_qte_t,d.bambou_nbr_carnet,'T')].filter(v=>v!=='—').join(' · ')||'—';return `<tr><td><strong>${esc(displayValue(d.statut_operateur))}</strong></td><td>${esc(woodProductSummary(d.charbon_qte_sacs,d.charbon_nbr_carnet,'sac'))}</td><td>${esc(woodProductSummary(d.bois_feu_qte_t,d.bois_feu_nbr_carnet,'T'))}</td><td title="${esc(autres)}">${esc(autres)}</td><td>${a}</td></tr>`;}const name=d.nom_usine||d.nom_operateur||r.title||'—';const activity=d.activites_principales||d.service_rattachement||'—';const permit=[d.numero_permis,d.date_delivrance?fmtDate(d.date_delivrance):''].filter(Boolean).join(' / ')||'—';return `<tr><td>${esc(displayValue(d.type_exercant))}</td><td>${esc(displayValue(d.localite))}</td><td title="${esc(name)}"><strong>${esc(name)}</strong></td><td title="${esc(activity)}">${esc(activity)}</td><td>${esc(displayValue(d.contact_operateur))}</td><td>${esc(permit)}</td><td>${a}</td></tr>`}).join('');
+  }else if(isFireRegister){
+    const a=r=>`<div class="actions compact-actions"><button class="btn btn-secondary btn-sm" data-view="${r.id}">Voir</button><button class="btn btn-secondary btn-sm" data-print="${r.id}">PDF</button>${r.owned&&canEditCurrentPage()?`<button class="btn btn-secondary btn-sm" data-edit="${r.id}">Modifier</button><button class="btn btn-danger btn-sm" data-delete="${r.id}">Supprimer</button>`:'<span class="muted">Consult.</span>'}</div>`;
+    tb.innerHTML=items.map(r=>{const d=r.data||{},ac=a(r);if(currentFireType==='DEGATS')return `<tr><td>${esc(fmtDate(d.date_constat||r.event_date))}</td><td>${esc(displayValue(d.sous_prefecture))}</td><td>${esc(displayValue(d.village))}</td><td title="${esc(displayValue(d.nature_degats))}">${esc(displayValue(d.nature_degats))}</td><td>${esc(displayValue(d.superficie_detruite))}</td><td title="${esc(displayValue(d.personnes_impactees))}">${esc(displayValue(d.personnes_impactees))}</td><td>${ac}</td></tr>`;return `<tr><td>${esc(displayValue(d.departement))}</td><td>${esc(displayValue(d.sous_prefecture))}</td><td><strong>${esc(displayValue(d.village))}</strong></td><td>${esc(displayValue(d.acte_creation))}</td><td>${esc(displayValue(d.president_nom))}</td><td>${esc(displayValue(d.president_contact))}</td><td>${ac}</td></tr>`}).join('');
+  }else if(isFaunaRegister){
+    const a=r=>`<div class="actions compact-actions"><button class="btn btn-secondary btn-sm" data-view="${r.id}">Voir</button><button class="btn btn-secondary btn-sm" data-print="${r.id}">PDF</button>${r.owned&&canEditCurrentPage()?`<button class="btn btn-secondary btn-sm" data-edit="${r.id}">Modifier</button><button class="btn btn-danger btn-sm" data-delete="${r.id}">Supprimer</button>`:'<span class="muted">Consult.</span>'}</div>`;
+    tb.innerHTML=items.map(r=>{const d=r.data||{},ac=a(r);if(currentFaunaType==='CONFLITS')return `<tr><td>${esc(displayValue(d.sous_prefecture))}</td><td>${esc(displayValue(d.village))}</td><td>${esc(displayValue(d.type_conflit))}</td><td title="${esc(displayValue(d.degats_recenses))}">${esc(displayValue(d.degats_recenses))}</td><td>H : ${esc(displayValue(d.hommes_impactes))} · F : ${esc(displayValue(d.femmes_impactees))}</td><td title="${esc(displayValue(d.action_menee))}">${esc(displayValue(d.action_menee))}</td><td>${ac}</td></tr>`;return `<tr><td>${esc(fmtDate(d.date_observation||r.event_date))}</td><td><strong>${esc(displayValue(d.especes_animales))}</strong></td><td>${esc(displayValue(d.zone_observation))}</td><td>${esc(displayValue(d.commentaires_utiles))}</td><td>${ac}</td></tr>`}).join('');
+  }else if(isMissionRegister){
+    const a=r=>`<div class="actions compact-actions"><button class="btn btn-secondary btn-sm" data-view="${r.id}">Voir</button><button class="btn btn-secondary btn-sm" data-print="${r.id}">PDF</button>${currentMissionType==='REPRESSION'&&canEditCurrentPage()?`<button class="btn btn-primary btn-sm" data-offense-pv="${r.id}">P-V</button>`:''}${currentMissionType==='ORDRE_MISSION'&&canEditCurrentPage()?`<button class="btn btn-primary btn-sm" data-order-pv="${r.id}">P-V</button>`:''}${r.owned&&canEditCurrentPage()?`<button class="btn btn-secondary btn-sm" data-edit="${r.id}">Modifier</button><button class="btn btn-danger btn-sm" data-delete="${r.id}">Supprimer</button>`:'<span class="muted">Consult.</span>'}</div>`;
+    tb.innerHTML=items.map(r=>{const d=r.data||{},ac=a(r);if(currentMissionType==='ORDRE_MISSION'){const agents=[d.agent_mission_1,d.agent_mission_2,d.agent_mission_3,d.agent_mission_4].filter(Boolean).join(' · ')||'—';return `<tr><td><strong>${esc(displayValue(d.numero_mission||r.reference))}</strong></td><td>${esc(displayValue(d.chef_mission))}</td><td title="${esc(agents)}">${esc(agents)}</td><td title="${esc(displayValue(d.objectif_mission))}">${esc(displayValue(d.objectif_mission))}</td><td>${esc(fmtDate(d.date_depart))}</td><td>${esc(fmtDate(d.date_retour))}</td><td>${ac}</td></tr>`;}return `<tr><td>${esc(displayValue(d.objet_infraction))}</td><td><strong>${esc(displayValue(d.personne_mise_cause))}</strong></td><td>${esc(displayValue(d.contact_mis_cause))}</td><td title="${esc([d.objets_saisis,d.produits_saisis,d.materiels_saisis].filter(Boolean).join(' | '))}">${esc(displayValue([d.objets_saisis,d.produits_saisis,d.materiels_saisis].filter(Boolean).join(' · ')))}</td><td>${esc(displayValue(d.observations))}</td><td>${ac}</td></tr>`}).join('');
+  }else{
+    tb.innerHTML=items.map(r=>`<tr>${genericSpec.map(c=>{const v=genericCellValue(r,c);return `<td title="${esc(v)}">${c.key==='$title'?`<strong>${esc(v)}</strong>`:esc(v)}</td>`}).join('')}<td class="actions-col">${actionsHtml(r)}</td></tr>`).join('');
+  }
+  items.forEach(r=>{
+    tb.querySelector(`[data-view="${r.id}"]`)?.addEventListener('click',()=>openDetails(r));
+    tb.querySelector(`[data-print="${r.id}"]`)?.addEventListener('click',e=>withButtonLock(e.currentTarget,()=>printRecord(r),'Préparation…'));
+    if(isConvocationRegister)tb.querySelector(`[data-pv="${r.id}"]`)?.addEventListener('click',e=>withButtonLock(e.currentTarget,()=>manageConvocationPv(r),'Ouverture…'));
+    if(isMissionRegister&&currentMissionType==='REPRESSION')tb.querySelector(`[data-offense-pv="${r.id}"]`)?.addEventListener('click',e=>withButtonLock(e.currentTarget,()=>manageOffensePv(r),'Ouverture…'));
+    if(isMissionRegister&&currentMissionType==='ORDRE_MISSION')tb.querySelector(`[data-order-pv="${r.id}"]`)?.addEventListener('click',e=>withButtonLock(e.currentTarget,()=>manageOrderMissionPv(r),'Ouverture…'));
+    if(!r.owned)return;
+    tb.querySelector(`[data-edit="${r.id}"]`)?.addEventListener('click',()=>openEditor(r,null,moduleKey==='documents'?currentDocumentType:null,null,moduleKey==='exploitation-forestiere'?forestTypeOf(r):null));
+    tb.querySelector(`[data-delete="${r.id}"]`)?.addEventListener('click',e=>deleteRecord(r,e.currentTarget));
+  });
+}
+function fieldLabel(key,record=null){const f=activeFields(record).find(x=>x[0]===key);return f?.[1]||key.replaceAll('_',' ');}
+function displayValue(value){if(value===null||value===undefined||value==='')return '—';return String(value);}
+function personnelSexeShort(value){
+  if(value===null||value===undefined||value==='')return '—';
+  const s=String(value).trim().toUpperCase();
+  if(s==='M'||s.startsWith('MASC')||s==='HOMME')return 'M';
+  if(s==='F'||s.startsWith('FÉM')||s.startsWith('FEM')||s==='FEMME')return 'F';
+  return String(value);
+}
+
+function dossierItemHtml(r,kind=''){
+  const d=r.data||{};const when=r.event_date||d.date_activite||d.date_depart||d.date_cessation||d.date_reprise||d.date_demande||r.created_at;
+  const detail=d.objectif_mission||d.type_conge||d.theme||d.motif||d.texte_demande||d.nouvelle_affectation||d.ancien_service||'';
+  return `<div class="agent-dossier-event"><div><strong>${esc(r.title||kind||'Enregistrement')}</strong>${detail?`<small>${esc(detail)}</small>`:''}</div><time>${esc(fmtDate(when))}</time></div>`;
+}
+async function openAgentDossier(record){
+  try{
+    const resp=await api(`/api/agent-dossier?id=${encodeURIComponent(record.id)}`);const agent=resp.agent||record,d=agent.data||{},sections=resp.sections||{};
+    const identity=[['Référence administrative',d.reference_administrative||agent.reference],['Nom et Prénoms',agent.title],['Date de naissance',d.date_naissance?fmtDate(d.date_naissance):''],['Lieu de naissance',d.lieu_naissance],['Matricule',d.matricule],['Emploi',d.emploi],['Fonction',d.fonction],['Catégorie / Grade',[d.categorie,d.grade].filter(Boolean).join(' — ')],['Classe / Échelon',[d.classe,d.echelon].filter(Boolean).join(' — ')],['Prise de service au MINEF',d.date_prise_service_minef?fmtDate(d.date_prise_service_minef):''],['Prise de service dans la Région',d.date_prise_service_region?fmtDate(d.date_prise_service_region):d.date_prise_service_gbeke?fmtDate(d.date_prise_service_gbeke):''],['Handicap',d.handicap],['Situation matrimoniale',d.situation_matrimoniale],['Téléphone',d.telephone]];
+    const block=(title,key)=>{const items=sections[key]||[];return `<section class="agent-dossier-section"><div class="agent-dossier-section-head"><h3>${esc(title)}</h3><span>${items.length}</span></div>${items.length?`<div class="agent-dossier-events">${items.map(r=>dossierItemHtml(r,title)).join('')}</div>`:'<div class="agent-dossier-empty">Aucun enregistrement associé.</div>'}</section>`};
+    const photo=d.photo?`<img class="agent-dossier-photo" src="${esc(d.photo)}" alt="Photo de l’agent">`:'<div class="agent-dossier-photo agent-dossier-photo-empty">PHOTO</div>';
+    const html=`<div class="agent-dossier"><div class="agent-dossier-identity">${photo}<div class="agent-dossier-idgrid">${identity.map(([l,v])=>`<div><span>${esc(l)}</span><strong>${esc(displayValue(v))}</strong></div>`).join('')}</div></div><div class="agent-dossier-summary"><span><strong>${(sections.mutations||[]).length}</strong> Mutation(s)</span><span><strong>${(sections.conges||[]).length}</strong> Congé(s)</span><span><strong>${(sections.missions||[]).length}</strong> Mission(s)</span><span><strong>${(sections.formations||[]).length}</strong> Formation(s)</span></div>${block('Mutations et prises de service','mutations')}${block('Congés / cessations','conges')}${block('Reprises de service','reprises')}${block('Demandes d’explication','explications')}${block('Autorisations d’absence','absences')}${block('Formations','formations')}${block('Missions','missions')}</div>`;
+    await professionalDialog({title:`Dossier administratif — ${agent.title||'Agent'}`,html,confirmText:'Fermer'});
+  }catch(e){await professionalAlert('Dossier agent',e.message||'Impossible de charger le dossier administratif.');}
+}
+
+function openDetails(record){
+  if(moduleKey==='personnel'){openAgentDossier(record);return;}
+  const photo=moduleKey==='personnel'&&record.data?.photo?`<div class="agent-photo-view"><img src="${esc(record.data.photo)}" alt="Photo agent"></div>`:'';
+  const rows=[
+    ['Référence',record.reference],['Nom / Intitulé',record.title],['Date',fmtDate(record.event_date)],['Statut',record.status],
+    ...(moduleKey==='stages'?[['Type de document',stageConfig(stageTypeOf(record))?.label||'Stage']]:[]),
+    ...(moduleKey==='transformation-bois'?woodVisibleFields(woodTypeOf(record),record.data||{}):activeFields(record).filter(([, ,t])=>t!=='section'&&t!=='image')).filter(([k])=>k!=='photo').map(([k,l])=>[l,record.data?.[k]])
+  ];
+  const html=`<div class="detail-layout">${photo}<div class="detail-grid">${rows.map(([l,v])=>`<div class="detail-item"><span>${esc(l)}</span><strong>${esc(displayValue(v))}</strong></div>`).join('')}</div></div>`;
+  professionalDialog({title:`${activeSingular(record)} — Informations`,html,confirmText:'Fermer'});
+}
+
+async function compressImage(file){
+  if(!file)return '';
+  if(!/^image\/(jpeg|png|webp)$/i.test(file.type)) throw new Error('Format photo non accepté. Utilisez JPG, PNG ou WEBP.');
+  if(file.size>6*1024*1024) throw new Error('La photo ne doit pas dépasser 6 Mo.');
+  const dataUrl=await new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=reject;fr.readAsDataURL(file)});
+  const img=await new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=reject;i.src=dataUrl});
+  const maxW=520,maxH=620,ratio=Math.min(1,maxW/img.width,maxH/img.height);
+  const c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*ratio));c.height=Math.max(1,Math.round(img.height*ratio));
+  c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+  return c.toDataURL('image/jpeg',.78);
+}
+
+function inclusiveDays(start,end){
+  if(!start||!end)return '';
+  const a=new Date(`${start}T00:00:00Z`),b=new Date(`${end}T00:00:00Z`);
+  if(Number.isNaN(a.getTime())||Number.isNaN(b.getTime())||b<a)return '';
+  return Math.floor((b-a)/86400000)+1;
+}
+function frenchNumber(n){
+  n=Number(n);const u=['zéro','un','deux','trois','quatre','cinq','six','sept','huit','neuf','dix','onze','douze','treize','quatorze','quinze','seize'];
+  if(n>=0&&n<=16)return u[n];
+  if(n<20)return 'dix-'+u[n-10];
+  const t={20:'vingt',30:'trente',40:'quarante',50:'cinquante',60:'soixante'};
+  if(n<70){const d=Math.floor(n/10)*10,r=n%10;return t[d]+(r===0?'':r===1?' et un':'-'+u[r]);}
+  if(n<80){const r=n-60;return 'soixante-'+(r<=16?u[r]:'dix-'+u[r-10]);}
+  if(n<100){const r=n-80;return 'quatre-vingt'+(r===0?'s':'-'+(r<=16?u[r]:'dix-'+u[r-10]));}
+  return String(n);
+}
+function longFrDate(v){
+  if(!v)return '—';
+  const d=new Date(`${String(v).slice(0,10)}T00:00:00Z`);if(Number.isNaN(d.getTime()))return fmtDate(v);
+  return new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'long',year:'numeric',timeZone:'UTC'}).format(d).replace(/^./,c=>c.toUpperCase());
+}
+function absenceSignerTitle(){
+  const t=session?.user?.organizationType;
+  if(t==='PEF')return 'Le Chef de poste';
+  if(t==='CANTONNEMENT')return 'Le Chef de Cantonnement';
+  return 'Le Responsable du service';
+}
+function updateAbsenceDays(){
+  if(!(moduleKey==='absences'||(moduleKey==='documents'&&editorDocumentType==='ABSENCE')))return;
+  const a=document.querySelector('#dynamicFields [data-key="date_debut"]');
+  const b=document.querySelector('#dynamicFields [data-key="date_fin"]');
+  const n=document.querySelector('#dynamicFields [data-key="nombre_jours"]');
+  if(n)n.value=inclusiveDays(a?.value,b?.value);
+}
+
+
+function normalizeForestText(v){return String(v||'').trim().toLocaleLowerCase('fr-FR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ')}
+async function mountForestEditorLogic(record=null){
+  const area=document.getElementById('dynamicFields');if(!area)return;
+  const q=k=>area.querySelector(`[data-key="${k}"]`);
+  if(editorForestType==='REBOISEMENT'){
+    const type=q('type_reboisement'),enterprise=q('entreprise_responsable');
+    const wrap=enterprise?.closest('.field');
+    const update=()=>{const show=normalizeForestText(type?.value)==='compensatoires suivis';if(wrap)wrap.hidden=!show;if(enterprise&&!show)enterprise.value=''};
+    type?.addEventListener('change',update);type?.addEventListener('input',update);update();
+  }
+  if(editorForestType==='PLANTATION_CREEE'||editorForestType==='REBOISEMENT'){
+    const superficie=q('superficie'),densite=q('densite'),total=q('nombre_total_plants');
+    const calculate=()=>{if(!total||String(total.value||'').trim())return;const sv=Number(superficie?.value||0),dv=Number(densite?.value||0);if(sv>0&&dv>0)total.value=String(Math.round(sv*dv))};
+    superficie?.addEventListener('input',calculate);densite?.addEventListener('input',calculate);calculate();
+  }
+  if(editorForestType==='PEPINIERE_PRODUCTION'){
+    const sous=q('sous_prefecture'),localite=q('localite'),coordX=q('coord_x'),coordY=q('coord_y'),essence=q('essence'),produced=q('nbr_plants_produits');
+    if(!sous||!localite)return;
+    [sous,localite,essence,produced].forEach(el=>{if(el)el.required=true});
+    const initialSous=String(record?.data?.sous_prefecture||sous.value||'').trim();
+    const initialLocalite=String(record?.data?.localite||record?.data?.localisation||localite.value||'').trim();
+    try{
+      const sites=(await fetchOwnModuleItems('exploitation-forestiere',{forestType:'PEPINIERE_SITE'})).filter(r=>String(r?.data?.sous_prefecture||'').trim()&&String(r?.data?.localite||'').trim());
+      const sousValues=[...new Map(sites.map(r=>[normalizeForestText(r.data.sous_prefecture),String(r.data.sous_prefecture).trim()])).values()].sort((a,b)=>a.localeCompare(b,'fr',{sensitivity:'base'}));
+      sous.innerHTML='<option value="">— Sélectionner une sous-préfecture enregistrée —</option>';
+      sousValues.forEach(v=>{const op=document.createElement('option');op.value=v;op.textContent=v;sous.appendChild(op)});
+      if(initialSous&&!Array.from(sous.options).some(o=>normalizeForestText(o.value)===normalizeForestText(initialSous))){const op=document.createElement('option');op.value=initialSous;op.textContent=`${initialSous} — valeur existante`;sous.appendChild(op)}
+      sous.value=Array.from(sous.options).find(o=>normalizeForestText(o.value)===normalizeForestText(initialSous))?.value||'';
+      const fillLocalites=(wanted='')=>{
+        const selectedSous=normalizeForestText(sous.value);
+        const matching=sites.filter(r=>normalizeForestText(r.data.sous_prefecture)===selectedSous);
+        localite.innerHTML='<option value="">— Sélectionner une localité du site —</option>';
+        matching.sort((a,b)=>String(a.data.localite).localeCompare(String(b.data.localite),'fr',{sensitivity:'base'})).forEach(r=>{const d=r.data||{},op=document.createElement('option');op.value=String(d.localite||'');op.textContent=[d.localite,d.responsable_nom].filter(Boolean).join(' — ');op.dataset.coordX=String(d.coord_x||'');op.dataset.coordY=String(d.coord_y||'');op.dataset.siteId=String(r.id||'');localite.appendChild(op)});
+        if(wanted&&!Array.from(localite.options).some(o=>normalizeForestText(o.value)===normalizeForestText(wanted))){const op=document.createElement('option');op.value=wanted;op.textContent=`${wanted} — valeur existante`;op.dataset.coordX=String(record?.data?.coord_x||'');op.dataset.coordY=String(record?.data?.coord_y||'');localite.appendChild(op)}
+        const wantedOption=Array.from(localite.options).find(o=>normalizeForestText(o.value)===normalizeForestText(wanted));
+        if(wantedOption)localite.value=wantedOption.value;else if(matching.length===1)localite.value=String(matching[0].data?.localite||'');else localite.value='';
+        applySite();
+      };
+      const applySite=()=>{const op=localite.options[localite.selectedIndex];if(coordX)coordX.value=op?.dataset?.coordX||'';if(coordY)coordY.value=op?.dataset?.coordY||''};
+      sous.addEventListener('change',()=>fillLocalites(''));
+      localite.addEventListener('change',applySite);
+      if(sous.value)fillLocalites(initialLocalite);else{localite.innerHTML='<option value="">— Choisissez d’abord la sous-préfecture —</option>';if(coordX)coordX.value='';if(coordY)coordY.value=''}
+      if(!sites.length){sous.innerHTML='<option value="">Aucun site de pépinière enregistré</option>';sous.disabled=true;localite.innerHTML='<option value="">Ajoutez d’abord un site de pépinière</option>';localite.disabled=true;const help=document.createElement('small');help.className='muted';help.textContent='La production doit être rattachée à un site de pépinière enregistré dans « Sites de pépinière et responsables ».';sous.closest('.field')?.appendChild(help)}
+    }catch(e){console.warn('Sites de pépinière',e);showToast('Impossible de charger les sites de pépinière.','error')}
+  }
+}
+
+
+function openEditor(record=null,stageTypeOverride=null,documentTypeOverride=null,smartSourceRecord=null,forestTypeOverride=null,fireTypeOverride=null,faunaTypeOverride=null,missionTypeOverride=null){
+  const d=document.getElementById('editorDialog');d.classList.add('editor-dialog');
+  const isPersonnel=moduleKey==='personnel';
+  const isDocument=moduleKey==='documents';
+  const isConvocationModule=moduleKey==='convocations';
+  const isStage=moduleKey==='stages';
+  const isAwareness=moduleKey==='sensibilisations';
+  const isMinefActivity=moduleKey==='activites-minef';
+  const isForest=moduleKey==='exploitation-forestiere';
+  const isWood=moduleKey==='transformation-bois';
+  const isFire=moduleKey==='feux-brousse';
+  const isFauna=moduleKey==='faune';
+  const isMission=moduleKey==='missions';
+  const isFormation=moduleKey==='formations';
+  if(isStage)editorStageType=stageTypeOverride||(record?stageTypeOf(record):currentStageType);
+  if(isDocument)editorDocumentType=documentTypeOverride||(record?documentTypeOf(record):currentDocumentType);
+  if(isConvocationModule)editorConvocationView=currentConvocationView;
+  if(isForest)editorForestType=forestTypeOverride||(record?forestTypeOf(record):currentForestType);
+  if(isWood)editorWoodType=record?woodTypeOf(record):currentWoodType;
+  if(isFire)editorFireType=fireTypeOverride||(record?fireTypeOf(record):currentFireType);
+  if(isFauna)editorFaunaType=faunaTypeOverride||(record?faunaTypeOf(record):currentFaunaType);
+  if(isMission)editorMissionType=missionTypeOverride||(record?missionTypeOf(record):currentMissionType);
+  if(smartSourceRecord)pendingSmartSourceRecord=smartSourceRecord;
+  const isConvocation=isConvocationModule&&editorConvocationView==='CONVOCATIONS';
+  const isConvocationPv=isConvocationModule&&editorConvocationView==='PV';
+  const isAbsence=moduleKey==='absences'||(isDocument&&editorDocumentType==='ABSENCE');
+  const isServiceDocument=isDocument&&['CESSATION_SERVICE','CESSATION_CONGE','REPRISE_SERVICE','PRISE_SERVICE_MUTATION'].includes(editorDocumentType);
+  const isExplanationDocument=isDocument&&editorDocumentType==='DEMANDE_EXPLICATION';
+  d.classList.toggle('personnel-editor',isPersonnel);
+  d.classList.toggle('absence-editor',isAbsence);
+  d.classList.toggle('convocation-editor',isConvocation);
+  d.classList.toggle('pv-editor',isConvocationPv);
+  d.classList.toggle('stage-editor',isStage);
+  d.classList.toggle('document-service-editor',isServiceDocument);
+  d.classList.toggle('document-explanation-editor',isExplanationDocument);
+  d.classList.toggle('awareness-editor',isAwareness);
+  d.classList.toggle('minef-activity-editor',isMinefActivity);
+  d.classList.toggle('forest-editor',isForest);
+  d.classList.toggle('wood-editor',isWood);
+  d.classList.toggle('fire-editor',isFire);
+  d.classList.toggle('fauna-editor',isFauna);
+  d.classList.toggle('mission-editor',isMission);
+  d.classList.toggle('order-mission-editor',isMission&&editorMissionType==='ORDRE_MISSION');
+  d.classList.toggle('order-mission-pv-editor',isMission&&editorMissionType==='PV_ORDRE_MISSION');
+  d.classList.toggle('formation-editor',isFormation);
+  const singular=activeSingular(record);
+  document.getElementById('editorTitle').textContent=record?`Modifier — ${singular}`:`Ajouter — ${singular}`;
+  document.getElementById('recordId').value=record?.id||'';
+  const refInput=document.getElementById('recordReference');
+  const titleInput=document.getElementById('recordTitle');
+  const dateInput=document.getElementById('recordDate');
+  const statusInput=document.getElementById('recordStatus');
+  refInput.value=record?.reference||'';
+  titleInput.value=record?.title||'';
+  dateInput.value=(record?.event_date||'').slice(0,10);
+  statusInput.value=record?.status||'ACTIVE';
+  const refField=refInput.closest('.field'),dateField=dateInput.closest('.field'),titleField=titleInput.closest('.field'),statusField=statusInput.closest('.field');
+  titleInput.required=true;
+  refField.classList.remove('personnel-base-hidden');dateField.classList.remove('personnel-base-hidden');titleField.classList.remove('personnel-base-hidden');statusField.classList.remove('personnel-status-hidden');statusField.hidden=false;
+  if(isPersonnel){
+    // V2.02 — « Référence administrative » est supprimée uniquement du popup Ajouter — Agent.
+    // Elle reste disponible lors de la modification des anciens dossiers qui en possèdent une.
+    if(record){
+      refField.classList.remove('personnel-base-hidden');
+      refField.querySelector('label').textContent='Référence administrative';
+      refInput.value=record?.data?.reference_administrative||record?.reference||'';
+    }else{
+      refField.classList.add('personnel-base-hidden');
+      refInput.value='';
+    }
+    dateField.classList.add('personnel-base-hidden');
+    titleField.querySelector('label').textContent='Nom et Prénoms *';
+    titleField.classList.remove('full');
+    statusField.classList.add('personnel-status-hidden');
+  }else if(isMinefActivity){
+    refField.classList.add('personnel-base-hidden');
+    dateField.classList.add('personnel-base-hidden');
+    titleField.classList.add('personnel-base-hidden');
+    statusField.classList.add('personnel-status-hidden');
+    statusField.hidden=true;
+    titleInput.required=false;
+    titleInput.value=record?.title||record?.data?.intitule_activite||'Activité';
+    statusInput.value=record?.status||'ACTIVE';
+  }else if(isAwareness){
+    refField.classList.add('personnel-base-hidden');
+    dateField.classList.add('personnel-base-hidden');
+    titleField.classList.add('personnel-base-hidden');
+    statusField.classList.add('personnel-status-hidden');
+    titleInput.required=false;
+    titleInput.value=record?.title||record?.data?.type_sensibilisation||record?.data?.theme||'Sensibilisation';
+    statusInput.value=record?.status||'ACTIVE';
+  }else if(isForest){
+    refField.classList.add('personnel-base-hidden');
+    dateField.classList.add('personnel-base-hidden');
+    titleField.classList.add('personnel-base-hidden');
+    statusField.classList.add('personnel-status-hidden');
+    titleInput.required=false;
+    titleInput.value=record?.title||forestConfig(editorForestType)?.label||'Exploitation forestière';
+    statusInput.value=record?.status||'ACTIVE';
+  }else if(isWood){
+    refField.classList.add('personnel-base-hidden');dateField.classList.add('personnel-base-hidden');titleField.classList.add('personnel-base-hidden');statusField.classList.add('personnel-status-hidden');titleInput.required=false;titleInput.value=record?.title||woodConfig(editorWoodType)?.label||'Transformation du bois';statusInput.value=record?.status||'ACTIVE';
+  }else if(isFire||isFauna||(isMission&&editorMissionType!=='PV_INFRACTION')||isFormation){
+    refField.classList.add('personnel-base-hidden');dateField.classList.add('personnel-base-hidden');titleField.classList.add('personnel-base-hidden');statusField.classList.add('personnel-status-hidden');titleInput.required=false;
+    if(isFire)titleInput.value=record?.title||fireConfig(editorFireType)?.label||'Feux de brousse';
+    if(isFauna)titleInput.value=record?.title||faunaConfig(editorFaunaType)?.label||'Faune';
+    if(isMission)titleInput.value=record?.title||missionConfig(editorMissionType)?.label||'Mission';
+    if(isFormation)titleInput.value=record?.title||record?.data?.theme||'Formation';
+    statusInput.value=record?.status||'ACTIVE';
+  }else if(isMission&&editorMissionType==='PV_INFRACTION'){
+    refField.classList.add('personnel-base-hidden');dateField.classList.add('personnel-base-hidden');
+    titleField.querySelector('label').textContent='Affaire / personne mise en cause *';titleField.classList.remove('full');titleInput.readOnly=true;titleInput.classList.add('computed-field');
+    statusField.classList.add('personnel-status-hidden');statusField.hidden=true;statusInput.value=record?.status||'ACTIVE';
+  }else if(isAbsence){
+    // V1.87 — Autorisation d’absence : la Référence administrative remplace
+    // l’ancien champ « Référence / N° » et le nom de l’agent provient du champ intelligent.
+    refField.querySelector('label').textContent='Référence administrative';
+    refInput.value=record?.data?.reference_administrative||record?.reference||'';
+    refInput.placeholder='Ex. 00125';
+    dateField.querySelector('label').textContent='Date d’établissement';
+    titleField.querySelector('label').textContent='Nom et Prénoms de l’agent *';
+    titleField.classList.remove('full');
+    titleField.classList.add('personnel-base-hidden');
+    titleInput.required=false;
+    statusField.classList.remove('personnel-status-hidden');
+    statusInput.innerHTML='<option value="BROUILLON">BROUILLON</option><option value="AUTORISÉ">AUTORISÉ</option><option value="ANNULÉ">ANNULÉ</option>';
+    statusInput.value=record?.status||'AUTORISÉ';
+  }else if(isConvocation){
+    // V1.89 — La Référence administrative remplace l’ancien champ « Référence / N° »
+    // au même emplacement. Le nom de la personne convoquée reste une saisie manuelle.
+    refField.querySelector('label').textContent='Référence administrative';
+    refInput.value=record?.data?.reference_administrative||record?.reference||'';
+    refInput.placeholder='Ex. 00125';
+    dateField.querySelector('label').textContent="Date d’établissement";
+    titleField.querySelector('label').textContent='Nom et Prénoms de la personne convoquée *';
+    titleField.classList.remove('full');
+    statusField.classList.remove('personnel-status-hidden');
+    statusInput.innerHTML='<option value="BROUILLON">BROUILLON</option><option value="ÉMISE">ÉMISE</option><option value="REMISE">REMISE</option><option value="PRÉSENTÉ">PRÉSENTÉ</option><option value="ANNULÉ">ANNULÉ</option>';
+    statusInput.value=record?.status||'ÉMISE';
+  }else if(isConvocationPv){
+    // V1.90 — Procès-verbal de rencontre : la Référence administrative remplace
+    // l’ancien « Référence / N° du procès-verbal » et l’identité provient
+    // exclusivement du champ intelligent « Convocation à l’origine de la rencontre ».
+    refField.querySelector('label').textContent='Référence administrative';
+    refInput.value=record?.data?.reference_administrative||record?.reference||'';
+    refInput.placeholder='Ex. 00125';
+    dateField.querySelector('label').textContent="Date d’établissement du procès-verbal";
+    titleField.querySelector('label').textContent='Personne convoquée / personne concernée *';
+    titleField.classList.remove('full');
+    titleField.classList.add('personnel-base-hidden');
+    titleInput.required=false;
+    statusField.classList.remove('personnel-status-hidden');
+    statusInput.innerHTML='<option value="BROUILLON">BROUILLON</option><option value="ÉTABLI">ÉTABLI</option><option value="VALIDÉ">VALIDÉ</option><option value="ANNULÉ">ANNULÉ</option>';
+    statusInput.value=record?.status||'ÉTABLI';
+  }else if(isStage){
+    // V1.88 — Mise en stage / Fin de stage : la Référence administrative
+    // remplace l’ancien champ « Référence / N° attestation » au même emplacement.
+    refField.querySelector('label').textContent='Référence administrative';
+    refInput.value=record?.data?.reference_administrative||record?.reference||'';
+    refInput.placeholder='Ex. 00125';
+    dateField.querySelector('label').textContent="Date d’établissement";
+    titleField.querySelector('label').textContent='Nom et Prénoms du stagiaire *';
+    titleField.classList.remove('full');
+    // Pour une fin de stage, l’identité du stagiaire provient exclusivement
+    // du champ intelligent « Stage en cours à clôturer ».
+    if(editorStageType==='FIN_STAGE'){
+      titleField.classList.add('personnel-base-hidden');
+      titleInput.required=false;
+    }
+    statusField.classList.remove('personnel-status-hidden');
+    if(editorStageType==='MISE_STAGE'){
+      statusInput.innerHTML='<option value="BROUILLON">BROUILLON</option><option value="EN COURS">EN COURS</option><option value="ÉMISE">ÉMISE</option><option value="TERMINÉ">TERMINÉ</option><option value="ANNULÉE">ANNULÉE</option>';
+      statusInput.value=record?.status||'EN COURS';
+    }else{
+      statusInput.innerHTML='<option value="BROUILLON">BROUILLON</option><option value="ÉMISE">ÉMISE</option><option value="ANNULÉE">ANNULÉE</option>';
+      statusInput.value=record?.status||'ÉMISE';
+    }
+  }else if(isExplanationDocument){
+    // V1.87 — La demande d’explication utilise directement la Référence administrative
+    // et le nom de l’agent est fourni uniquement par le champ intelligent « Agent concerné ».
+    refField.querySelector('label').textContent='Référence administrative';
+    refInput.value=record?.data?.reference_administrative||record?.reference||'';
+    refInput.placeholder='Ex. 00125';
+    dateField.querySelector('label').textContent="Date d’établissement";
+    titleField.querySelector('label').textContent='Nom et Prénoms de l’agent *';
+    titleField.classList.remove('full');
+    titleField.classList.add('personnel-base-hidden');
+    titleInput.required=false;
+    statusField.classList.remove('personnel-status-hidden');
+    statusInput.innerHTML='<option value="BROUILLON">BROUILLON</option><option value="ÉMISE">ÉMISE</option><option value="RÉPONDUE">RÉPONDUE</option><option value="ANNULÉE">ANNULÉE</option>';
+    statusInput.value=record?.status||'ÉMISE';
+  }else if(isServiceDocument){
+    refField.querySelector('label').textContent='Référence / N° certificat';
+    dateField.querySelector('label').textContent="Date d’établissement";
+    titleField.querySelector('label').textContent='Nom et Prénoms de l’agent *';
+    titleField.classList.remove('full');
+    // V1.85 — Ajustements ciblés des documents de service.
+    // Cessation / mutation, cessation / congé et reprise / congé :
+    // le numéro de certificat et le nom ne sont plus saisis manuellement.
+    if(['CESSATION_SERVICE','CESSATION_CONGE','REPRISE_SERVICE'].includes(editorDocumentType)){
+      refField.classList.add('personnel-base-hidden');
+      titleField.classList.add('personnel-base-hidden');
+      titleInput.required=false;
+    }
+    // Prise de service / mutation : supprimer uniquement la saisie de la référence.
+    // Le champ manuel « Nom et Prénoms de l’agent » reste visible et obligatoire.
+    if(editorDocumentType==='PRISE_SERVICE_MUTATION'){
+      refField.classList.add('personnel-base-hidden');
+      titleField.classList.remove('personnel-base-hidden');
+      titleInput.required=true;
+    }
+    statusField.classList.remove('personnel-status-hidden');
+    statusInput.innerHTML='<option value="BROUILLON">BROUILLON</option><option value="ÉMIS">ÉMIS</option><option value="ANNULÉ">ANNULÉ</option>';
+    statusInput.value=record?.status||'ÉMIS';
+  }else{
+    dateField.querySelector('label').textContent='Date';
+    titleField.querySelector('label').textContent='Intitulé / nom principal *';
+    titleField.classList.add('full');
+    statusField.classList.remove('personnel-status-hidden');
+  }
+  // V1.97 — Ressource et Équipement : retirer aussi le champ générique « Référence ».
+  if(moduleKey==='ressources-naturelles'||moduleKey==='materiel')refField.classList.add('personnel-base-hidden');
+  const area=document.getElementById('dynamicFields');area.innerHTML='';
+  // V1.92 — Dans « Ajouter — Répression d’infraction », le champ simple
+  // « Chef de mission » n’est plus affiché. Ce champ caché reçoit la valeur
+  // choisie par le sélecteur intelligent afin de conserver l’enregistrement,
+  // les rapports et les impressions existants sans changer leur logique.
+  if(isMission&&editorMissionType==='REPRESSION'&&!record){const hidden=document.createElement('input');hidden.type='hidden';hidden.dataset.key='chef_mission';hidden.value='';area.appendChild(hidden)}
+  if(isMission&&editorMissionType==='PV_INFRACTION'){const hidden=document.createElement('input');hidden.type='hidden';hidden.dataset.key='_source_offense_id';hidden.value=record?.data?._source_offense_id||'';area.appendChild(hidden)}
+  if(isMission&&editorMissionType==='PV_ORDRE_MISSION'){const hidden=document.createElement('input');hidden.type='hidden';hidden.dataset.key='_source_order_mission_id';hidden.value=record?.data?._source_order_mission_id||'';area.appendChild(hidden)}
+  // V1.97 — Les champs manuels sont retirés, mais les sélecteurs intelligents
+  // continuent d'enregistrer la valeur métier dans un champ caché.
+  if(isAwareness){const hidden=document.createElement('input');hidden.type='hidden';hidden.dataset.key='agent_charge';hidden.value=record?.data?.agent_charge||'';area.appendChild(hidden)}
+  if(moduleKey==='materiel'){const hidden=document.createElement('input');hidden.type='hidden';hidden.dataset.key='responsable';hidden.value=record?.data?.responsable||'';area.appendChild(hidden)}
+
+  // V1.74 — Référence administrative sur les formulaires concernés.
+  // V1.95 — Elle est supprimée des cinq formulaires d’Exploitation forestière :
+  // Recherche parcellaire, Site de pépinière, Production de pépinière, Plantation forestière créée et Reboisement.
+  // V1.91 — Pour le Procès-verbal de mission, la Référence administrative reste visible
+  // et modifiable même en modification. Elle occupe la première place visible du formulaire,
+  // à la place de l’ancien sélecteur intelligent « Chef de mission ».
+  if(!isPersonnel&&!isExplanationDocument&&!isAbsence&&!isStage&&!isConvocation&&!isConvocationPv&&!isMinefActivity&&!suppressesAdministrativeReference(record)){
+    const isOrderMissionPv=isMission&&editorMissionType==='PV_ORDRE_MISSION';
+    const administrativeReference=String(record?.data?.reference_administrative||record?.reference||'');
+    if(record&&!isOrderMissionPv){
+      const hidden=document.createElement('input');
+      hidden.type='hidden';hidden.dataset.key='reference_administrative';hidden.value=administrativeReference;area.appendChild(hidden);
+    }else{
+      const wrap=document.createElement('div');wrap.className='field administrative-reference-field';wrap.dataset.fieldKey='reference_administrative';
+      const lab=document.createElement('label');lab.textContent='Référence administrative';
+      const input=document.createElement('input');input.type='text';input.dataset.key='reference_administrative';input.autocomplete='off';input.placeholder='Ex. 00125';input.value=administrativeReference;
+      const help=document.createElement('small');help.className='muted';help.textContent='Référence propre au document. Elle sera utilisée dans l’en-tête de l’impression.';
+      wrap.append(lab,input,help);area.appendChild(wrap);
+    }
+  }
+
+  for(const [key,label,type,opts] of activeFields(record)){
+    if(isAwareness&&key==='agent_charge')continue;
+    if(moduleKey==='materiel'&&key==='responsable')continue;
+    if(type==='section'){
+      const section=document.createElement('div');section.className='form-section-heading full';section.dataset.sectionKey=key;section.innerHTML=`<strong>${esc(label)}</strong>`;area.appendChild(section);continue;
+    }
+    const wrap=document.createElement('div');wrap.className='field'+((type==='textarea'||type==='computed-textarea')?' full':'')+(type==='image'?' photo-field':'');wrap.dataset.fieldKey=key;
+    if(isConvocation){
+      if(key==='objet_convocation')wrap.classList.add('convocation-object-field');
+      if(key==='personne_a_voir')wrap.classList.add('convocation-person-field');
+    }
+    if(isConvocationPv&&['objet_rencontre','personnes_presentes','resume_echanges','conclusions_decisions','observations'].includes(key))wrap.classList.add('pv-wide-field');
+    if(isStage&&key==='theme')wrap.classList.add('stage-theme-field');
+    if(isStage&&key==='note_service_origine')wrap.classList.add('stage-wide-field');
+    if(isServiceDocument&&['decision_objet','certificat_cessation_origine','decision_autorite','type_conge','lieu_conge'].includes(key))wrap.classList.add('document-wide-field');
+    if(isExplanationDocument&&['texte_demande','reponse_agent'].includes(key))wrap.classList.add('document-explanation-wide-field');
+    const lab=document.createElement('label');lab.textContent=label;wrap.appendChild(lab);
+    if(type==='image'){
+      const hidden=document.createElement('input');hidden.type='hidden';hidden.dataset.key=key;hidden.value=record?.data?.[key]||'';
+      const input=document.createElement('input');input.type='file';input.accept='image/jpeg,image/png,image/webp';
+      const preview=document.createElement('div');preview.className='photo-preview';
+      const render=()=>{preview.innerHTML=hidden.value?`<img src="${esc(hidden.value)}" alt="Photo de l’agent"><button type="button" class="btn btn-danger btn-sm" data-remove-photo>Retirer</button>`:'<span class="muted">Aucune photo sélectionnée</span>';preview.querySelector('[data-remove-photo]')?.addEventListener('click',()=>{hidden.value='';input.value='';render()})};
+      input.addEventListener('change',async()=>{try{if(input.files?.[0])hidden.value=await compressImage(input.files[0]);render()}catch(err){input.value='';professionalAlert('Photo non importée',err.message)}});
+      wrap.append(hidden,input,preview);render();area.appendChild(wrap);continue;
+    }
+    let el;
+    if(type==='textarea'||type==='computed-textarea'){el=document.createElement('textarea');el.rows=2;if(type==='computed-textarea'){el.readOnly=true;el.classList.add('computed-field')}}
+    else if(type==='select'){el=document.createElement('select');for(const o of String(opts||'').split('|')){const op=document.createElement('option');op.value=o;op.textContent=o;el.appendChild(op)}}
+    else if(['agent-select','created-fire-select'].includes(type)){el=document.createElement('select');const op=document.createElement('option');op.value='';op.textContent=type==='created-fire-select'?'— Sélectionner un comité créé —':'— Sélectionner —';el.appendChild(op)}
+    else{el=document.createElement('input');el.type=type==='computed'?'number':'text';if(!['computed','computed-text'].includes(type))el.type=type||'text';if(['computed','computed-text'].includes(type)){el.readOnly=true;el.classList.add('computed-field')}}
+    el.dataset.key=key;
+    let initialValue=record?.data?.[key]??'';
+    if(isAwareness&&key==='type_sensibilisation'&&!initialValue)initialValue=record?.data?.theme||record?.title||'';
+    if(isAwareness&&key==='date_activite'&&!initialValue)initialValue=(record?.event_date||'').slice(0,10);
+    if(isMinefActivity&&key==='date_activite'&&!initialValue)initialValue=(record?.event_date||'').slice(0,10);
+    if(isForest&&key==='date_activite'&&!initialValue)initialValue=(record?.event_date||'').slice(0,10);
+    if(isFire&&key==='date_constat'&&!initialValue)initialValue=(record?.event_date||'').slice(0,10);
+    if(isFauna&&key==='date_observation'&&!initialValue)initialValue=(record?.event_date||'').slice(0,10);
+    if(isFormation&&key==='date_activite'&&!initialValue)initialValue=(record?.event_date||'').slice(0,10);
+    el.value=initialValue;
+    if(isConvocationPv&&!record&&key==='lieu_rencontre')el.value=session?.user?.organizationName||'';
+    if(isStage&&!record&&key==='qualite_stagiaire')el.value='élève Sous-officier';
+    if(isStage&&!record&&editorStageType==='MISE_STAGE'&&key==='note_service_origine')el.value='Direction des Ressources Humaines et de la Formation du Ministère des Eaux et Forêts';
+    if(isServiceDocument&&!record&&key==='option_emploi')el.value='Eaux et Forêts';
+    if(isServiceDocument&&!record&&editorDocumentType==='CESSATION_SERVICE'&&key==='decision_objet')el.value='portant mutation des Agents Techniques du Ministère des Eaux et Forêts';
+    if(isServiceDocument&&!record&&editorDocumentType==='CESSATION_SERVICE'&&key==='ancien_service')el.value=session?.user?.organizationName||'';
+    if(isServiceDocument&&!record&&editorDocumentType==='CESSATION_CONGE'&&key==='type_conge')el.value='congé administratif annuel';
+    if(isServiceDocument&&!record&&editorDocumentType==='CESSATION_CONGE'&&key==='annee_conge')el.value=String(new Date().getFullYear());
+    if(isServiceDocument&&!record&&editorDocumentType==='REPRISE_SERVICE'&&key==='type_conge')el.value='congé administratif';
+    if(isServiceDocument&&!record&&editorDocumentType==='REPRISE_SERVICE'&&key==='service_reprise')el.value=session?.user?.organizationName||'';
+    if(isServiceDocument&&!record&&editorDocumentType==='PRISE_SERVICE_MUTATION'&&key==='decision_objet')el.value='portant mutation des Agents Techniques du Ministère des Eaux et Forêts';
+    if(isServiceDocument&&!record&&editorDocumentType==='PRISE_SERVICE_MUTATION'&&key==='nouvelle_affectation')el.value=session?.user?.organizationName||'';
+    if(isExplanationDocument&&!record&&key==='civilite')el.value='Monsieur';
+    if(isExplanationDocument&&!record&&key==='service_affectation')el.value=session?.user?.organizationName||'';
+    if(isExplanationDocument&&!record&&key==='delai_reponse_heures')el.value='48';
+    wrap.appendChild(el);area.appendChild(wrap);
+  }
+  const hideDocumentAmpliations=isFormation;
+  if(!isPersonnel&&!hideDocumentAmpliations){
+    const ampliationsWrap=document.createElement('div');
+    ampliationsWrap.className='field full ampliations-toggle-field document-ampliations-field';
+    const ampliationsChecked=['1','true','yes','oui'].includes(String(record?.data?._show_ampliations||'').toLowerCase());
+    const hasOwn=(obj,key)=>Object.prototype.hasOwnProperty.call(obj||{},key);
+    const hasDocumentAmpliations=hasOwn(record?.data,'_ampliations');
+    const hasDocumentAmpliationNumbers=hasOwn(record?.data,'_ampliation_numbers');
+    const initialAmpliations=hasDocumentAmpliations?String(record?.data?._ampliations||''):String(printSettingsCache?.ampliations||'');
+    const initialAmpliationNumbers=hasDocumentAmpliationNumbers?String(record?.data?._ampliation_numbers||''):String(printSettingsCache?.ampliationNumbers||'');
+    ampliationsWrap.innerHTML=`<div class="document-ampliations-head"><div><strong>AMPLIATIONS du document</strong><small>Les destinataires sont préremplis depuis Paramètres → En-tête des imprimés. Vous pouvez les modifier ici : ces changements resteront propres à ce document et ne modifieront ni les paramètres généraux ni les autres documents.</small></div><label class="ampliations-toggle"><input type="checkbox" data-key="_show_ampliations" ${ampliationsChecked?'checked':''}><span><strong>Afficher sur le PDF</strong><small>Active ou masque les ampliations uniquement pour ce document.</small></span></label></div><div class="document-ampliations-grid"><div class="field"><label>Destinataires / ampliations</label><textarea rows="5" data-key="_ampliations" placeholder="Un destinataire par ligne">${esc(initialAmpliations)}</textarea></div><div class="field"><label>Nombres / exemplaires</label><textarea rows="5" data-key="_ampliation_numbers" placeholder="Un nombre par ligne">${esc(initialAmpliationNumbers)}</textarea></div></div>`;
+    area.appendChild(ampliationsWrap);
+    if(!hasDocumentAmpliations||!hasDocumentAmpliationNumbers){
+      const docId=String(record?.id||'');
+      ensurePrintSettings().then(settings=>{
+        const currentId=String(document.getElementById('recordId')?.value||'');
+        if(currentId!==docId)return;
+        const dest=ampliationsWrap.querySelector('[data-key="_ampliations"]');
+        const nums=ampliationsWrap.querySelector('[data-key="_ampliation_numbers"]');
+        if(!hasDocumentAmpliations&&dest&&!dest.value.trim())dest.value=String(settings?.ampliations||'');
+        if(!hasDocumentAmpliationNumbers&&nums&&!nums.value.trim())nums.value=String(settings?.ampliationNumbers||'');
+      }).catch(()=>{});
+    }
+  }
+  if(isAbsence){
+    const start=document.querySelector('#dynamicFields [data-key="date_debut"]');
+    const end=document.querySelector('#dynamicFields [data-key="date_fin"]');
+    start?.addEventListener('change',updateAbsenceDays);end?.addEventListener('change',updateAbsenceDays);updateAbsenceDays();
+  }
+  if(isForest)mountForestEditorLogic(record);
+  if(isWood)mountWoodEditorLogic(record);
+  if(isFire)mountFireEditorLogic(record);
+  if(isMission)mountMissionEditorLogic(record);
+  if(isFormation)mountFormationEditorLogic(record);
+  if(moduleKey==='ressources-naturelles')mountResourceEditorLogic(record);
+  if(isMinefActivity)mountMinefActivityEditorLogic(record);
+  const foot=d.querySelector('.dialog-foot');foot?.querySelector('[data-pv-print-dialog]')?.remove();
+  if(isMission&&['PV_INFRACTION','PV_ORDRE_MISSION'].includes(editorMissionType)&&record&&foot){const b=document.createElement('button');b.type='button';b.className='btn btn-secondary';b.dataset.pvPrintDialog='1';b.textContent='Imprimer le P-V';b.addEventListener('click',e=>withButtonLock(e.currentTarget,()=>printRecord(record),'Préparation…'));foot.insertBefore(b,foot.lastElementChild)}
+  d.showModal();
+  mountSmartAutofill(record);
+  mountHistorySuggestions(record);
+}
+
+
+async function fetchOwnModuleItems(module,extra={}){
+  const out=[];let page=1,totalPages=1;
+  do{
+    const q=new URLSearchParams({module,page:String(page),limit:'100',search:''});
+    Object.entries(extra||{}).forEach(([k,v])=>{if(v!==undefined&&v!==null&&String(v)!=='')q.set(k,String(v))});
+    const r=await api(`/api/load?${q.toString()}`);out.push(...(r.items||[]));totalPages=Number(r.totalPages||1);page++;
+  }while(page<=totalPages&&page<=100);
+  return out;
+}
+function editorFieldWrap(key){return document.querySelector(`#dynamicFields [data-field-key="${key}"]`)}
+function setFieldVisibility(key,show,{clear=false}={}){const w=editorFieldWrap(key);if(!w)return;w.hidden=!show;if(!show&&clear){const el=w.querySelector('[data-key]');if(el)el.value=''}}
+async function mountFireEditorLogic(record=null){
+  if(!['REDYNAMISE','RENOUVELE'].includes(editorFireType))return;
+  const area=document.getElementById('dynamicFields');if(!area)return;
+  const q=k=>area.querySelector(`[data-key="${k}"]`);
+  const village=q('village'),departement=q('departement'),sous=q('sous_prefecture'),acte=q('acte_creation'),president=q('president_nom'),contact=q('president_contact');
+  if(!village)return;
+  const currentVillage=String(record?.data?.village||village.value||'');
+  try{
+    const created=await fetchOwnModuleItems('feux-brousse',{fireType:'CREE'});
+    const rows=created
+      .filter(r=>String(r?.data?.village||'').trim())
+      .sort((a,b)=>String(a.data?.village||'').localeCompare(String(b.data?.village||''),'fr',{sensitivity:'base'}));
+    village.innerHTML='<option value="">— Sélectionner un comité créé —</option>';
+    rows.forEach(r=>{
+      const d=r.data||{};const op=document.createElement('option');
+      op.value=String(d.village||'');
+      op.textContent=[d.village,d.sous_prefecture,d.departement].filter(Boolean).join(' — ');
+      op.dataset.departement=String(d.departement||'');op.dataset.sousPrefecture=String(d.sous_prefecture||'');op.dataset.acte=String(d.acte_creation||'');op.dataset.president=String(d.president_nom||'');op.dataset.contact=String(d.president_contact||'');op.dataset.sourceId=String(r.id||'');
+      village.appendChild(op);
+    });
+    if(currentVillage && !Array.from(village.options).some(o=>o.value===currentVillage)){
+      const legacy=document.createElement('option');legacy.value=currentVillage;legacy.textContent=`${currentVillage} — comité enregistré`;village.appendChild(legacy);
+    }
+    village.value=currentVillage;
+  }catch(e){
+    console.warn('Liste des comités créés',e);
+    if(currentVillage){const op=document.createElement('option');op.value=currentVillage;op.textContent=currentVillage;village.appendChild(op);village.value=currentVillage}
+  }
+  const autofill=()=>{
+    const op=village.selectedOptions?.[0];if(!op||!op.value)return;
+    if(departement)departement.value=op.dataset.departement||departement.value||'';
+    if(sous)sous.value=op.dataset.sousPrefecture||sous.value||'';
+    if(acte)acte.value=op.dataset.acte||acte.value||'';
+    if(president)president.value=op.dataset.president||president.value||'';
+    if(contact)contact.value=op.dataset.contact||contact.value||'';
+  };
+  village.addEventListener('change',autofill);
+  // Pour une nouvelle redynamisation / un nouveau renouvellement, le choix du village
+  // récupère automatiquement les informations du comité créé. Tous les champs restent modifiables.
+  if(!record && village.value)autofill();
+}
+
+async function mountMissionEditorLogic(record=null){
+  const area=document.getElementById('dynamicFields');if(!area)return;
+  const q=k=>area.querySelector(`[data-key="${k}"]`);
+  if(editorMissionType==='ORDRE_MISSION'){
+    const numero=q('numero_mission');if(numero&&!record)numero.placeholder='Attribué automatiquement à l’enregistrement';
+    const locality=String(session?.user?.organizationName||'').replace(/^(POSTE DES EAUX ET FORÊTS DE|CANTONNEMENT(?: DES EAUX ET FORÊTS)? DE)\s*/i,'').trim();
+    const residence=q('residence_affectation');if(residence&&!record&&!residence.value)residence.value=locality||session?.user?.organizationName||'';
+    const ensureHidden=(key,value='')=>{let el=q(key);if(!el){el=document.createElement('input');el.type='hidden';el.dataset.key=key;area.appendChild(el)}el.value=String(value??'');return el};
+    const teamKeys=['chef_mission','agent_mission_1','agent_mission_2','agent_mission_3','agent_mission_4'];
+    let preview=null;
+    const renderPreview=()=>{
+      if(!preview)return;
+      const rows=teamKeys.map((key,index)=>{
+        const sel=q(key);const prefix=key==='chef_mission'?'_chef_mission':`_${key}`;
+        const name=String(sel?.value||'').trim();const matricule=String(q(`${prefix}_matricule`)?.value||'').trim();const corps=String(q(`${prefix}_corps`)?.value||'').trim();const fonction=String(q(`${prefix}_fonction`)?.value||'').trim();
+        const role=index===0?'Chef de mission':`Agent ${index}`;
+        return `<tr><td><span class="order-team-role">${esc(role)}</span>${name?`<strong>${esc(name)}</strong>`:'—'}</td><td>${esc(matricule||'—')}</td><td>${esc(corps||'—')}</td><td>${esc(fonction||'—')}</td></tr>`;
+      }).join('');
+      preview.innerHTML=`<label>Aperçu de l’équipe</label><div class="order-team-preview-wrap"><table class="order-team-preview-table"><thead><tr><th>Nom et prénoms</th><th>Matricule</th><th>Corps</th><th>Fonction</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    };
+    try{
+      const agents=await fetchOwnModuleItems('personnel');
+      for(const key of teamKeys){
+        const sel=q(key);if(!sel)continue;const current=String(record?.data?.[key]||sel.value||'');
+        sel.innerHTML='<option value="">— Sélectionner —</option>'+agents.map(r=>`<option value="${esc(r.title||'')}" data-matricule="${esc(r.data?.matricule||'')}" data-corps="${esc(r.data?.emploi||r.data?.corps||'')}" data-grade="${esc(r.data?.grade||'')}" data-fonction="${esc(r.data?.fonction||'')}">${esc(r.title||'')}${r.data?.matricule?` — ${esc(r.data.matricule)}`:''}</option>`).join('');sel.value=current;
+        const prefix=key==='chef_mission'?'_chef_mission':`_${key}`;
+        const matricule=ensureHidden(`${prefix}_matricule`,record?.data?.[`${prefix}_matricule`]||'');
+        const corps=ensureHidden(`${prefix}_corps`,record?.data?.[`${prefix}_corps`]||'');
+        const grade=ensureHidden(`${prefix}_grade`,record?.data?.[`${prefix}_grade`]||'');
+        const fonction=ensureHidden(`${prefix}_fonction`,record?.data?.[`${prefix}_fonction`]||'');
+        const sync=()=>{const op=sel.selectedOptions?.[0];matricule.value=op?.dataset?.matricule||'';corps.value=op?.dataset?.corps||'';grade.value=op?.dataset?.grade||'';fonction.value=op?.dataset?.fonction||'';renderPreview()};
+        sel.addEventListener('change',sync);
+        if(sel.value&&(!record||!matricule.value||!corps.value||!fonction.value))sync();
+      }
+      preview=document.createElement('div');preview.className='field full order-team-preview';
+      const residenceWrap=editorFieldWrap('residence_affectation');area.insertBefore(preview,residenceWrap||null);renderPreview();
+    }catch(e){console.warn('Équipe ordre de mission',e)}
+  }
+  if(editorMissionType==='PV_ORDRE_MISSION'){
+    const sourceId=Number(q('_source_order_mission_id')?.value||record?.data?._source_order_mission_id||0);
+    if(sourceId){
+      try{
+        const orders=await fetchOwnModuleItems('missions',{missionType:'ORDRE_MISSION'});const source=orders.find(r=>Number(r.id)===sourceId);
+        if(source){const d=source.data||{};const agents=[d.agent_mission_1,d.agent_mission_2,d.agent_mission_3,d.agent_mission_4].filter(Boolean).join('\n');const means=[[d.moyen_deplacement_1,d.immatriculation_1],[d.moyen_deplacement_2,d.immatriculation_2]].filter(x=>x.some(Boolean)).map(([m,i])=>[m,i].filter(Boolean).join(' — ')).join('\n');const auto={ordre_reference:d.numero_mission||source.reference||'',chef_mission:d.chef_mission||'',agents_mission:agents,residence_affectation:d.residence_affectation||'',lieu_mission:d.lieu_mission||'',objectif_mission:d.objectif_mission||'',date_depart:d.date_depart||'',date_retour:d.date_retour||'',moyen_deplacement_1:d.moyen_deplacement_1||'',immatriculation_1:d.immatriculation_1||'',moyen_deplacement_2:d.moyen_deplacement_2||'',immatriculation_2:d.immatriculation_2||'',moyens_deplacement:means,_chef_mission_matricule:d._chef_mission_matricule||'',_chef_mission_corps:d._chef_mission_corps||'',agent_mission_1:d.agent_mission_1||'',_agent_mission_1_matricule:d._agent_mission_1_matricule||'',_agent_mission_1_corps:d._agent_mission_1_corps||'',_agent_mission_1_fonction:d._agent_mission_1_fonction||'',agent_mission_2:d.agent_mission_2||'',_agent_mission_2_matricule:d._agent_mission_2_matricule||'',_agent_mission_2_corps:d._agent_mission_2_corps||'',_agent_mission_2_fonction:d._agent_mission_2_fonction||'',agent_mission_3:d.agent_mission_3||'',_agent_mission_3_matricule:d._agent_mission_3_matricule||'',_agent_mission_3_corps:d._agent_mission_3_corps||'',_agent_mission_3_fonction:d._agent_mission_3_fonction||'',agent_mission_4:d.agent_mission_4||'',_agent_mission_4_matricule:d._agent_mission_4_matricule||'',_agent_mission_4_corps:d._agent_mission_4_corps||'',_agent_mission_4_fonction:d._agent_mission_4_fonction||''};Object.entries(auto).forEach(([k,v])=>{const el=q(k);if(el)el.value=v??''});const lieu=q('lieu_pv');if(!record&&lieu&&!lieu.value)lieu.value=d.lieu_mission||d.residence_affectation||''}
+      }catch(e){console.warn('Ordre de mission lié au P-V',e)}
+    }
+  }
+  if(editorMissionType==='PV_INFRACTION'){
+    const sourceId=Number(q('_source_offense_id')?.value||record?.data?._source_offense_id||0);
+    const title=document.getElementById('recordTitle');if(title){title.readOnly=true;title.classList.add('computed-field')}
+    if(sourceId){
+      try{
+        const offenses=await fetchOwnModuleItems('missions',{missionType:'REPRESSION'});const source=offenses.find(r=>Number(r.id)===sourceId);
+        if(source){
+          const d=source.data||{};if(title)title.value=d.personne_mise_cause||source.title||'Infraction';
+          const auto={chef_mission:d.chef_mission||'',agents_arrestation:d.agents_arrestation||'',date_controle:d.date_controle,heure_controle:d.heure_controle,lieu_controle:d.lieu_controle,arrestation:d.arrestation,domicile_mis_cause:d.domicile_mis_cause,contact_mis_cause:d.contact_mis_cause,type_piece_identite:d.type_piece_identite||String(d.type_numero_piece||'').split(/[-–—]/)[0]?.trim(),numero_piece_identite:d.numero_piece_identite||String(d.type_numero_piece||'').split(/[-–—]/).slice(1).join('-').trim(),objet_infraction:d.objet_infraction,objets_saisis:d.objets_saisis,produits_saisis:d.produits_saisis,materiels_saisis:d.materiels_saisis,sort_biens:d.sort_biens,lieu_conservation:d.lieu_conservation};
+          Object.entries(auto).forEach(([k,v])=>{const el=q(k);if(el)el.value=v??''});
+          const defaults={expose_faits:d.expose_faits,constatations:d.constatations,declaration_mis_cause:d.declaration_mis_cause,observations_pv:d.observations,resume_infraction:d.resume_infraction||d.objet_infraction,mesures_prises:d.mesures_prises,autorite_transmission:d.autorite_transmission};
+          if(!record)Object.entries(defaults).forEach(([k,v])=>{const el=q(k);if(el&&!el.value)el.value=v??''});
+        }
+      }catch(e){console.warn('Affaire liée au P-V',e)}
+    }
+  }
+}
+function mountMinefActivityEditorLogic(record=null){
+  const area=document.getElementById('dynamicFields');
+  const type=area?.querySelector('[data-key="type_activite"]');
+  const cadreWrap=editorFieldWrap('categorie_minef');
+  if(!type||!cadreWrap)return;
+  const update=()=>{
+    const minef=normalizeWoodText(type.value)==='activites du minef';
+    // Le champ Cadre de l’activité MINEF n’existe visuellement que pour une activité du MINEF.
+    cadreWrap.hidden=!minef;
+    cadreWrap.classList.toggle('hidden',!minef);
+    const cadre=cadreWrap.querySelector('[data-key="categorie_minef"]');
+    if(cadre){
+      cadre.disabled=!minef;
+      if(!minef)cadre.value='';
+    }
+  };
+  type.addEventListener('change',update);
+  update();
+}
+
+async function mountFormationEditorLogic(record=null){
+  const area=document.getElementById('dynamicFields');const theme=area?.querySelector('[data-key="theme"]');if(!theme)return;
+  const update=()=>{const other=normalizeWoodText(theme.value).startsWith('autres');setFieldVisibility('theme_autre',other,{clear:!other})};theme.addEventListener('change',update);update();
+  // V1.99 — Liaison nominative facultative des formations avec les agents.
+  // Elle alimente automatiquement le dossier administratif numérique de l'agent.
+  try{
+    const agents=await fetchOwnModuleItems('personnel');if(!agents.length)return;
+    let selected=[];try{selected=JSON.parse(String(record?.data?._participant_agent_ids||'[]'))}catch{}selected=(Array.isArray(selected)?selected:[]).map(Number);
+    const wrap=document.createElement('div');wrap.className='field full formation-participants-field';wrap.dataset.fieldKey='_participant_agent_ids';
+    const hidden=document.createElement('input');hidden.type='hidden';hidden.dataset.key='_participant_agent_ids';hidden.value=JSON.stringify(selected);
+    const label=document.createElement('label');label.textContent='Agents participants (liaison avec les fiches individuelles)';
+    const help=document.createElement('div');help.className='small-note';help.textContent='Facultatif : cochez les agents concernés afin que cette formation apparaisse dans leur dossier administratif numérique.';
+    const grid=document.createElement('div');grid.className='formation-participants-grid';
+    const sync=()=>{const ids=[...grid.querySelectorAll('input[type="checkbox"]:checked')].map(x=>Number(x.value)).filter(Boolean);hidden.value=JSON.stringify(ids)};
+    grid.innerHTML=agents.map(a=>`<label class="formation-participant"><input type="checkbox" value="${Number(a.id)}" ${selected.includes(Number(a.id))?'checked':''}><span><strong>${esc(a.title||'Agent')}</strong><small>${esc(a.data?.matricule||a.data?.fonction||a.data?.emploi||'')}</small></span></label>`).join('');grid.addEventListener('change',sync);
+    wrap.append(label,help,hidden,grid);area.appendChild(wrap);
+  }catch{/* Le rattachement nominatif reste facultatif si Personnel n'est pas accessible. */}
+}
+
+function mountResourceEditorLogic(record=null){
+  const type=document.querySelector('#dynamicFields [data-key="type"]');if(!type)return;
+  const otherInput=document.querySelector('#dynamicFields [data-key="type_autre"]');
+  const otherWrap=editorFieldWrap('type_autre');
+  const update=()=>{
+    const other=normalizeWoodText(type.value)==='autre';
+    setFieldVisibility('type_autre',other,{clear:!other});
+    if(otherWrap){
+      otherWrap.hidden=!other;
+      otherWrap.classList.toggle('hidden',!other);
+    }
+    if(otherInput){
+      otherInput.required=other;
+      otherInput.disabled=!other;
+      if(!other)otherInput.value='';
+    }
+  };
+  type.addEventListener('change',update);
+  update();
+}
+
+async function saveRecord(e){
+  e.preventDefault();
+  // V1.93 — Définir le contexte d'absence dans la portée de l'enregistrement.
+  // Auparavant, cette variable n'existait que dans openEditor(), ce qui faisait
+  // échouer silencieusement TOUS les boutons « Enregistrer » des popups.
+  const isAbsence=moduleKey==='absences'||(moduleKey==='documents'&&editorDocumentType==='ABSENCE');
+  if(isAbsence)updateAbsenceDays();
+  const submit=e.submitter||document.querySelector('#recordForm button[type="submit"]');
+  return withButtonLock(submit,async()=>{
+    const id=document.getElementById('recordId').value;const data={};
+    document.querySelectorAll('#dynamicFields [data-key]').forEach(el=>data[el.dataset.key]=el.type==='checkbox'?(el.checked?'1':'0'):el.value);
+    if(moduleKey==='stages')data._stage_type=editorStageType;
+    if(moduleKey==='documents'&&editorDocumentType!=='ABSENCE')data._document_type=editorDocumentType;
+    const payload={id:id?Number(id):undefined,reference:document.getElementById('recordReference').value,title:document.getElementById('recordTitle').value,eventDate:document.getElementById('recordDate').value,status:document.getElementById('recordStatus').value,data};
+    if(moduleKey==='personnel'){
+      data.reference_administrative=String(payload.reference||'').trim();
+      payload.reference=data.reference_administrative;
+      payload.eventDate=data.date_prise_service_gbeke||data.date_prise_service_minef||'';
+      payload.status='ACTIVE';
+    }
+    if(moduleKey==='stages'){
+      // V1.88 — Une seule Référence administrative pour les attestations de stage.
+      data.reference_administrative=String(payload.reference||'').trim();
+      payload.reference=data.reference_administrative;
+    }
+    if(moduleKey==='documents'&&editorDocumentType==='DEMANDE_EXPLICATION'){
+      // V1.87 — Le champ principal porte la référence administrative.
+      data.reference_administrative=String(payload.reference||'').trim();
+      payload.reference=data.reference_administrative;
+    }
+    if(moduleKey==='convocations'&&editorConvocationView==='CONVOCATIONS'){
+      // V1.89 — Une seule Référence administrative pour la convocation.
+      data.reference_administrative=String(payload.reference||'').trim();
+      payload.reference=data.reference_administrative;
+    }
+    if(moduleKey==='convocations'&&editorConvocationView==='PV'){
+      // V1.90 — Une seule Référence administrative pour le procès-verbal de rencontre.
+      data.reference_administrative=String(payload.reference||'').trim();
+      payload.reference=data.reference_administrative;
+    }
+    if(isAbsence){
+      // V1.87 — Autorisation d’absence : une seule Référence administrative,
+      // enregistrée à la fois comme référence principale et dans les données du document.
+      data.reference_administrative=String(payload.reference||'').trim();
+      payload.reference=data.reference_administrative;
+    }
+    if(moduleKey==='activites-minef'){
+      if(normalizeWoodText(data.type_activite)!=='activites du minef')data.categorie_minef='';
+      payload.title=data.intitule_activite||'Activité';
+      payload.eventDate=data.date_activite||'';
+      payload.status='ACTIVE';
+      payload.reference=payload.reference||'';
+    }
+    if(moduleKey==='sensibilisations'){
+      payload.title=data.type_sensibilisation||'Sensibilisation';
+      payload.eventDate=data.date_activite||'';
+      payload.status='ACTIVE';
+      payload.reference=payload.reference||'';
+    }
+    if(moduleKey==='ressources-naturelles'&&normalizeWoodText(data.type)!=='autre')data.type_autre='';
+    if(moduleKey==='exploitation-forestiere'){
+      data._forest_type=editorForestType;
+      payload.eventDate=data.date_activite||'';
+      payload.status='ACTIVE';
+      payload.reference=payload.reference||'';
+      if(editorForestType==='RECHERCHE_PARCELLAIRE')payload.title=`${data.localite||'Parcelle'}${data.essence?` — ${data.essence}`:''}`;
+      else if(editorForestType==='PEPINIERE_SITE')payload.title=`${data.localite||data.sous_prefecture||'Site de pépinière'}${data.responsable_nom?` — ${data.responsable_nom}`:''}`;
+      else if(editorForestType==='PEPINIERE_PRODUCTION')payload.title=`${data.localite||'Production de pépinière'}${data.essence?` — ${data.essence}`:''}`;
+      else if(editorForestType==='PLANTATION_CREEE')payload.title=`${data.beneficiaire||data.localite||'Plantation forestière'}`;
+      else payload.title=`${data.beneficiaire||data.localite||'Reboisement'}${data.type_reboisement?` — ${data.type_reboisement}`:''}`;
+      if(editorForestType==='REBOISEMENT'&&normalizeForestText(data.type_reboisement)!=='compensatoires suivis')data.entreprise_responsable='';
+    }
+    if(moduleKey==='transformation-bois'){
+      data._wood_type=editorWoodType;
+      payload.status='ACTIVE';payload.reference=payload.reference||'';
+      if(editorWoodType==='EXPLOITANTS_SECONDAIRES'){
+        payload.title=data.nom_operateur||'Exploitant de produits secondaires';payload.eventDate=data.date_delivrance||'';
+      }else if(editorWoodType==='PRODUITS_QTE'){
+        payload.title=`Produits secondaires — ${data.statut_operateur||'opérateur'}`;payload.eventDate='';
+      }else{
+        const isUnit=normalizeWoodText(data.type_exercant)==='unites de transformation';
+        payload.title=(isUnit?data.nom_usine:data.nom_operateur)||data.localite||'Unité / exerçant du bois';payload.eventDate=data.date_delivrance||'';
+        if(isUnit){data.service_rattachement='';data.numero_permis='';data.date_delivrance=''}else{data.region='';data.departement='';data.nom_usine='';data.activites_principales=''}
+      }
+    }
+    if(moduleKey==='feux-brousse'){
+      data._fire_type=editorFireType;payload.status='ACTIVE';payload.reference=payload.reference||'';
+      if(editorFireType==='DEGATS'){payload.eventDate=data.date_constat||'';payload.title=`${data.village||'Dégâts'} — ${data.nature_degats||'Feu de brousse'}`}
+      else{payload.eventDate='';payload.title=`${data.village||'Comité'} — ${fireConfig(editorFireType)?.label||'Comité de lutte contre les feux de brousse'}`}
+    }
+    if(moduleKey==='faune'){
+      data._fauna_type=editorFaunaType;payload.status='ACTIVE';payload.reference=payload.reference||'';
+      if(editorFaunaType==='OBSERVATIONS'){payload.eventDate=data.date_observation||'';payload.title=data.especes_animales||'Observation de la faune'}
+      else{payload.eventDate='';payload.title=`${data.village||'Conflit'} — ${data.type_conflit||'Conflit homme-faune'}`}
+    }
+    if(moduleKey==='formations'){
+      const isOther=normalizeWoodText(data.theme).startsWith('autres');if(!isOther)data.theme_autre='';
+      payload.title=isOther?(data.theme_autre||'Autre formation'):(data.theme||'Formation');payload.eventDate=data.date_activite||'';payload.status='ACTIVE';payload.reference=payload.reference||'';
+    }
+    if(moduleKey==='missions'){
+      payload.status='ACTIVE';payload.reference=payload.reference||'';
+      if(editorMissionType==='PV_INFRACTION'){
+        data._mission_type='PV_INFRACTION';payload.eventDate=data.date_controle||payload.eventDate||'';payload.title=payload.title||'Infraction';
+      }else if(editorMissionType==='PV_ORDRE_MISSION'){
+        data._mission_type='PV_ORDRE_MISSION';payload.eventDate=data.date_depart||payload.eventDate||'';payload.title=`Procès-verbal — ${data.ordre_reference||'Ordre de mission'}`;
+      }else if(editorMissionType==='ORDRE_MISSION'){
+        data._mission_type='ORDRE_MISSION';payload.eventDate=data.date_depart||'';payload.title=`Ordre de mission ${data.numero_mission||''}`.trim();
+      }else if(editorMissionType==='REPRESSION'){
+        data._offense_type='REPRESSION';data._mission_type='REPRESSION';payload.eventDate=data.date_controle||'';payload.title=data.personne_mise_cause||data.objet_infraction||'Répression d’infraction';
+      }
+    }
+    const saveModule=moduleKey==='documents'?effectiveModule(editorDocumentType):(moduleKey==='convocations'&&editorConvocationView==='PV'?'convocation_pv':(moduleKey==='missions'?effectiveModule(editorMissionType):moduleKey));
+    try{await api('/api/save',{method:'POST',body:{module:saveModule,action:id?'update':'create',payload}});document.getElementById('editorDialog').close();await professionalAlert('Enregistrement réussi',`${activeSingular()} enregistré(e) avec succès.`);loadRecords()}catch(err){await professionalAlert('Enregistrement impossible',err.message);}
+  },'Enregistrement…');
+}
+
+async function deleteRecord(r,button){
+  const yes=await professionalConfirm('Supprimer définitivement',`Voulez-vous supprimer définitivement « ${r.title} » ? Cette action est irréversible.`,{confirmText:'Supprimer',cancelText:'Annuler',danger:true});
+  if(!yes)return;
+  const actionModule=moduleKey==='documents'?effectiveModule(currentDocumentType):(moduleKey==='convocations'&&currentConvocationView==='PV'?'convocation_pv':(moduleKey==='missions'?effectiveModule(currentMissionType):moduleKey));
+  return withButtonLock(button,async()=>{try{await api('/api/save',{method:'POST',body:{module:actionModule,action:'delete',payload:{id:r.id}}});await professionalAlert('Suppression effectuée','L’enregistrement a été supprimé définitivement.');loadRecords()}catch(e){await professionalAlert('Suppression impossible',e.message)}},'Suppression…');
+}
+
+let printSettingsCache=null;
+
+async function ensurePrintSettings(){
+  if(printSettingsCache)return printSettingsCache;
+  const r=await api('/api/print-settings');
+  printSettingsCache=r.settings||{};
+  return printSettingsCache;
+}
+
+function nowFrDateTime(){
+  const d=new Date();
+  const p=n=>String(n).padStart(2,'0');
+  return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+function officialDate(v){
+  if(!v)return '';
+  const d=new Date(`${String(v).slice(0,10)}T00:00:00`);
+  if(Number.isNaN(d.getTime()))return fmtDate(v);
+  return new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}).format(d);
+}
+
+function printBaseStyles(){return `@page{size:A4 portrait;margin:13mm 14mm 18mm}*{box-sizing:border-box}html,body{background:#fff}body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;font-size:11.5px;line-height:1.15;padding-bottom:13mm}.official-header{display:grid;grid-template-columns:minmax(0,1.25fr) 90px minmax(0,1fr);gap:12px;align-items:start;margin-bottom:10px;min-height:116px}.official-left{font-size:10.5px;line-height:1.35;font-weight:500}.official-left .admin-line{display:block;margin:0 0 2px;text-transform:uppercase}.official-left .admin-separator{font-size:8px;letter-spacing:2px;margin:0 0 5px 18px}.official-center{text-align:center;min-height:76px}.official-emblem{max-width:74px;max-height:74px;object-fit:contain}.official-right{text-align:center;font-size:10.5px;line-height:1.35;font-weight:800}.official-right .motto{font-style:italic;font-weight:500;margin-top:2px}.official-right .admin-separator{font-size:8px;letter-spacing:2px;margin-top:2px}.official-reference{font-size:10.5px;margin:4px 0 34px;font-weight:500}.document-title{text-align:center;text-decoration:underline;text-decoration-thickness:1.2px;text-underline-offset:3px;font-size:18px;font-weight:900;margin:34px 0 44px;letter-spacing:.02em}.official-body{width:86%;margin:0 auto;text-align:justify;line-height:1.15}.official-body.wide{width:100%}.official-body p,.absence-body p,.convocation-body p,.document-paragraph{line-height:1.15;margin:0 0 1.7em;text-align:justify}.meta{display:grid;grid-template-columns:repeat(2,1fr);gap:7px 18px;margin-bottom:1.7em;text-align:left}.meta>div,.data>div{padding:6px 8px;border-bottom:1px solid #d9dfdc}.label{font-size:9px;text-transform:uppercase;color:#64716b;font-weight:800;display:block;margin-bottom:2px}.value{font-weight:700;white-space:pre-wrap}.data{display:grid;grid-template-columns:repeat(2,1fr);gap:0 16px;text-align:left}.record-print .official-signature{position:fixed;right:14mm;bottom:24mm;width:43%;text-align:center;break-inside:avoid}.official-signature .made-at{font-size:11px;margin:0 0 18px;text-align:center}.official-signature .signer-title{font-size:11px;margin-bottom:28px}.official-signature .signature-media{height:54px;display:flex;justify-content:center;align-items:flex-end;position:relative}.official-signature .signature-image{max-width:145px;max-height:54px;object-fit:contain;position:relative;z-index:2}.official-signature .stamp-image{max-width:80px;max-height:80px;object-fit:contain;position:absolute;right:5%;bottom:-15px;opacity:.82}.official-signature .signer-name{font-weight:900;text-decoration:underline;margin-top:4px}.official-signature .signer-position{font-size:9.5px;margin-top:2px}.official-footer{position:fixed;left:14mm;right:14mm;bottom:5mm;border-top:1px solid #cfd7d3;padding-top:4px;text-align:center;font-size:8.5px;color:#5d6963}.record-print .official-body,.record-print .absence-body,.record-print .agent-sheet{margin-bottom:62mm}.agent-sheet{width:92%;margin-left:auto;margin-right:auto;border:1px solid #bac6c0;border-radius:7px;overflow:hidden}.agent-sheet-top{display:grid;grid-template-columns:1fr 120px;gap:18px;padding:16px;border-bottom:1px solid #dce4e0}.agent-sheet-photo{width:108px;height:132px;object-fit:cover;border:1.5px solid #174c3b;border-radius:5px;background:#f3f5f4}.agent-sheet-photo-empty{display:grid;place-items:center;color:#87928d;font-weight:800}.agent-sheet-id{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;align-content:start}.agent-sheet-section{padding:12px 16px 4px}.agent-sheet-section h2{font-size:11px;color:#174c3b;text-transform:uppercase;letter-spacing:.06em;border-bottom:1.5px solid #b89b44;padding-bottom:5px;margin:0 0 6px}.agent-sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 20px}.agent-sheet-cell{padding:7px 0;border-bottom:1px solid #e2e7e4;min-height:43px}.absence-body{width:86%;margin-left:auto;margin-right:auto;font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.15;text-align:justify}.absence-body .request{text-align:center;line-height:1.15;margin-bottom:1.7em}.convocation-body{font-family:Georgia,'Times New Roman',serif;font-size:12.2px;line-height:1.15;width:92%;margin-left:auto;margin-right:auto}.convocation-intro{text-align:center;font-weight:600;line-height:1.3;margin:0 auto 14px;width:88%}.convocation-table{width:100%;border-collapse:collapse;margin:0 0 16px;font-size:11.6px}.convocation-table td{border:1px solid #b7b7b7;padding:6px 7px;vertical-align:middle;background:#fff;color:#111}.convocation-table .convocation-label{width:102px;font-weight:800;white-space:nowrap}.convocation-table .convocation-colon{width:16px;text-align:center;font-weight:700}.convocation-table .convocation-value{font-weight:500}.convocation-section{margin:0 0 14px}.convocation-section-title{font-weight:800;margin:0 0 5px}.convocation-box{border:1px solid #c4c4c4;min-height:44px;padding:7px 8px;white-space:pre-wrap;line-height:1.15;text-align:justify}.convocation-person-box{border:1px solid #c4c4c4;min-height:31px;padding:7px 8px;display:grid;grid-template-columns:auto 16px 1fr;align-items:center;gap:2px}.convocation-person-box .label{font-family:Georgia,'Times New Roman',serif;font-size:11.6px;text-transform:none;color:#111;margin:0;font-weight:800}.convocation-person-box .value{font-weight:500}.convocation-final{margin:0 0 1.7em;font-weight:500;text-align:left!important;line-height:1.15}.record-print.convocation-print .official-signature{bottom:20mm}.record-print.convocation-print .official-body{margin-bottom:58mm}.list-print .document-title{margin-top:26px;margin-bottom:24px}table{width:100%;border-collapse:collapse;font-size:9.5px}th,td{border:1px solid #aebbb5;padding:5px;text-align:left}th{background:#eef2f0;color:#173f33}.no-print{position:fixed;right:12px;top:12px;z-index:9999}@media print{.no-print{display:none!important}.agent-sheet{break-inside:avoid}.official-signature{break-inside:avoid}}
+/* V1.20 — Marges et typographie finales de tous les imprimés PDF */
+@page{size:A4 portrait;margin:1.5cm 1.2cm 1.2cm 1.2cm}
+.document-title{font-family:"Cooper Black",Cooper,serif!important;font-size:20pt!important}
+.record-print .official-body,.record-print .official-body *,
+.record-print .absence-body,.record-print .absence-body *,
+.record-print .convocation-body,.record-print .convocation-body *,
+.record-print .agent-sheet,.record-print .agent-sheet *,
+.record-print .official-signature,.record-print .official-signature *{font-family:"Arial Narrow",Arial,sans-serif!important;font-size:13pt!important}
+.list-print .official-body,.list-print .official-body *,
+.list-print table,.list-print table *{font-family:"Arial Narrow",Arial,sans-serif!important;font-size:13pt!important}
+.record-print .official-signature{right:1.2cm}
+.official-footer{display:none!important}
+
+/* V1.21 — Bloc date + signature flexible, sans chevauchement */
+body.record-print{
+  min-height:270mm;
+  padding-bottom:0!important;
+  display:flex;
+  flex-direction:column;
+}
+.record-print .print-main{flex:0 0 auto;min-width:0}
+.record-print .official-signature,
+.record-print.convocation-print .official-signature{
+  position:static!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:43%;
+  margin-left:auto;
+  margin-top:auto;
+  padding-top:9mm;
+  text-align:center;
+  break-inside:avoid!important;
+  page-break-inside:avoid!important;
+  flex:0 0 auto;
+  line-height:1.2;
+}
+.record-print .official-body,
+.record-print .absence-body,
+.record-print .agent-sheet,
+.record-print.convocation-print .official-body{margin-bottom:0!important}
+.official-signature .made-at{
+  margin:0 0 5mm;
+  line-height:1.2;
+  text-align:center;
+  white-space:normal;
+}
+.official-signature .signer-title{
+  margin:0 0 7mm;
+  line-height:1.2;
+  text-align:center;
+}
+.official-signature .signature-media{
+  min-height:18mm;
+  height:auto;
+  display:flex;
+  justify-content:center;
+  align-items:flex-end;
+  gap:4mm;
+  position:relative;
+  margin:0 0 3mm;
+}
+.official-signature .signature-image{
+  max-width:42mm;
+  max-height:18mm;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+  position:static;
+}
+.official-signature .stamp-image{
+  max-width:24mm;
+  max-height:24mm;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+  position:static;
+  opacity:.82;
+}
+.official-signature .signer-name{
+  margin:0;
+  line-height:1.2;
+  text-align:center;
+  overflow-wrap:anywhere;
+}
+.official-signature .signer-position{
+  margin-top:1.5mm;
+  line-height:1.2;
+  text-align:center;
+  overflow-wrap:anywhere;
+}
+@media print{
+  body.record-print{min-height:270mm}
+  .record-print .official-signature{break-inside:avoid!important;page-break-inside:avoid!important}
+}
+
+/* V1.22 — Typographie spécifique : Autorisations d’absence uniquement */
+.record-print.absence-print .document-title{
+  font-family:"Cooper Black",Cooper,serif!important;
+  font-size:22pt!important;
+}
+.record-print.absence-print .absence-body,
+.record-print.absence-print .absence-body *{
+  font-family:"Arial Narrow",Arial,sans-serif!important;
+  font-size:14pt!important;
+  line-height:1.5!important;
+}
+.record-print.absence-print .absence-body .request,
+.record-print.absence-print .absence-body p{
+  line-height:1.5!important;
+}
+
+/* V1.23 — AMPLIATIONS et zone basse flexible */
+.official-bottom-row{
+  width:100%;
+  margin-top:auto;
+  padding-top:9mm;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:8mm;
+  align-items:end;
+  break-inside:avoid;
+  page-break-inside:avoid;
+  flex:0 0 auto;
+}
+.official-bottom-row .official-signature{
+  position:static!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:100%!important;
+  margin:0!important;
+  padding-top:0!important;
+  align-self:end;
+}
+.official-ampliations-placeholder{min-width:0}
+.official-ampliations{
+  min-width:0;
+  align-self:end;
+  font-family:"Arial Narrow",Arial,sans-serif!important;
+  font-size:12pt!important;
+  line-height:1.15;
+  text-align:left;
+  overflow-wrap:anywhere;
+}
+.official-ampliations .ampliations-title{
+  font-family:"Arial Narrow",Arial,sans-serif!important;
+  font-size:14pt!important;
+  line-height:1.15;
+  font-weight:800;
+  text-decoration:underline;
+  text-underline-offset:2px;
+  margin-bottom:2.5mm;
+}
+.official-ampliations .ampliations-content{
+  display:table;
+  width:56mm;
+  max-width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+}
+.official-ampliations .ampliation-row{display:table-row}
+.official-ampliations .ampliation-label{
+  display:table-cell;
+  width:47mm;
+  min-width:0;
+  overflow-wrap:anywhere;
+  padding:.65mm 0;
+  vertical-align:baseline;
+}
+.official-ampliations .ampliation-number{
+  display:table-cell;
+  width:9mm;
+  padding:.65mm 0;
+  text-align:center;
+  font-weight:700;
+  white-space:nowrap;
+  vertical-align:baseline;
+}
+@media print{
+  .official-bottom-row{break-inside:avoid!important;page-break-inside:avoid!important}
+}
+
+/* V1.27 — Attestations de mise et fin de stage */
+.record-print.stage-print .stage-document-title{
+  width:88%;
+  margin:24px auto 38px;
+  border:1.2px solid #111;
+  padding:7px 10px;
+  text-align:center;
+  font-family:"Cooper Black",Cooper,serif!important;
+  font-size:20pt!important;
+  font-weight:900;
+  line-height:1.05;
+  letter-spacing:.01em;
+}
+.record-print.stage-print .stage-body,
+.record-print.stage-print .stage-body *{
+  font-family:"Arial Narrow",Arial,sans-serif!important;
+  font-size:13pt!important;
+}
+.record-print.stage-print .stage-body{width:94%;line-height:1.35;text-align:justify}
+.record-print.stage-print .stage-body p{line-height:1.35;margin:0 0 1.55em;text-align:justify}
+
+/* V1.29 — Certificats de cessation / reprise de service */
+.record-print.service-document-print .service-document-title{margin-top:28px;margin-bottom:42px}
+.record-print.service-document-print .service-document-body,
+.record-print.service-document-print .service-document-body *{font-family:"Arial Narrow",Arial,sans-serif!important;font-size:13pt!important}
+.record-print.service-document-print .service-document-body{width:92%;line-height:1.35;text-align:justify}
+.record-print.service-document-print .service-document-body p{line-height:1.35;margin:0 0 1.65em;text-align:justify}
+
+/* V1.32 — Procès-verbal lié à une convocation */
+.record-print.pv-print .pv-body,
+.record-print.pv-print .pv-body *{font-family:"Arial Narrow",Arial,sans-serif!important;font-size:13pt!important}
+.record-print.pv-print .pv-body{width:92%;line-height:1.35;text-align:justify}
+.record-print.pv-print .pv-body p{line-height:1.35;margin:0 0 1.55em;text-align:justify;white-space:normal}
+.record-print.pv-print .document-title{margin-top:30px;margin-bottom:40px}
+
+/* V1.35 — Demande d’explication écrite */
+.record-print.explanation-print .explanation-document-title{margin-top:28px;margin-bottom:30px}
+.record-print.explanation-print .explanation-body,
+.record-print.explanation-print .explanation-body *{font-family:"Arial Narrow",Arial,sans-serif!important;font-size:13pt!important}
+.record-print.explanation-print .explanation-body{width:96%;line-height:1.35;text-align:justify}
+.record-print.explanation-print .explanation-address{width:90%;margin:0 auto 7mm!important;text-align:center!important;line-height:1.35!important}
+.record-print.explanation-print .explanation-table{width:100%;border-collapse:collapse;table-layout:fixed;margin:0 auto 8mm;font-size:13pt!important}
+.record-print.explanation-print .explanation-table th{border:1px solid #111;background:#fff;color:#111;text-align:center;font-weight:900;padding:2.5mm 2mm;line-height:1.1}
+.record-print.explanation-print .explanation-table td{border:1px solid #111;width:50%;height:88mm;min-height:88mm;vertical-align:top;padding:4mm 3mm;text-align:justify;line-height:1.35}
+.record-print.explanation-print .explanation-text,.record-print.explanation-print .explanation-response{white-space:normal;overflow-wrap:anywhere}
+.record-print.explanation-print .explanation-deadline{margin:8mm 0 0!important;line-height:1.35!important;text-align:justify!important}
+
+/* V1.40 — Liste générale du personnel en A4 paysage */
+.list-print.personnel-list-print .personnel-list-title{font-family:"Cooper Black",Cooper,serif!important;font-size:20pt!important;margin:16px 0 18px!important;line-height:1.05!important}
+.list-print.personnel-list-print .official-header{margin-bottom:5mm;min-height:0}
+.list-print.personnel-list-print .official-body{width:100%!important;margin:0!important}
+.list-print.personnel-list-print .personnel-print-table{width:100%;table-layout:fixed;border-collapse:collapse;font-family:"Arial Narrow",Arial,sans-serif!important;font-size:7.2pt!important;line-height:1.05!important}
+.list-print.personnel-list-print .personnel-print-table th,
+.list-print.personnel-list-print .personnel-print-table td{font-family:"Arial Narrow",Arial,sans-serif!important;font-size:7.2pt!important;line-height:1.05!important;border:1px solid #555;padding:1.5mm .8mm;vertical-align:middle;overflow-wrap:anywhere;word-break:normal}
+.list-print.personnel-list-print .personnel-print-table th{font-weight:800;text-align:center;background:#f2f4f3;color:#111}
+.list-print.personnel-list-print .personnel-print-table td:first-child{text-align:center;width:5%}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(1){width:4%}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(2){width:13%}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(3){width:4%}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(4){width:6%}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(5){width:8%}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(6){width:8%}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(7){width:6%}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(8){width:8%}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(9){width:9%}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(10){width:6%}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(11){width:5%}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(12){width:5%}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(13){width:7%}
+.list-print.personnel-list-print .personnel-print-table th:nth-child(14){width:11%}
+
+/* V1.37 — En-tête général : 10 pt, interligne 1, seul le chiffre de référence en rouge/gras */
+.official-left,
+.official-right,
+.official-reference{
+  font-size:10pt!important;
+  line-height:1!important;
+}
+.official-left .admin-line,
+.official-right .motto,
+.official-reference{
+  line-height:1!important;
+}
+.official-left .admin-separator,
+.official-right .admin-separator{
+  line-height:1!important;
+}
+.official-reference .reference-prefix,
+.official-reference .reference-nondigit,
+.official-reference .reference-suffix{
+  color:#111!important;
+  font-weight:500!important;
+}
+.official-reference .reference-number{
+  color:#d00000!important;
+  font-weight:900!important;
+}
+.official-ampliations{
+  font-size:10pt!important;
+  line-height:1.15!important;
+  font-weight:400!important;
+}
+.official-ampliations .ampliations-title{
+  font-size:12pt!important;
+  line-height:1.15!important;
+  font-weight:800!important;
+}
+.official-ampliations .ampliation-label,
+.official-ampliations .ampliation-number{
+  font-size:10pt!important;
+  line-height:1.15!important;
+  font-weight:400!important;
+}
+
+/* V1.45 — Fiche de renseignement de l’agent, A4 portrait professionnelle */
+@page{size:A4 portrait;margin:1.5cm 1.2cm 1.2cm 1.2cm}
+body.list-print.personnel-sheet-print{font-family:"Arial Narrow",Arial,sans-serif!important;padding-bottom:0!important}
+.personnel-sheet-print .official-header{margin-bottom:3mm;min-height:0}
+.personnel-sheet-print .official-reference{margin:1.5mm 0 5mm!important}
+.personnel-sheet-print .agent-profile-title{
+  width:78%;margin:0 auto 5mm;padding:3.2mm 5mm 2.8mm;
+  background:linear-gradient(135deg,#074c42,#0a6c5b);color:#fff;
+  border-radius:3mm;box-shadow:0 1.2mm 2.5mm rgba(0,0,0,.12);
+  text-align:center;border-bottom:1mm solid #c89b2c;
+}
+.personnel-sheet-print .agent-profile-title-main{
+  font-family:"Cooper Black",Cooper,serif!important;font-size:18pt!important;
+  line-height:1.05!important;font-weight:900!important;letter-spacing:.02em;
+}
+.personnel-sheet-print .agent-profile-subtitle{
+  font-family:"Arial Narrow",Arial,sans-serif!important;font-size:8.5pt!important;
+  line-height:1.15!important;letter-spacing:.11em;margin-top:1.5mm;font-weight:500!important;
+}
+.personnel-sheet-print .agent-profile{width:100%;font-family:"Arial Narrow",Arial,sans-serif!important;font-size:9.6pt!important;line-height:1.1!important}
+.personnel-sheet-print .agent-profile *{font-family:"Arial Narrow",Arial,sans-serif!important}
+.personnel-sheet-print .agent-profile-section{
+  border:1px solid #a9c9c2;border-radius:2mm;overflow:hidden;margin:0 0 3.2mm;background:#fff;break-inside:avoid;page-break-inside:avoid;
+}
+.personnel-sheet-print .agent-section-title{
+  background:linear-gradient(90deg,#064b43,#0b6d5f);color:#fff;font-size:10.5pt!important;
+  font-weight:900!important;line-height:1!important;padding:2.3mm 4mm;letter-spacing:.01em;
+}
+.personnel-sheet-print .agent-section-number{color:#e2b342;font-size:11pt!important;margin-right:1.2mm}
+.personnel-sheet-print .agent-identity-layout{display:grid;grid-template-columns:minmax(0,1fr) 34mm;gap:4mm;padding:3mm 4mm 3.5mm;align-items:stretch}
+.personnel-sheet-print .agent-identity-fields{display:grid;grid-template-columns:1fr;gap:1.7mm}
+.personnel-sheet-print .agent-photo-frame{display:flex;align-items:center;justify-content:center;border-left:1px solid #d4e4e0;padding-left:3mm}
+.personnel-sheet-print .agent-sheet-photo{width:31mm!important;height:38mm!important;object-fit:cover;border:1px solid #075548!important;border-radius:2mm!important;background:#f2f6f5}
+.personnel-sheet-print .agent-sheet-photo-empty{display:grid!important;place-items:center;color:#83918d;font-size:8pt!important;font-weight:800!important}
+.personnel-sheet-print .agent-info-row{display:grid;grid-template-columns:43% 57%;min-height:8.4mm;border:1px solid #dbe7e4;border-radius:1.2mm;overflow:hidden;background:#fff}
+.personnel-sheet-print .agent-info-label{display:flex;align-items:center;padding:1.4mm 3mm;background:#eef5f3;color:#183f38;font-size:9pt!important;line-height:1.05!important;font-weight:800!important}
+.personnel-sheet-print .agent-info-value{display:flex;align-items:center;padding:1.4mm 3mm;color:#111;font-size:9.6pt!important;line-height:1.05!important;font-weight:700!important;min-width:0;overflow-wrap:anywhere}
+.personnel-sheet-print .agent-professional-grid{display:grid;grid-template-columns:1fr 1fr;gap:4mm;padding:3mm 4mm 3.5mm}
+.personnel-sheet-print .agent-professional-grid>div{display:grid;gap:1.7mm;align-content:start}
+.personnel-sheet-print .agent-split-sections{display:grid;grid-template-columns:1.12fr .88fr;gap:3mm;align-items:stretch}
+.personnel-sheet-print .agent-split-sections .agent-profile-section{margin-bottom:3.2mm;height:100%}
+.personnel-sheet-print .agent-section-content{padding:3mm 4mm;display:grid;gap:1.7mm}
+.personnel-sheet-print .agent-contact-section{margin-bottom:0}
+.personnel-sheet-print .agent-contact-layout{display:grid;grid-template-columns:minmax(0,1fr) 58mm;gap:5mm;align-items:center;padding:3mm 4mm 3.5mm}
+.personnel-sheet-print .agent-contact-field{min-width:0}
+.personnel-sheet-print .agent-signature-box-wrap{display:grid;grid-template-columns:auto 32mm;gap:2.5mm;align-items:center;justify-content:end;font-size:9pt!important;white-space:nowrap}
+.personnel-sheet-print .agent-signature-box{height:14mm;border:1px solid #075548;border-radius:1.5mm;background:#fff}
+@media print{
+  .personnel-sheet-print .agent-profile,.personnel-sheet-print .agent-profile-section{break-inside:avoid!important;page-break-inside:avoid!important}
+}
+
+/* V1.59 — Rapport consolidé, A4 paysage */
+.report-bundle-print{font-family:"Arial Narrow",Arial,sans-serif!important;font-size:9pt!important;padding-bottom:0!important}
+.report-bundle-print .official-header{margin-bottom:3mm;min-height:0}
+.report-bundle-print .official-reference{margin:1.5mm 0 4mm!important}
+.report-bundle-print .report-bundle-title{font-family:"Cooper Black",Cooper,serif!important;font-size:18pt!important;margin:4mm 0 5mm!important;line-height:1.08!important}
+.report-bundle-print .report-print-summary{display:grid;grid-template-columns:1.4fr 1.2fr .8fr;gap:2mm;border:1px solid #9ab7af;background:#f3f7f5;padding:2.2mm 3mm;margin:0 0 4mm;font-size:9pt;break-inside:avoid}
+.report-bundle-print .report-bundle-body{font-family:"Arial Narrow",Arial,sans-serif!important;font-size:8.2pt!important;line-height:1.08!important;margin-bottom:42mm!important}
+.report-bundle-print .report-print-section{margin:0 0 4mm;break-inside:auto;page-break-inside:auto}
+.report-bundle-print .report-section-head{display:flex;align-items:center;justify-content:space-between;gap:3mm;background:#e9f2ef;border-left:1.2mm solid #0a6657;padding:1.4mm 2mm;margin:0 0 1.2mm;break-after:avoid;page-break-after:avoid}
+.report-bundle-print .report-section-head h3{font-size:10pt!important;line-height:1!important;margin:0;font-weight:900;color:#173f33}
+.report-bundle-print .report-section-head span{font-size:7.5pt;color:#55645e;white-space:nowrap}
+.report-bundle-print .report-table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:7.5pt!important;line-height:1.05!important;margin:0}
+.report-bundle-print .report-table thead{display:table-header-group}
+.report-bundle-print .report-table tr{break-inside:avoid;page-break-inside:avoid}
+.report-bundle-print .report-table th,.report-bundle-print .report-table td{font-size:7.5pt!important;line-height:1.05!important;padding:1.15mm .9mm;border:1px solid #a8b6b1;vertical-align:middle;overflow-wrap:anywhere;word-break:normal}
+.report-bundle-print .report-table th{text-align:center;font-weight:800;background:#f0f4f2;color:#173f33}
+.report-bundle-print .report-empty-cell{text-align:center!important;color:#6b746f;font-style:italic;padding:2mm!important}
+.report-bundle-print .report-print-conclusion{margin-top:5mm;border:1px solid #b7c8c2;padding:3mm;break-inside:avoid;page-break-inside:avoid}
+.report-bundle-print .report-print-conclusion h3{font-size:10pt;margin:0 0 2mm;color:#173f33}
+.report-bundle-print .report-print-conclusion p{font-size:9pt;line-height:1.25;margin:0;text-align:justify}
+.report-bundle-print .official-bottom-row{margin-top:7mm}
+
+`}
+
+
+function settingsLine(v){return String(v||'').trim()}
+function adminLineHtml(v){const s=settingsLine(v);return s?`<div class="admin-line">${esc(s)}</div><div class="admin-separator">- - - - - -</div>`:''}
+function formattedReference(reference,s){
+  const raw=String(reference||'').trim();
+  const prefix=settingsLine(s.referencePrefix);
+  let number='____________', suffix=prefix;
+  if(raw&&raw!=='—'){
+    const slashIndex=raw.indexOf('/');
+    if(slashIndex>=0){
+      number=raw.slice(0,slashIndex).replace(/^N[°ºo]?\s*/i,'').trim()||'____________';
+      suffix=raw.slice(slashIndex+1).trim()||prefix;
+    }else{
+      number=raw.replace(/^N[°ºo]?\s*/i,'').trim()||'____________';
+    }
+  }
+  // Seuls les chiffres du numéro deviennent rouges et gras. Le préfixe N°,
+  // les séparateurs/lettres éventuels et le suffixe administratif restent noirs.
+  const numberHtml=Array.from(number).map(ch=>/\d/.test(ch)
+    ?`<span class="reference-number">${esc(ch)}</span>`
+    :`<span class="reference-nondigit">${esc(ch)}</span>`).join('');
+  return `<span class="reference-prefix">N°</span>${numberHtml}${suffix?`/<span class="reference-suffix">${esc(suffix)}</span>`:''}`;
+}
+function officialHeaderHtml(s,{reference='',hideReference=false}={}){
+  const left=[s.ministry,s.cabinet,s.regionalDirection,s.departmentalDirection,s.cantonment,s.post].map(adminLineHtml).join('');
+  const emblem=s.emblemData?`<img class="official-emblem" src="${esc(s.emblemData)}" alt="Emblème">`:'';
+  return `<div class="official-header"><div class="official-left">${left}</div><div class="official-center">${emblem}</div><div class="official-right"><div>${esc(settingsLine(s.republic)||'REPUBLIQUE DE COTE D’IVOIRE')}</div><div class="motto">${esc(settingsLine(s.motto)||'Union – Discipline – Travail')}</div><div class="admin-separator">- - - - - -</div></div></div>${hideReference?'':`<div class="official-reference">${formattedReference(reference,s)}</div>`}`;
+}
+function officialSignatureHtml(s,date=''){
+  const title=settingsLine(s.signerTitle)||absenceSignerTitle();
+  const name=settingsLine(s.signerName);
+  const position=settingsLine(s.signerPosition);
+  const locality=settingsLine(s.locality)||String(session?.user?.organizationName||'').replace(/^(POSTE DES EAUX ET FORÊTS DE|CANTONNEMENT(?: DES EAUX ET FORÊTS)? DE)\s*/i,'').trim();
+  const madeAt=(locality||date)?`Fait à ${esc(locality||'')}${locality&&date?', le ':''}${date?esc(longFrDate(date)):''}`:'';
+  const sig=s.signatureData?`<img class="signature-image" src="${esc(s.signatureData)}" alt="Signature">`:'';
+  const stamp=s.stampData?`<img class="stamp-image" src="${esc(s.stampData)}" alt="Cachet">`:'';
+  return `<div class="official-signature">${madeAt?`<div class="made-at">${madeAt}</div>`:''}<div class="signer-title">${esc(title)}</div><div class="signature-media">${sig}${stamp}</div>${name?`<div class="signer-name">${esc(name)}</div>`:''}${position?`<div class="signer-position">${esc(position)}</div>`:''}</div>`;
+}
+function normalizedAmpliationRows(s){
+  const destinations=String(s?.ampliations||'').replace(/\r/g,'').split('\n');
+  const numbers=String(s?.ampliationNumbers||'').replace(/\r/g,'').split('\n');
+  const rows=[];
+  destinations.forEach((raw,i)=>{
+    const label=String(raw||'').trim().replace(/^[-–—•*]+\s*/,'');
+    if(!label)return;
+    rows.push({label,number:String(numbers[i]||'').trim()});
+  });
+  return rows;
+}
+function officialAmpliationsHtml(s){
+  const rows=normalizedAmpliationRows(s);
+  if(!rows.length)return '<div class="official-ampliations-placeholder"></div>';
+  const content=rows.map(row=>`<div class="ampliation-row"><div class="ampliation-label">- ${esc(row.label)}</div><div class="ampliation-number">${row.number?esc(row.number):''}</div></div>`).join('');
+  return `<div class="official-ampliations"><div class="ampliations-title">AMPLIATIONS</div><div class="ampliations-content">${content}</div></div>`;
+}
+function officialFooterHtml(){return ''}
+
+function orderMissionPrintStyles(){return `
+/* V1.73 — Mise en page effective intégrée au document d’impression : Ordre de mission + P-V */
+.record-print.order-mission-print .document-title,
+.record-print.order-mission-pv-print .document-title{
+  font-family:"Cooper Black",Cooper,"Arial Black",serif!important;
+  font-size:20pt!important;
+  line-height:1.05!important;
+  font-weight:900!important;
+  text-align:center!important;
+  text-decoration:underline!important;
+  text-decoration-thickness:1.2px!important;
+  text-underline-offset:3px!important;
+  margin:7mm 0 8mm!important;
+  letter-spacing:0!important;
+}
+.order-mission-body,
+.order-mission-pv-body{
+  width:100%!important;
+  margin:0 auto!important;
+  font-family:"Arial Narrow",Arial,sans-serif!important;
+  font-size:14pt!important;
+  line-height:1.5!important;
+  color:#111!important;
+  text-align:justify!important;
+}
+.order-mission-body *,
+.order-mission-pv-body *{
+  font-family:"Arial Narrow",Arial,sans-serif!important;
+  box-sizing:border-box!important;
+}
+.order-mission-body p,
+.order-mission-pv-body p{
+  font-size:14pt!important;
+  line-height:1.5!important;
+  margin:0 0 5mm!important;
+  text-align:justify!important;
+}
+.order-mission-body .order-intro,
+.order-mission-pv-body .order-intro{
+  text-align:left!important;
+  margin:0 0 5mm!important;
+  font-size:14pt!important;
+  line-height:1.5!important;
+}
+.order-number{
+  width:max-content!important;
+  min-width:74mm!important;
+  max-width:100%!important;
+  margin:0 auto 7mm!important;
+  padding:1.2mm 6mm!important;
+  border:1px solid #c9c9c9!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+  font-size:14pt!important;
+  line-height:1.5!important;
+}
+.order-number strong{font-size:14pt!important;line-height:1.5!important;font-weight:800!important}
+.order-team-table{
+  width:100%!important;
+  border-collapse:collapse!important;
+  table-layout:fixed!important;
+  margin:0 0 5mm!important;
+  background:#fff!important;
+  font-size:14pt!important;
+  line-height:1.5!important;
+}
+.order-team-table th,
+.order-team-table td{
+  border:1px solid #c8c8c8!important;
+  background:#fff!important;
+  color:#111!important;
+  padding:1mm 1.6mm!important;
+  height:8mm!important;
+  min-height:8mm!important;
+  vertical-align:middle!important;
+  text-align:center!important;
+  font-size:14pt!important;
+  line-height:1.5!important;
+  overflow-wrap:normal!important;
+  word-break:normal!important;
+}
+.order-team-table th{font-weight:800!important}
+.order-team-table th:first-child,.order-team-table td:first-child{width:40%!important}
+.order-team-table th:nth-child(2),.order-team-table td:nth-child(2){width:19%!important}
+.order-team-table th:nth-child(3),.order-team-table td:nth-child(3){width:18%!important}
+.order-team-table th:nth-child(4),.order-team-table td:nth-child(4){width:23%!important}
+.order-team-table .order-team-chief td:first-child{font-weight:800!important}
+.order-box-row{
+  display:grid!important;
+  grid-template-columns:max-content 7mm minmax(0,1fr)!important;
+  align-items:center!important;
+  border:1px solid #d0d0d0!important;
+  min-height:9mm!important;
+  margin:0 0 4mm!important;
+  padding:1mm 2mm!important;
+  font-size:14pt!important;
+  line-height:1.5!important;
+}
+.order-box-row strong{font-size:14pt!important;line-height:1.5!important;white-space:nowrap!important}
+.order-colon{font-size:14pt!important;line-height:1.5!important;text-align:center!important;font-weight:700!important}
+.order-box-row>span:last-child{font-size:14pt!important;line-height:1.5!important;min-width:0!important}
+.order-objective-label{
+  margin:0 0 1.5mm!important;
+  padding-left:2mm!important;
+  text-align:left!important;
+  font-size:14pt!important;
+  line-height:1.5!important;
+  font-weight:800!important;
+}
+.order-objective-label strong{font-size:14pt!important;line-height:1.5!important}
+.order-objective-box{
+  border:1px solid #d0d0d0!important;
+  min-height:28mm!important;
+  padding:3mm 2mm!important;
+  margin:0 0 5mm!important;
+  text-align:justify!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+  font-size:14pt!important;
+  line-height:1.5!important;
+}
+.order-pair{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  gap:10mm!important;
+  margin:0 0 2mm!important;
+  font-size:14pt!important;
+  line-height:1.5!important;
+}
+.order-pair-cell{
+  display:grid!important;
+  grid-template-columns:max-content 7mm minmax(0,1fr)!important;
+  align-items:center!important;
+  min-width:0!important;
+  min-height:8.5mm!important;
+  padding:1mm 2mm!important;
+  border-bottom:1px solid #d0d0d0!important;
+  font-size:14pt!important;
+  line-height:1.5!important;
+}
+.order-pair-cell strong,
+.order-pair-cell>span{font-size:14pt!important;line-height:1.5!important}
+.order-pair-cell strong{white-space:nowrap!important}
+.order-pair-cell>span:last-child{min-width:0!important;white-space:normal!important;overflow-wrap:anywhere!important}
+.order-pv-sections{margin-top:7mm!important}
+.order-pv-section{
+  margin:0 0 6mm!important;
+  break-inside:auto!important;
+  page-break-inside:auto!important;
+}
+.order-pv-section h2{
+  font-family:"Arial Narrow",Arial,sans-serif!important;
+  font-size:14pt!important;
+  line-height:1.5!important;
+  margin:0 0 1.5mm!important;
+  padding:0!important;
+  font-weight:800!important;
+  text-align:left!important;
+  text-decoration:none!important;
+}
+.order-pv-text{
+  width:100%!important;
+  min-height:18mm!important;
+  border:1px solid #d0d0d0!important;
+  padding:3mm!important;
+  font-size:14pt!important;
+  line-height:1.5!important;
+  text-align:justify!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+}
+.record-print.order-mission-print .official-bottom-row,
+.record-print.order-mission-pv-print .official-bottom-row{
+  margin-top:8mm!important;
+  padding-top:4mm!important;
+}
+.record-print.order-mission-print .official-signature,
+.record-print.order-mission-pv-print .official-signature,
+.record-print.order-mission-print .official-signature *,
+.record-print.order-mission-pv-print .official-signature *{
+  font-family:"Arial Narrow",Arial,sans-serif!important;
+  font-size:14pt!important;
+  line-height:1.5!important;
+}
+.record-print.order-mission-print .official-signature .signature-media,
+.record-print.order-mission-pv-print .official-signature .signature-media{height:22mm!important}
+.record-print.order-mission-print .official-signature .signer-position,
+.record-print.order-mission-pv-print .official-signature .signer-position{font-size:14pt!important}
+@media print{
+  .order-number,.order-team-table,.order-box-row,.order-pair,.order-pv-section h2{break-inside:avoid!important;page-break-inside:avoid!important}
+  .order-mission-body,.order-mission-pv-body{font-size:14pt!important;line-height:1.5!important}
+}
+`}
+
+function buildPrintDocument({title,body,reference='',date='',settings,signature=true,hideReference=false,documentClass='',showAmpliations=false,signatureHtml=''}){
+  const bodyClass=(signature?'record-print':'list-print')+(documentClass?` ${documentClass}`:'');
+  const sig=signatureHtml||officialSignatureHtml(settings,date);
+  const bottom=signature?`<div class="official-bottom-row">${showAmpliations&&settingsLine(settings.ampliations)?officialAmpliationsHtml(settings):'<div class="official-ampliations-placeholder"></div>'}${sig}</div>`:'';
+  const orientationStyle=(documentClass.includes('personnel-list-print')||documentClass.includes('report-bundle-print'))?'@page{size:A4 landscape;margin:1.5cm 1.2cm 1.2cm 1.2cm}':((documentClass.includes('order-mission-print')||documentClass.includes('order-mission-pv-print'))?'@page{size:A4 portrait;margin:1.5cm 1.2cm 1.2cm 1.2cm}':'');
+  const offenseStyles=`.offense-report-body{width:94%;margin:0 auto;font-family:"Arial Narrow",Arial,sans-serif;font-size:13pt;line-height:1.35;text-align:justify}.offense-report-body .report-section{margin:0 0 7mm;break-inside:auto}.offense-report-body .report-section h2{font-family:"Arial Narrow",Arial,sans-serif;font-size:14pt;line-height:1.2;margin:0 0 3mm;font-weight:800;text-align:left;text-decoration:none}.offense-report-body p{margin:0 0 3.5mm;line-height:1.35;text-align:justify}.offense-report-body .identity-lines{display:grid;grid-template-columns:1fr 1fr;gap:2mm 6mm;margin:2mm 0 3mm}.offense-report-body .identity-lines div{min-width:0}.offense-report-body .identity-lines .wide{grid-column:1 / -1}.offense-team{margin:2mm 0 4mm}.offense-team-line{margin:0 0 1.8mm;padding-left:4mm}.offense-seizure-item{margin:2.5mm 0 4mm}.offense-seizure-label{font-weight:400;margin-bottom:1mm}.offense-seizure-value{padding-left:8mm;min-height:4mm}.offense-report-body .evidence-photos{display:flex;gap:5mm;flex-wrap:wrap;margin:3mm 0}.offense-report-body .evidence-photos figure{margin:0;width:42mm}.offense-report-body .evidence-photos img{width:42mm;height:32mm;object-fit:contain;border:1px solid #b8c1bd}.offense-report-body .evidence-photos figcaption{font-size:9pt;text-align:center;margin-top:1mm}.mission-chief-signature .mission-signature-space{height:16mm}.mission-chief-signature .mission-agents{margin-top:4mm;font-size:11pt;line-height:1.25;text-align:left}.mission-chief-signature .mission-agents strong{display:block;text-align:center;margin-bottom:1.5mm}.mission-chief-signature .mission-signature-name{font-weight:800;text-decoration:underline}.mission-chief-signature .mission-signature-function{margin-top:1mm}.record-print.offense-report-print .document-title,.record-print.offense-pv-print .document-title{margin-top:18mm;margin-bottom:12mm}`;
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title||'Document')}</title><style>${printBaseStyles()}${orientationStyle}${offenseStyles}${orderMissionPrintStyles()}</style></head><body class="${bodyClass}"><main class="print-main">${officialHeaderHtml(settings,{reference,hideReference})}${body}</main>${bottom}</body></html>`;
+}
+
+async function launchPrint(html){
+  // V1.99 — Toute impression est inscrite dans le journal des opérations.
+  try{
+    const doc=new DOMParser().parseFromString(String(html||''),'text/html');const printedTitle=doc?.title||'Document SIGAT';const targetId=window.__sigatPrintTargetId||null;window.__sigatPrintTargetId=null;
+    api('/api/audit/print',{method:'POST',body:{module:moduleKey||'rapports',page:currentPermissionPage()||moduleKey,targetId,description:`Impression — ${printedTitle}`}}).catch(()=>{});
+  }catch{}
+  return new Promise((resolve,reject)=>{
+    const frame=document.createElement('iframe');
+    frame.setAttribute('aria-hidden','true');
+    frame.style.cssText='position:fixed;width:1px;height:1px;right:0;bottom:0;border:0;opacity:.01;pointer-events:none;';
+    let started=false,finished=false;
+    const done=()=>{if(finished)return;finished=true;setTimeout(()=>frame.remove(),1000);resolve();};
+    const fail=e=>{if(finished)return;finished=true;frame.remove();reject(e instanceof Error?e:new Error('Impression impossible.'));};
+    const startPrint=()=>{
+      if(started||finished)return;started=true;
+      try{
+        const w=frame.contentWindow;if(!w)throw new Error('Fenêtre d’impression indisponible.');const images=[...frame.contentDocument.images];
+        Promise.all(images.map(img=>img.complete?Promise.resolve():new Promise(r=>{img.onload=img.onerror=r}))).then(()=>setTimeout(()=>{try{w.focus();w.print();setTimeout(done,700)}catch(e){fail(e)}},180)).catch(fail);
+      }catch(e){fail(e)}
+    };
+    frame.onload=startPrint;document.body.appendChild(frame);frame.srcdoc=html;setTimeout(()=>{if(!started&&!finished&&frame.contentDocument?.readyState==='complete')startPrint()},1800);
+  });
+}
+
+function stageDate(v){
+  if(!v)return '—';
+  const d=new Date(`${String(v).slice(0,10)}T00:00:00Z`);if(Number.isNaN(d.getTime()))return fmtDate(v);
+  const weekdays=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+  const months=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  return `${weekdays[d.getUTCDay()]} ${String(d.getUTCDate()).padStart(2,'0')} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+function stageShortDate(v){
+  if(!v)return '—';
+  const d=new Date(`${String(v).slice(0,10)}T00:00:00Z`);if(Number.isNaN(d.getTime()))return fmtDate(v);
+  const months=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  return `${String(d.getUTCDate()).padStart(2,'0')} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+function stageTime(v){
+  const m=String(v||'').match(/^(\d{1,2}):(\d{2})/);if(!m)return String(v||'—');
+  return `${String(m[1]).padStart(2,'0')} h ${m[2]} mn`;
+}
+function stageResponsibleIntro(record){
+  const org=String(record.source_organization||session?.user?.organizationName||'Service des Eaux et Forêts').trim();
+  const type=record.source_type||session?.user?.organizationType;
+  if(type==='PEF'){
+    const m=org.match(/poste\s+(?:des\s+)?eaux\s+et\s+for[eê]ts\s+de\s+(.+)/i);
+    return `Le Chef de poste des Eaux et Forêts de ${m?m[1]:org}`;
+  }
+  if(type==='CANTONNEMENT')return `Le Chef de Cantonnement de ${org.replace(/^Cantonnement\s+(?:de\s+)?/i,'')}`;
+  return `Le Responsable de ${org}`;
+}
+
+function offenseAgentLines(raw=''){
+  return String(raw||'').split(/\r?\n|\s*;\s*/).map(v=>v.trim()).filter(Boolean);
+}
+function offenseTeamHtml(d={}){
+  const rows=[];
+  const chief=String(d.chef_mission||'').trim();
+  if(chief)rows.push(`<div class="offense-team-line"><span>${esc(chief)}</span><strong> : Chef de mission</strong></div>`);
+  const agentsRaw=String(d.agents_arrestation||'').trim();
+  for(const agent of offenseAgentLines(agentsRaw))rows.push(`<div class="offense-team-line"><span>${esc(agent)}</span><strong> : Agent(s) de la mission</strong></div>`);
+  if(!rows.length)rows.push('<div class="offense-team-line"><span>—</span><strong> : Agent(s) de la mission</strong></div>');
+  return `<div class="offense-team">${rows.join('')}</div>`;
+}
+function offenseSeizureHtml(d={},lead='Au cours de l’intervention, ont été saisis ou retenus :'){
+  const item=(label,value)=>`<div class="offense-seizure-item"><div class="offense-seizure-label">- ${esc(label)} :</div><div class="offense-seizure-value"><strong>${esc(displayValue(value)).split('\n').join('<br>')}</strong></div></div>`;
+  const location=d.lieu_conservation?` <strong>${esc(d.lieu_conservation)}</strong>`:'';
+  return `<p>${esc(lead)}</p>${item('Les objets',d.objets_saisis)}${item('Les produits',d.produits_saisis)}${item('Les matériels',d.materiels_saisis)}<p>Les biens saisis ont été <strong>${esc(displayValue(d.sort_biens))}</strong>${location?` ${location}`:''}.</p>`;
+}
+function missionChiefSignatureHtml(d={},settings={},date='',time='',showDate=true){
+  const chief=String(d.chef_mission||d._mission_chef||'').trim();const grade=String(d._mission_chef_grade||'').trim();const fn=String(d._mission_chef_fonction||'').trim();
+  const locality=settingsLine(settings.locality)||String(session?.user?.organizationName||'').replace(/^(POSTE DES EAUX ET FORÊTS DE|CANTONNEMENT(?: DES EAUX ET FORÊTS)? DE)\s*/i,'').trim();
+  const madeDate=date?longFrDate(String(date).slice(0,10)):longFrDate(new Date().toISOString().slice(0,10));
+  const madeAt=`Fait à ${esc(locality||'')}, le ${esc(madeDate)}${time?` à ${esc(String(time).slice(0,5).replace(':',' h '))}`:''}`;
+  const gradeFunction=[grade,fn].filter(Boolean).join(' / ');
+  return `<div class="official-signature mission-chief-signature">${showDate?`<div class="made-at">${madeAt}</div>`:''}<div class="signer-title">Le Chef de mission</div><div class="mission-signature-space"></div>${chief?`<div class="mission-signature-name">${esc(chief)}</div>`:''}${gradeFunction?`<div class="mission-signature-function">${esc(gradeFunction)}</div>`:''}</div>`;
+}
+function orderMissionTeamHtml(d={}){
+  const rows=[];
+  const add=(name,matricule,corps,fn,isChief=false)=>{
+    if(!String(name||'').trim())return;
+    rows.push(`<tr${isChief?' class="order-team-chief"':''}><td>${esc(String(name).trim())}</td><td>${esc(displayValue(matricule))}</td><td>${esc(displayValue(corps))}</td><td>${esc(displayValue(fn))}</td></tr>`);
+  };
+  add(d.chef_mission,d._chef_mission_matricule,d._chef_mission_corps||d._chef_mission_grade,d._chef_mission_fonction,true);
+  for(let i=1;i<=4;i++)add(d[`agent_mission_${i}`],d[`_agent_mission_${i}_matricule`],d[`_agent_mission_${i}_corps`]||d[`_agent_mission_${i}_grade`],d[`_agent_mission_${i}_fonction`],false);
+  while(rows.length<5)rows.push('<tr><td>&nbsp;</td><td></td><td></td><td></td></tr>');
+  return `<table class="order-team-table"><thead><tr><th>Nom et prénoms</th><th>Matricule</th><th>Corps</th><th>Fonction</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+}
+function orderMissionPairHtml(label1,value1,label2,value2){
+  return `<div class="order-pair"><div class="order-pair-cell"><strong>${esc(label1)}</strong><span class="order-colon">:</span><span>${esc(displayValue(value1))}</span></div><div class="order-pair-cell"><strong>${esc(label2)}</strong><span class="order-colon">:</span><span>${esc(displayValue(value2))}</span></div></div>`;
+}
+function orderMissionTeamFromPvHtml(d={}){
+  // Les nouveaux P-V conservent le détail de chaque agent. Pour les anciens P-V,
+  // on reconstitue au mieux les lignes à partir du texte déjà enregistré.
+  const hasStructured=String(d._chef_mission_matricule||d._chef_mission_corps||'').trim()||[1,2,3,4].some(i=>String(d[`agent_mission_${i}`]||'').trim());
+  if(hasStructured)return orderMissionTeamHtml(d);
+  const rows=[];
+  const chief=String(d.chef_mission||'').trim();
+  if(chief)rows.push(`<tr class="order-team-chief"><td>${esc(chief)}</td><td>${esc(displayValue(d._chef_mission_matricule))}</td><td>${esc(displayValue(d._chef_mission_corps||d._chef_mission_grade))}</td><td>${esc(displayValue(d._chef_mission_fonction))}</td></tr>`);
+  for(const line of String(d.agents_mission||'').split(/\r?\n/).map(v=>v.trim()).filter(Boolean)){
+    const parts=line.split(/\s+[–—-]\s+/).map(v=>v.trim());
+    rows.push(`<tr><td>${esc(parts[0]||line)}</td><td></td><td>${esc(parts[1]||'')}</td><td>${esc(parts.slice(2).join(' – '))}</td></tr>`);
+  }
+  while(rows.length<5)rows.push('<tr><td>&nbsp;</td><td></td><td></td><td></td></tr>');
+  return `<table class="order-team-table"><thead><tr><th>Nom et prénoms</th><th>Matricule</th><th>Corps</th><th>Fonction</th></tr></thead><tbody>${rows.slice(0,5).join('')}</tbody></table>`;
+}
+function orderMissionPrintBody(record,settings={}){
+  const d=record.data||{};const locality=settingsLine(settings.locality)||String(session?.user?.organizationName||'').replace(/^(POSTE DES EAUX ET FORÊTS DE|CANTONNEMENT(?: DES EAUX ET FORÊTS)? DE)\s*/i,'').trim();
+  const n=displayValue(d.numero_mission||record.reference);
+  return `<div class="document-title order-document-title">ORDRE DE MISSION</div><div class="order-mission-body"><div class="order-number">N° de la mission : <strong>${esc(n)}</strong></div><p class="order-intro">Le Chef de Poste des Eaux et Forêts de <strong>${esc(locality||'—')}</strong> donne l’ordre à :</p>${orderMissionTeamHtml(d)}<div class="order-box-row"><strong>Résidence d’affectation</strong><span class="order-colon">:</span><span>${esc(displayValue(d.residence_affectation||locality))}</span></div><div class="order-box-row"><strong>De se rendre en mission</strong><span class="order-colon">:</span><span>${esc(displayValue(d.lieu_mission))}</span></div><div class="order-objective-label"><strong>Objectif de la mission :</strong></div><div class="order-objective-box">${esc(displayValue(d.objectif_mission)).split('\n').join('<br>')}</div>${orderMissionPairHtml('Date de départ',fmtDate(d.date_depart),'Date de retour',fmtDate(d.date_retour))}${orderMissionPairHtml('Moyens de déplacement',d.moyen_deplacement_1,'Immatriculation',d.immatriculation_1)}${orderMissionPairHtml('Moyens de déplacement',d.moyen_deplacement_2,'Immatriculation',d.immatriculation_2)}</div>`;
+}
+function orderMissionPvPrintBody(record){
+  const d=record.data||{};
+  const missionNumber=displayValue(d.ordre_reference||record.reference);
+  const destination=d.lieu_mission||d.lieu_pv||'—';
+  const means1=d.moyen_deplacement_1||String(d.moyens_deplacement||'').split(/\r?\n/)[0]||'';
+  const means2=d.moyen_deplacement_2||String(d.moyens_deplacement||'').split(/\r?\n/)[1]||'';
+  const splitMean=v=>{const p=String(v||'').split(/\s+[—–-]\s+/);return {m:p[0]||'',i:p.slice(1).join(' — ')||''}};
+  const m1=d.moyen_deplacement_1?{m:d.moyen_deplacement_1,i:d.immatriculation_1||''}:splitMean(means1);
+  const m2=d.moyen_deplacement_2?{m:d.moyen_deplacement_2,i:d.immatriculation_2||''}:splitMean(means2);
+  const sec=(n,t,v)=>`<section class="order-pv-section"><h2>${n}. ${esc(t)}</h2><div class="order-pv-text">${esc(displayValue(v)).split('\n').join('<br>')}</div></section>`;
+  return `<div class="document-title order-document-title">PROCES-VERBAL DE MISSION</div><div class="order-mission-pv-body"><div class="order-number">N° de la mission : <strong>${esc(missionNumber)}</strong></div><p class="order-intro">La mission ci-dessous a été exécutée par :</p>${orderMissionTeamFromPvHtml(d)}<div class="order-box-row"><strong>Résidence d’affectation</strong><span class="order-colon">:</span><span>${esc(displayValue(d.residence_affectation))}</span></div><div class="order-box-row"><strong>Lieu de la mission</strong><span class="order-colon">:</span><span>${esc(displayValue(destination))}</span></div><div class="order-objective-label"><strong>Objectif de la mission :</strong></div><div class="order-objective-box">${esc(displayValue(d.objectif_mission)).split('\n').join('<br>')}</div>${orderMissionPairHtml('Date de départ',fmtDate(d.date_depart),'Date de retour',fmtDate(d.date_retour))}${orderMissionPairHtml('Moyens de déplacement',m1.m,'Immatriculation',m1.i)}${orderMissionPairHtml('Moyens de déplacement',m2.m,'Immatriculation',m2.i)}<div class="order-pv-sections">${sec(1,'Déroulement de la mission',d.deroulement)}${sec(2,'Constatations',d.constatations)}${sec(3,'Résultats / mesures prises',d.resultats)}${sec(4,'Observations',d.observations)}${sec(5,'Conclusion / suite donnée',d.conclusion)}</div></div>`;
+}
+
+function reportSection(n,title,html){return `<section class="report-section"><h2>${n}. ${esc(title)}</h2>${html}</section>`}
+function repressionPrintBody(record){
+  const d=record.data||{};const date=fmtDate(d.date_controle||record.event_date);const lieu=displayValue(d.lieu_controle);const chief=String(d.chef_mission||'').trim();
+  const intro=`Dans le cadre d’une opération de contrôle effectuée le <strong>${esc(date)}</strong> à <strong>${esc(lieu)}</strong>, une équipe d’agents des Eaux et Forêts a procédé à des vérifications visant à assurer le respect de la réglementation en vigueur.`;
+  const missionInfo=`<p>${intro}</p><p>Cette équipe était composée de :</p>${offenseTeamHtml(d)}<p>Au cours de cette opération, les agents ont constaté une infraction portant sur <strong>${esc(displayValue(d.objet_infraction))}</strong>.</p><p>L’intervention a donné lieu à <strong>${esc(displayValue(d.arrestation))}</strong>.</p>`;
+  const identity=`<p>La personne mise en cause est identifiée comme suit :</p><div class="identity-lines offense-identity-lines"><div><strong>Nom et prénoms :</strong> ${esc(displayValue(d.personne_mise_cause))}</div><div><strong>Contact :</strong> ${esc(displayValue(d.contact_mis_cause))}</div><div><strong>Type de pièce d’identité :</strong> ${esc(displayValue(d.type_piece_identite))}</div><div><strong>Numéro de la pièce :</strong> ${esc(displayValue(d.numero_piece_identite))}</div><div class="wide"><strong>Domicile / Localité :</strong> ${esc(displayValue(d.domicile_mis_cause))}</div></div>`;
+  const seizure=offenseSeizureHtml(d,'Au cours de l’intervention, ont été saisis ou retenus :');
+  const responsible=chief||offenseAgentLines(d.agents_arrestation)[0]||'le chef de mission';
+  const facts=`<p>Le <strong>${esc(date)}</strong>${d.heure_controle?` à <strong>${esc(String(d.heure_controle).slice(0,5))}</strong>`:''}, l’équipe de contrôle placée sous la responsabilité de <strong>${esc(responsible)}</strong> s’est rendue à <strong>${esc(lieu)}</strong>.</p><p>Au cours des vérifications effectuées, les agents ont relevé <strong>${esc(displayValue(d.expose_faits)).split('\n').join('<br>')}</strong>.</p><p>Les éléments recueillis sur les lieux ont conduit les agents à procéder aux vérifications nécessaires et à prendre les mesures appropriées conformément aux procédures en vigueur.</p>`;
+  const declaration=`<p>Invitée à fournir ses explications sur les faits constatés, la personne mise en cause déclare ce qui suit :</p><p><strong>${esc(displayValue(d.declaration_mis_cause)).split('\n').join('<br>')}</strong></p><p>Cette déclaration a été recueillie et consignée afin d’être jointe au dossier de la procédure.</p>`;
+  const constat=`<p>A l’issue du contrôle et des vérifications effectuées, nous avons constaté les éléments suivants :</p><p><strong>${esc(displayValue(d.constatations)).split('\n').join('<br>')}</strong></p><p>Ces constatations ont été relevées sous la responsabilité du <strong>chef de mission</strong> et consignées objectivement afin de permettre l’examen des faits par l’autorité compétente.</p>`;
+  const observations=`<p>${esc(displayValue(d.observations)).split('\n').join('<br>')}</p>`;
+  const suite=`<p>Au regard des faits constatés, des déclarations recueillies et des éléments matériels relevés au cours de l’opération, il ressort que <strong>${esc(displayValue(d.resume_infraction||d.objet_infraction))}</strong>.</p><p>En conséquence, les mesures suivantes ont été prises :</p><p><strong>${esc(displayValue(d.mesures_prises)).split('\n').join('<br>')}</strong></p><p>Le présent dossier est transmis à <strong>${esc(displayValue(d.autorite_transmission))}</strong> pour les suites administratives et/ou judiciaires prévues par les textes en vigueur.</p>`;
+  return `<div class="document-title">REPRESSION DES INFRACTIONS</div><div class="offense-report-body">${reportSection(1,'Identification de l’opération',missionInfo)}${reportSection(2,'Identification de la personne mise en cause',identity)}${reportSection(3,'Objets, produits ou matériels saisis',seizure)}${reportSection(4,'Exposé des faits',facts)}${reportSection(5,'Déclaration de la personne mise en cause',declaration)}${reportSection(6,'Constatations des agents',constat)}${reportSection(7,'Observations',observations)}${reportSection(8,'Conclusion et suite donnée',suite)}</div>`;
+}
+function offensePvPrintBody(record){
+  const d=record.data||{};const date=fmtDate(d.date_controle||record.event_date);const lieu=displayValue(d.lieu_controle);const chief=String(d.chef_mission||'').trim();
+  const refOperation=`Dans le cadre d’une opération de contrôle effectuée le <strong>${esc(date)}</strong> à <strong>${esc(lieu)}</strong>, une équipe d’agents des Eaux et Forêts a procédé à des vérifications visant à assurer le respect de la réglementation en vigueur.`;
+  const s1=`<p>${refOperation}</p><p>Cette équipe était composée de :</p>${offenseTeamHtml(d)}<p>Au cours de cette opération, les agents ont constaté une infraction portant sur <strong>${esc(displayValue(d.objet_infraction))}</strong>.</p><p>L’intervention a donné lieu à <strong>${esc(displayValue(d.arrestation))}</strong>.</p>`;
+  const s2=`<p>La personne mise en cause est identifiée comme suit :</p><div class="identity-lines offense-identity-lines"><div><strong>Nom et prénoms :</strong> ${esc(displayValue(d.personne_mise_cause||record.title))}</div><div><strong>Contact :</strong> ${esc(displayValue(d.contact_mis_cause))}</div><div><strong>Type de pièce d’identité :</strong> ${esc(displayValue(d.type_piece_identite))}</div><div><strong>Numéro de la pièce :</strong> ${esc(displayValue(d.numero_piece_identite))}</div><div class="wide"><strong>Domicile / Localité :</strong> ${esc(displayValue(d.domicile_mis_cause))}</div></div><p>L’intervention a donné lieu à <strong>${esc(displayValue(d.arrestation))}</strong>.</p>`;
+  const s3=`<p>L’infraction constatée porte sur :</p><p><strong>${esc(displayValue(d.objet_infraction)).split('\n').join('<br>')}</strong></p>`;
+  const s4=offenseSeizureHtml(d,'Au cours du contrôle, les objets, produits ou matériels suivants ont été découverts et saisis :');
+  const responsible=chief||offenseAgentLines(d.agents_arrestation)[0]||'le chef de mission';
+  const s5=`<p>Le <strong>${esc(date)}</strong>${d.heure_controle?` à <strong>${esc(String(d.heure_controle).slice(0,5))}</strong>`:''}, l’équipe de contrôle placée sous la responsabilité de <strong>${esc(responsible)}</strong> s’est rendue à <strong>${esc(lieu)}</strong>.</p><p>Au cours de l’opération, les agents ont constaté que <strong>${esc(displayValue(d.expose_faits)).split('\n').join('<br>')}</strong>.</p>`;
+  const s6=`<p>Les vérifications entreprises ont permis de relever plusieurs éléments matériels susceptibles de caractériser l’infraction constatée.</p><p>A l’issue des vérifications effectuées sur les lieux, nous avons alors constaté ce qui suit :</p><p><strong>${esc(displayValue(d.constatations)).split('\n').join('<br>')}</strong></p><p>Ces constatations ont été effectuées sous la responsabilité du <strong>chef de mission</strong> et consignées de manière objective dans le présent procès-verbal.</p>`;
+  const s7=`<p>Invitée à s’expliquer sur les faits qui lui sont reprochés, la personne mise en cause déclare ce qui suit :</p><p><strong>${esc(displayValue(d.declaration_mis_cause)).split('\n').join('<br>')}</strong></p><p>La présente déclaration a été recueillie et consignée dans le présent procès-verbal afin d’être versée au dossier de la procédure.</p>`;
+  const s8=`<p>Les observations complémentaires relatives aux circonstances de l’infraction sont les suivantes :</p><p><strong>${esc(displayValue(d.observations_pv)).split('\n').join('<br>')}</strong></p>`;
+  const s9=`<p>Au regard des faits constatés, des déclarations recueillies et des éléments matériels relevés au cours de l’intervention, il ressort que <strong>${esc(displayValue(d.resume_infraction||d.objet_infraction))}</strong>.</p><p>En conséquence, les mesures suivantes ont été prises :</p><p><strong>${esc(displayValue(d.mesures_prises)).split('\n').join('<br>')}</strong></p><p>Le présent <strong>procès-verbal d’infraction</strong> est établi pour servir et valoir ce que de droit et transmis à <strong>${esc(displayValue(d.autorite_transmission))}</strong> pour les suites administratives et/ou judiciaires appropriées.</p>`;
+  return `<div class="document-title">PROCES-VERBAL D’INFRACTION</div><div class="offense-report-body">${reportSection(1,'Identification de l’opération',s1)}${reportSection(2,'Identification de la personne mise en cause',s2)}${reportSection(3,"Objet de l’infraction",s3)}${reportSection(4,'Objets, produits ou matériels concernés',s4)}${reportSection(5,'Exposé des faits',s5)}${reportSection(6,'Constatations',s6)}${reportSection(7,'Déclaration de la personne mise en cause',s7)}${reportSection(8,'Observations',s8)}${reportSection(9,'Conclusion et suite donnée',s9)}</div>`;
+}
+
+async function printRecord(record){
+  try{
+    const s=await ensurePrintSettings();
+    let body='';let title='';let customSignatureHtml='';let customDocumentClass='';
+    if(moduleKey==='missions'&&missionTypeOf(record)==='ORDRE_MISSION'){
+      title='ORDRE DE MISSION';body=orderMissionPrintBody(record,s);customDocumentClass='order-mission-print';
+    }else if(moduleKey==='missions'&&missionTypeOf(record)==='PV_ORDRE_MISSION'){
+      title='PROCES-VERBAL DE MISSION';body=orderMissionPvPrintBody(record);customDocumentClass='order-mission-pv-print';
+      const d=record.data||{};const stamp=String(record.created_at||record.updated_at||d.date_retour||d.date_depart||new Date().toISOString());customSignatureHtml=missionChiefSignatureHtml({_mission_chef:d.chef_mission,_mission_chef_grade:d._chef_mission_grade,_mission_chef_fonction:d._chef_mission_fonction},s,stamp.slice(0,10),'',true);
+    }else if(moduleKey==='missions'&&missionTypeOf(record)==='REPRESSION'){
+      title='REPRESSION DES INFRACTIONS';body=repressionPrintBody(record);customDocumentClass='offense-report-print';
+      const d=record.data||{};const madeDate=String(record.created_at||record.updated_at||d.date_controle||record.event_date||new Date().toISOString()).slice(0,10);customSignatureHtml=missionChiefSignatureHtml(d,s,madeDate,'');
+    }else if(moduleKey==='missions'&&missionTypeOf(record)==='PV_INFRACTION'){
+      title='PROCES-VERBAL D’INFRACTION';body=offensePvPrintBody(record);customDocumentClass='offense-pv-print';
+      const d=record.data||{};const stamp=String(record.created_at||record.updated_at||new Date().toISOString());customSignatureHtml=missionChiefSignatureHtml(d,s,stamp.slice(0,10),'',false);
+    }else if(moduleKey==='stages'){
+      const d=record.data||{};const stageType=stageTypeOf(record);const org=record.source_organization||session?.user?.organizationName||'Service des Eaux et Forêts';
+      const intro=stageResponsibleIntro(record);const qual=String(d.qualite_stagiaire||'élève Sous-officier').trim();
+      const ident=`${esc(qual)} <strong>${esc(record.title)}</strong>${d.matricule_stagiaire?` <strong>(${esc(d.matricule_stagiaire)})</strong>`:''}`;
+      if(stageType==='MISE_STAGE'){
+        const months=Number(d.duree_mois||0);const duration=months?`${esc(frenchNumber(months))} (${String(months).padStart(2,'0')}) mois`:'—';
+        title='ATTESTATION DE MISE EN STAGE';
+        body=`<div class="stage-document-title">ATTESTATION DE MISE EN STAGE</div><div class="official-body stage-body"><p>${esc(intro)}, soussigné(e), atteste que ${ident}, mis(e) en stage par la note de service <strong>N° ${esc(displayValue(d.note_service_numero))}</strong> du <strong>${esc(stageShortDate(d.note_service_date))}</strong>${d.note_service_origine?` émanant de <strong>${esc(d.note_service_origine)}</strong>`:''}, a effectivement commencé son stage au <strong>${esc(org)}</strong> le <strong>${esc(stageDate(d.date_debut))}</strong> à <strong>${esc(stageTime(d.heure_debut))}</strong>.</p><p>En outre, cette période d’apprentissage s’étendra sur une durée de <strong>${duration}</strong> allant du <strong>${esc(stageDate(d.date_debut))}</strong> au <strong>${esc(stageDate(d.date_fin))}</strong> inclus.</p><p>Ce stage aura pour thème : <strong>« ${esc(displayValue(d.theme))} »</strong>.</p><p>En foi de quoi, la présente attestation de mise en stage lui est délivrée, pour servir et valoir ce que de droit partout où besoin sera.</p></div>`;
+      }else{
+        title='ATTESTATION DE FIN DE STAGE';
+        body=`<div class="stage-document-title">ATTESTATION DE FIN DE STAGE</div><div class="official-body stage-body"><p>${esc(intro)}, soussigné(e), atteste que ${ident}${d.niveau_recrutement?`, recrue de niveau <strong>${esc(d.niveau_recrutement)}</strong>`:''}, mis(e) à la disposition du <strong>${esc(org)}</strong> sur la période allant du <strong>${esc(stageDate(d.date_debut))}</strong> au <strong>${esc(stageDate(d.date_fin))}</strong> suivant la lettre de mise en stage <strong>N° ${esc(displayValue(d.lettre_mise_stage_numero))}</strong> du <strong>${esc(stageShortDate(d.lettre_mise_stage_date))}</strong> a effectivement suivi avec assiduité et intérêt le stage sur ladite période.</p><p>En foi de quoi, il est établi la présente attestation de fin de stage pour servir et valoir ce que de droit.</p></div>`;
+      }
+    }else if(moduleKey==='documents'&&currentDocumentType==='CESSATION_SERVICE'){
+      const d=record.data||{};const intro=stageResponsibleIntro(record);
+      const employment=[d.emploi,d.option_emploi?`(Option ${d.option_emploi})`:'' ].filter(Boolean).join(' ');
+      const identity=`${d.grade_appellation?`${esc(d.grade_appellation)} `:''}<strong>${esc(record.title)}</strong>${d.matricule?`, Matricule <strong>${esc(d.matricule)}</strong>`:''}${employment?`, ${esc(employment)}`:''}${d.classe?` de <strong>${esc(d.classe)}</strong>`:''}${d.echelon?`, <strong>${esc(d.echelon)}</strong>`:''}`;
+      const decisionText=[d.decision_numero?`par Décision <strong>N° ${esc(d.decision_numero)}</strong>`:'',d.decision_date?`du <strong>${esc(stageShortDate(d.decision_date))}</strong>`:'',d.decision_objet?esc(d.decision_objet):''].filter(Boolean).join(' ');
+      title='CERTIFICAT DE CESSATION DE SERVICE';
+      body=`<div class="document-title service-document-title">CERTIFICAT DE CESSATION DE SERVICE</div><div class="official-body service-document-body"><p>${esc(intro)}, soussigné(e), atteste que ${identity}${d.ancien_service?`, précédemment en service au <strong>${esc(d.ancien_service)}</strong>`:''}${d.nouvelle_affectation?` et muté au <strong>${esc(d.nouvelle_affectation)}</strong>`:''}${decisionText?` ${decisionText}`:''}, cesse service le <strong>${esc(stageDate(d.date_cessation))}</strong> pour rejoindre son nouveau poste d’affectation.</p><p>En foi de quoi, le présent certificat est établi pour servir et valoir ce que de droit.</p></div>`;
+    }else if(moduleKey==='documents'&&currentDocumentType==='CESSATION_CONGE'){
+      const d=record.data||{};const intro=stageResponsibleIntro(record);const days=Number(d.duree_conge_jours||0);const duration=days?`${esc(frenchNumber(days))} (${String(days).padStart(2,'0')}) jours`:'— jour(s)';
+      const employment=[d.emploi,d.option_emploi?`(Option ${d.option_emploi})`:'' ].filter(Boolean).join(' ');
+      const identity=`${d.grade_appellation?`${esc(d.grade_appellation)} `:''}<strong>${esc(record.title)}</strong>${d.matricule?`, Matricule <strong>${esc(d.matricule)}</strong>`:''}${employment?`, ${esc(employment)}`:''}${d.classe?` <strong>${esc(d.classe)}</strong>`:''}${d.echelon?`, <strong>${esc(d.echelon)}</strong>`:''}`;
+      const leaveType=String(d.type_conge||'congé administratif annuel').trim();
+      title='CERTIFICAT DE CESSATION DE SERVICE';
+      body=`<div class="document-title service-document-title">CERTIFICAT DE CESSATION DE SERVICE</div><div class="official-body service-document-body"><p>${esc(intro)}, soussigné(e), certifie que ${identity}, bénéficiaire d’un <strong>${esc(leaveType)}</strong> de <strong>${duration}</strong>${d.annee_conge?` au titre de l’année <strong>${esc(d.annee_conge)}</strong>`:''}${d.decision_numero?` conformément à la décision <strong>N° ${esc(d.decision_numero)}</strong>`:''}${d.decision_date?` du <strong>${esc(stageShortDate(d.decision_date))}</strong>`:''}${d.decision_autorite?` de <strong>${esc(d.decision_autorite)}</strong>`:''}, cesse ses activités professionnelles le <strong>${esc(stageShortDate(d.date_cessation))}</strong>${d.lieu_conge?` pour en jouir à ses frais à <strong>${esc(d.lieu_conge)}</strong>`:''}.</p><p>À l’issue de ce ${esc(leaveType)}${days?` de <strong>${esc(days)} jours</strong>`:''}, l’intéressé(e) reprendra service à son poste habituel le <strong>${esc(stageShortDate(d.date_reprise_prevue))}</strong>${d.heure_reprise_prevue?` à <strong>${esc(stageTime(d.heure_reprise_prevue))}</strong>`:''}.</p><p>En foi de quoi, le présent certificat est établi pour servir et valoir ce que de droit.</p></div>`;
+    }else if(moduleKey==='documents'&&currentDocumentType==='REPRISE_SERVICE'){
+      const d=record.data||{};const intro=stageResponsibleIntro(record);const days=Number(d.duree_conge_jours||0);const duration=days?`${esc(frenchNumber(days))} (${String(days).padStart(2,'0')}) jours`:'— jour(s)';
+      const employment=[d.emploi,d.option_emploi?`(Option ${d.option_emploi})`:'' ].filter(Boolean).join(' ');
+      const identity=`${d.grade_appellation?`${esc(d.grade_appellation)} `:''}<strong>${esc(record.title)}</strong>${d.matricule?`, Matricule <strong>${esc(d.matricule)}</strong>`:''}${employment?`, ${esc(employment)}`:''}${d.classe?` de <strong>${esc(d.classe)}</strong>`:''}${d.echelon?`, <strong>${esc(d.echelon)}</strong>`:''}`;
+      const leaveType=String(d.type_conge||'congé administratif').trim();
+      const resumePlace=d.service_reprise?`à son ancien poste, <strong>${esc(d.service_reprise)}</strong>`:'à son ancien poste';
+      title='CERTIFICAT DE REPRISE DE SERVICE';
+      body=`<div class="document-title service-document-title">CERTIFICAT DE REPRISE DE SERVICE</div><div class="official-body service-document-body"><p>${esc(intro)}, soussigné(e), certifie que ${identity}, qui a cessé ses activités professionnelles le <strong>${esc(stageShortDate(d.date_cessation))}</strong>${d.certificat_cessation_numero?` conformément au certificat de cessation de service <strong>N° ${esc(d.certificat_cessation_numero)}</strong>`:''}${d.certificat_cessation_date?` du <strong>${esc(stageShortDate(d.certificat_cessation_date))}</strong>`:''}${d.certificat_cessation_origine?` émanant de <strong>${esc(d.certificat_cessation_origine)}</strong>`:''} pour bénéficier de <strong>${duration}</strong> de ${esc(leaveType)}${d.decision_numero?` suivant la décision <strong>N° ${esc(d.decision_numero)}</strong>`:''}${d.decision_date?` du <strong>${esc(stageShortDate(d.decision_date))}</strong>`:''}${d.decision_autorite?` de <strong>${esc(d.decision_autorite)}</strong>`:''} a repris le service ${resumePlace} le <strong>${esc(stageShortDate(d.date_reprise))}</strong>${d.heure_reprise?` à <strong>${esc(stageTime(d.heure_reprise))}</strong>`:''}.</p><p>En foi de quoi, le présent certificat est établi pour servir et valoir ce que de droit.</p></div>`;
+    }else if(moduleKey==='documents'&&currentDocumentType==='PRISE_SERVICE_MUTATION'){
+      const d=record.data||{};const intro=stageResponsibleIntro(record);
+      const employment=[d.emploi,d.option_emploi?`(Option ${d.option_emploi})`:'' ].filter(Boolean).join(' ');
+      const identity=`${d.grade_appellation?`${esc(d.grade_appellation)} `:''}<strong>${esc(record.title)}</strong>${d.matricule?`, Matricule <strong>${esc(d.matricule)}</strong>`:''}${employment?`, ${esc(employment)}`:''}${d.categorie?`, Catégorie <strong>${esc(d.categorie)}</strong>`:''}${d.grade_administratif?`, Grade <strong>${esc(d.grade_administratif)}</strong>`:''}${d.classe?`, <strong>${esc(d.classe)}</strong>`:''}${d.echelon?`, <strong>${esc(d.echelon)}</strong>`:''}`;
+      const decisionText=[d.decision_numero?`suivant la Décision <strong>N° ${esc(d.decision_numero)}</strong>`:'',d.decision_date?`du <strong>${esc(stageShortDate(d.decision_date))}</strong>`:'',d.decision_objet?esc(d.decision_objet):''].filter(Boolean).join(' ');
+      title='CERTIFICAT DE PRISE DE SERVICE';
+      body=`<div class="document-title service-document-title">CERTIFICAT DE PRISE DE SERVICE</div><div class="official-body service-document-body"><p>${esc(intro)}, soussigné(e), certifie que ${identity}${d.ancien_service?`, précédemment en service au <strong>${esc(d.ancien_service)}</strong>`:''}${d.nouvelle_affectation?`, muté(e) au <strong>${esc(d.nouvelle_affectation)}</strong>`:''}${decisionText?`, ${decisionText}`:''}, a pris service le <strong>${esc(stageDate(d.date_prise_service))}</strong> à son nouveau poste.</p><p>En foi de quoi, le présent certificat de prise de service est établi pour servir et valoir ce que de droit.</p></div>`;
+    }else if(moduleKey==='documents'&&currentDocumentType==='DEMANDE_EXPLICATION'){
+      const d=record.data||{};
+      const civilite=String(d.civilite||'Monsieur').trim();
+      const matricule=String(d.matricule||'').trim();
+      const emploi=String(d.emploi_qualite||'').trim();
+      const service=String(d.service_affectation||record.source_organization||session?.user?.organizationName||'').trim();
+      const texte=String(d.texte_demande||'').trim();
+      const reponse=String(d.reponse_agent||'').trim();
+      const delai=Number(d.delai_reponse_heures||48);
+      const delaiTexte=Number.isFinite(delai)&&delai>0?String(delai):'48';
+      title='DEMANDE D’EXPLICATION ÉCRITE';
+      body=`<div class="document-title explanation-document-title">DEMANDE D’EXPLICATION ÉCRITE</div><div class="official-body explanation-body"><p class="explanation-address">Adressée à <strong>${esc(civilite)} ${esc(record.title)}</strong>${matricule?`, matricule <strong>${esc(matricule)}</strong>`:''}${emploi?`, <strong>${esc(emploi)}</strong>`:''}${service?`, en service au <strong>${esc(service)}</strong>`:''}.</p><table class="explanation-table"><thead><tr><th>TEXTE</th><th>RÉPONSE</th></tr></thead><tbody><tr><td><div class="explanation-text">${esc(texte).split('\n').join('<br>')}</div><p class="explanation-deadline">Veuillez expliquer dans un délai de <strong>${esc(delaiTexte)} heures</strong> cette situation.</p></td><td><div class="explanation-response">${reponse?esc(reponse).split('\n').join('<br>'):'&nbsp;'}</div></td></tr></tbody></table></div>`;
+    }else if(moduleKey==='absences'||(moduleKey==='documents'&&currentDocumentType==='ABSENCE')){
+      const d=record.data||{};
+      const days=Number(d.nombre_jours||inclusiveDays(d.date_debut,d.date_fin)||0);
+      const dayText=days?`${frenchNumber(days)} (${String(days).padStart(2,'0')})`:'—';
+      const org=record.source_organization||session?.user?.organizationName||'Service des Eaux et Forêts';
+      const phrase=`Une autorisation d’absence de <strong>${esc(dayText)} jour${days>1?'s':''}</strong> allant du <strong>${esc(longFrDate(d.date_debut))}</strong> au <strong>${esc(longFrDate(d.date_fin))}</strong> inclus est accordée à <strong>${esc([d.grade,record.title].filter(Boolean).join(' '))}</strong>${d.matricule?`, Matricule <strong>${esc(d.matricule)}</strong>`:''}${d.emploi?`, ${esc(d.emploi)}`:''} en service au <strong>${esc(org)}</strong>${d.destination?` en vue de se rendre à <strong>${esc(d.destination)}</strong>`:''}${d.motif?` pour ${esc(d.motif)}`:''}.`;
+      title='AUTORISATION D’ABSENCE';
+      body=`<div class="document-title">AUTORISATION D’ABSENCE</div><div class="absence-body"><div class="request">Vu la demande d’absence en date du <strong>${esc(longFrDate(d.date_demande))}</strong>,</div><p>${phrase}</p></div>`;
+    }else if(moduleKey==='convocations'&&currentConvocationView==='CONVOCATIONS'){
+      const d=record.data||{};
+      const civ=String(d.civilite||'M.').trim();
+      const presentDate=d.date_presentation?longFrDate(d.date_presentation):'—';
+      const presentTime=d.heure?String(d.heure).slice(0,5):'—';
+      const structure=record.source_organization||session?.user?.organizationName||'Poste des Eaux et Forêts';
+      const objectText=String(d.objet_convocation||d.motif||'').trim();
+      const personText=String(d.personne_a_voir||d.voir||'').trim();
+      title='CONVOCATION';
+      body=`<div class="document-title">CONVOCATION</div><div class="official-body convocation-body"><div class="convocation-intro">Est prié(e) de bien vouloir se présenter au <strong>${esc(structure)}</strong><br>muni d’une pièce d’identité</div><table class="convocation-table"><tbody><tr><td class="convocation-label">M./Mme/Mlle</td><td class="convocation-colon">:</td><td class="convocation-value">${esc(`${civ} ${record.title}`.trim())}</td></tr><tr><td class="convocation-label">Profession</td><td class="convocation-colon">:</td><td class="convocation-value">${esc(displayValue(d.profession))}</td></tr><tr><td class="convocation-label">Domicile</td><td class="convocation-colon">:</td><td class="convocation-value">${esc(displayValue(d.domicile))}</td></tr><tr><td class="convocation-label">Date</td><td class="convocation-colon">:</td><td class="convocation-value">${esc(presentDate)}</td></tr><tr><td class="convocation-label">Heures</td><td class="convocation-colon">:</td><td class="convocation-value">${esc(presentTime)}</td></tr></tbody></table><div class="convocation-section"><div class="convocation-section-title">Objet de la convocation :</div><div class="convocation-box">${esc(objectText)}</div></div><div class="convocation-section"><div class="convocation-person-box"><span class="label">Personne à voir</span><span>:</span><span class="value">${esc(personText)}</span></div></div><p class="convocation-final">Votre présence à la date et à l’heure indiquée est nécessaire.</p></div>`;
+    }else if(moduleKey==='convocations'&&currentConvocationView==='PV'){
+      const d=record.data||{};
+      const meetingDate=d.date_rencontre?longFrDate(d.date_rencontre):'—';
+      const start=d.heure_debut?stageTime(d.heure_debut):'—';
+      const end=d.heure_fin?stageTime(d.heure_fin):'';
+      const sourceRef=String(d.convocation_reference||'').trim();
+      const place=String(d.lieu_rencontre||record.source_organization||session?.user?.organizationName||'').trim();
+      title='PROCÈS-VERBAL DE RENCONTRE';
+      body=`<div class="document-title">PROCÈS-VERBAL DE RENCONTRE</div><div class="official-body pv-body"><p>Le <strong>${esc(meetingDate)}</strong> à <strong>${esc(start)}</strong>${end?`, jusqu’à <strong>${esc(end)}</strong>`:''}, s’est tenue à <strong>${esc(place||'—')}</strong> une rencontre faisant suite à la convocation${sourceRef?` <strong>N° ${esc(sourceRef)}</strong>`:''} adressée à <strong>${esc(d.personne_convoquee||record.title)}</strong>${d.profession?`, ${esc(d.profession)}`:''}${d.domicile?`, domicilié(e) à ${esc(d.domicile)}`:''}.</p><p><strong>Objet de la rencontre :</strong><br>${esc(displayValue(d.objet_rencontre))}</p>${d.personne_a_voir?`<p><strong>Responsable / personne ayant reçu le convoqué :</strong><br>${esc(d.personne_a_voir)}</p>`:''}${d.personnes_presentes?`<p><strong>Personnes présentes :</strong><br>${esc(d.personnes_presentes).split('\n').join('<br>')}</p>`:''}<p><strong>Déroulement / résumé des échanges :</strong><br>${esc(displayValue(d.resume_echanges)).split('\n').join('<br>')}</p><p><strong>Conclusions / décisions arrêtées :</strong><br>${esc(displayValue(d.conclusions_decisions)).split('\n').join('<br>')}</p>${d.observations?`<p><strong>Observations :</strong><br>${esc(d.observations).split('\n').join('<br>')}</p>`:''}<p>En foi de quoi, le présent procès-verbal est établi pour servir et valoir ce que de droit.</p></div>`;
+    }else if(moduleKey==='exploitation-forestiere'){
+      const d=record.data||{};const type=forestTypeOf(record);const cfg=forestConfig(type)||{};
+      title=String(cfg.label||'Exploitation forestière').toUpperCase();
+      const dataRows=(cfg.fields||[]).filter(([k])=>!['_forest_type'].includes(k)).map(([k,l])=>`<div><span class="label">${esc(l)}</span><span class="value">${esc(displayValue(d[k]))}</span></div>`).join('');
+      body=`<div class="document-title">${esc(title)}</div><div class="official-body"><div class="meta"><div><span class="label">Date</span><span class="value">${esc(fmtDate(d.date_activite||record.event_date))}</span></div></div><div class="data">${dataRows}</div></div>`;
+    }else if(moduleKey==='transformation-bois'){
+      const d=record.data||{};const type=woodTypeOf(record);const cfg=woodConfig(type)||{};
+      title=String(cfg.label||'Transformation du bois').toUpperCase();
+      let dataRows='';
+      if(type==='PRODUITS_QTE'){
+        const rows=[
+          ['Statut de l’opérateur',d.statut_operateur],['Charbon de bois — Qté (sac)',d.charbon_qte_sacs],['Charbon de bois — Nbr carnet',d.charbon_nbr_carnet],
+          ['Bois de feu — Qté (T)',d.bois_feu_qte_t],['Bois de feu — Nbr carnet',d.bois_feu_nbr_carnet],['Mortiers — Qté (T)',d.mortiers_qte_t],['Mortiers — Nbr carnet',d.mortiers_nbr_carnet],
+          ['Kinkeliba — Qté (T)',d.kinkeliba_qte_t],['Kinkeliba — Nbr carnet',d.kinkeliba_nbr_carnet],['Fruit de karité — Qté (T)',d.karite_qte_t],['Fruit de karité — Nbr carnet',d.karite_nbr_carnet],
+          ['Bambou de chine — Qté (T)',d.bambou_qte_t],['Bambou de chine — Nbr carnet',d.bambou_nbr_carnet]
+        ];
+        dataRows=rows.map(([l,v])=>`<div><span class="label">${esc(l)}</span><span class="value">${esc(displayValue(v))}</span></div>`).join('');
+      }else{
+        dataRows=woodVisibleFields(type,d).map(([k,l])=>`<div><span class="label">${esc(l)}</span><span class="value">${esc(displayValue(d[k]))}</span></div>`).join('');
+      }
+      body=`<div class="document-title">${esc(title)}</div><div class="official-body"><div class="meta">${record.event_date?`<div><span class="label">Date</span><span class="value">${esc(fmtDate(record.event_date))}</span></div>`:''}</div><div class="data">${dataRows}</div></div>`;
+    }else if(['feux-brousse','faune','missions','formations'].includes(moduleKey)){
+      const d=record.data||{};
+      let dynTitle=activeSingular(record).toUpperCase();
+      if(moduleKey==='feux-brousse')dynTitle=String(fireConfig(fireTypeOf(record))?.label||dynTitle).toUpperCase();
+      if(moduleKey==='faune')dynTitle=String(faunaConfig(faunaTypeOf(record))?.label||dynTitle).toUpperCase();
+      if(moduleKey==='missions')dynTitle=missionTypeOf(record)==='PV_INFRACTION'?'PROCES-VERBAL D’INFRACTION':String(missionConfig(missionTypeOf(record))?.label||dynTitle).toUpperCase();
+      if(moduleKey==='formations')dynTitle='FORMATION / RENFORCEMENT DES CAPACITÉS';
+      title=dynTitle;
+      const rows=activeFields(record).filter(([, ,t])=>t!=='section').map(([k,l,t])=>{
+        if(t==='image')return d[k]?`<div class="print-photo-row"><span class="label">${esc(l)}</span><span class="value"><img src="${esc(d[k])}" alt="${esc(l)}" style="max-width:42mm;max-height:35mm;object-fit:contain"></span></div>`:'';
+        let value=d[k];
+        if(t==='date')value=fmtDate(value);
+        return `<div><span class="label">${esc(l)}</span><span class="value">${esc(displayValue(value))}</span></div>`;
+      }).join('');
+      body=`<div class="document-title">${esc(title)}</div><div class="official-body"><div class="meta"><div><span class="label">Nom / Intitulé</span><span class="value">${esc(record.title)}</span></div></div><div class="data">${rows}</div></div>`;
+    }else if(moduleKey==='personnel'){
+      const d=record.data||{};
+      const v=key=>esc(displayValue(d[key]));
+      title='FICHE DE RENSEIGNEMENT DE L’AGENT';
+      const photoHtml=d.photo?`<img class="agent-sheet-photo" src="${esc(d.photo)}" alt="Photo de l’agent">`:`<div class="agent-sheet-photo agent-sheet-photo-empty">PHOTO</div>`;
+      const field=(label,value)=>`<div class="agent-info-row"><span class="agent-info-label">${esc(label)}</span><span class="agent-info-value">${value}</span></div>`;
+      body=`<div class="agent-profile-title"><div class="agent-profile-title-main">FICHE DE RENSEIGNEMENT DE L’AGENT</div><div class="agent-profile-subtitle">INFORMATIONS PERSONNELLES ET PROFESSIONNELLES</div></div><div class="agent-profile"><section class="agent-profile-section agent-identity-section"><div class="agent-section-title"><span class="agent-section-number">1.</span> IDENTITÉ DE L’AGENT</div><div class="agent-identity-layout"><div class="agent-identity-fields">${field('Nom et Prénoms',esc(record.title))}${field('Date de naissance',esc(fmtDate(d.date_naissance)))}${field('Lieu de naissance',v('lieu_naissance'))}${field('Matricule',v('matricule'))}${field('Situation matrimoniale',v('situation_matrimoniale'))}</div><div class="agent-photo-frame">${photoHtml}</div></div></section><section class="agent-profile-section"><div class="agent-section-title"><span class="agent-section-number">2.</span> SITUATION PROFESSIONNELLE</div><div class="agent-professional-grid"><div>${field('Emploi',v('emploi'))}${field('Fonction',v('fonction'))}${field('Catégorie',v('categorie'))}</div><div>${field('Grade',v('grade'))}${field('Classe',v('classe'))}${field('Échelon',v('echelon'))}</div></div></section><div class="agent-split-sections"><section class="agent-profile-section"><div class="agent-section-title"><span class="agent-section-number">3.</span> INFORMATIONS ADMINISTRATIVES</div><div class="agent-section-content">${field('Date de prise de service au MINEF',esc(fmtDate(d.date_prise_service_minef)))}${field('Date de prise de service dans la Région',esc(fmtDate(d.date_prise_service_gbeke)))}</div></section><section class="agent-profile-section"><div class="agent-section-title"><span class="agent-section-number">4.</span> SITUATION PARTICULIÈRE</div><div class="agent-section-content">${field('Handicap',v('handicap'))}</div></section></div><section class="agent-profile-section agent-contact-section"><div class="agent-section-title"><span class="agent-section-number">5.</span> COORDONNÉES</div><div class="agent-contact-layout"><div class="agent-contact-field">${field('Numéro de téléphone',v('telephone'))}</div><div class="agent-signature-box-wrap"><span>Signature de l’agent</span><div class="agent-signature-box"></div></div></div></section></div>`;
+    }else{
+      title=(config?.singular||'Document').toUpperCase();
+      const dataRows=(config?.fields||[]).filter(([k])=>k!=='photo'&&!(moduleKey==='ressources-naturelles'&&k==='type_autre'&&normalizeWoodText(record.data?.type)!=='autre')).map(([k,l])=>`<div><span class="label">${esc(l)}</span><span class="value">${esc(displayValue(record.data?.[k]))}</span></div>`).join('');
+      const hideGenericReference=['ressources-naturelles','materiel'].includes(moduleKey);
+      body=`<div class="document-title">${esc(title)}</div><div class="official-body"><div class="meta">${hideGenericReference?'':`<div><span class="label">Référence</span><span class="value">${esc(displayValue(record.reference))}</span></div>`}<div><span class="label">Date</span><span class="value">${esc(fmtDate(record.event_date))}</span></div><div><span class="label">Nom / Intitulé</span><span class="value">${esc(record.title)}</span></div><div><span class="label">Statut</span><span class="value">${esc(record.status)}</span></div></div><div class="data">${dataRows}</div></div>`;
+    }
+    const showAmpliations=['1','true','yes','oui'].includes(String(record.data?._show_ampliations||'').toLowerCase());
+    const hasOwn=(obj,key)=>Object.prototype.hasOwnProperty.call(obj||{},key);
+    const documentSettings={...s};
+    if(hasOwn(record.data,'_ampliations'))documentSettings.ampliations=String(record.data?._ampliations||'');
+    if(hasOwn(record.data,'_ampliation_numbers'))documentSettings.ampliationNumbers=String(record.data?._ampliation_numbers||'');
+    const documentClass=customDocumentClass||(moduleKey==='convocations'?(currentConvocationView==='PV'?'pv-print':'convocation-print'):(moduleKey==='absences'||(moduleKey==='documents'&&currentDocumentType==='ABSENCE'))?'absence-print':moduleKey==='stages'?'stage-print':moduleKey==='personnel'?'personnel-sheet-print':(moduleKey==='documents'&&['CESSATION_SERVICE','CESSATION_CONGE','REPRISE_SERVICE','PRISE_SERVICE_MUTATION'].includes(currentDocumentType))?'service-document-print':(moduleKey==='documents'&&currentDocumentType==='DEMANDE_EXPLICATION')?'explanation-print':'');
+    const suppressAdministrativeReference=moduleKey==='personnel'||suppressesAdministrativeReference(record);
+    const printReference=suppressAdministrativeReference?'':String(record.data?.reference_administrative||record.reference||'');
+    const html=buildPrintDocument({title,body,reference:printReference,date:record.event_date,settings:documentSettings,signature:moduleKey!=='personnel',hideReference:suppressAdministrativeReference,showAmpliations:moduleKey==='personnel'?false:showAmpliations,documentClass,signatureHtml:customSignatureHtml});
+    window.__sigatPrintTargetId=record.id;
+    await launchPrint(html);
+  }catch(e){await professionalAlert('Impression impossible',e.message||'Le document n’a pas pu être préparé.');}
+}
+
+async function loadAllPersonnelForPrint(){
+  const items=[];let page=1,totalPages=1;
+  do{
+    const q=new URLSearchParams({module:'personnel',page:String(page),limit:'100',search:''});
+    const d=await api(`/api/load?${q.toString()}`);
+    items.push(...(d.items||[]));
+    totalPages=Number(d.totalPages||1);page++;
+  }while(page<=totalPages&&page<=200);
+  return items;
+}
+function personnelListTitle(settings){
+  const raw=settingsLine(settings?.post)||String(session?.user?.organizationName||'POSTE DES EAUX ET FORETS DE DIABO');
+  const structure=raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+  return `LISTE DU PERSONNEL DU ${structure}`;
+}
+
+async function printCurrentList(){
+  if(!lastItems.length){await professionalAlert('Impression','Aucune donnée à imprimer sur cette page.');return}
+  try{
+    const s=await ensurePrintSettings();
+    if(moduleKey==='personnel'){
+      const personnel=await loadAllPersonnelForPrint();
+      if(!personnel.length){await professionalAlert('Impression','Aucun agent à imprimer.');return}
+      const rows=personnel.map((r,i)=>{const d=r.data||{};return `<tr><td>${i+1}</td><td>${esc(r.title)}</td><td>${esc(fmtDate(d.date_naissance))}</td><td>${esc(displayValue(d.lieu_naissance))}</td><td>${esc(displayValue(d.matricule))}</td><td>${esc(displayValue(d.emploi))}</td><td>${esc(displayValue(d.fonction))}</td><td>${esc(displayValue(d.categorie))}</td><td>${esc(displayValue(d.grade))}</td><td>${esc(displayValue(d.classe))}</td><td>${esc(displayValue(d.echelon))}</td><td>${esc(fmtDate(d.date_prise_service_minef))}</td><td>${esc(fmtDate(d.date_prise_service_gbeke))}</td><td>${esc(displayValue(d.handicap))}</td><td>${esc(displayValue(d.situation_matrimoniale))}</td><td>${esc(displayValue(d.telephone))}</td></tr>`}).join('');
+      const title=personnelListTitle(s);
+      const body=`<div class="document-title personnel-list-title">${esc(title)}</div><div class="official-body wide"><table class="personnel-print-table"><thead><tr><th>N° d’ordre</th><th>Nom et prénoms</th><th>Date de naissance</th><th>Lieu de naissance</th><th>Matricule</th><th>Emploi</th><th>Fonction</th><th>Catégorie</th><th>Grade</th><th>Classe</th><th>Échelon</th><th>Prise de service au MINEF</th><th>Prise de service dans la Région</th><th>Handicap</th><th>Situation matrimoniale</th><th>N° téléphone</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      const html=buildPrintDocument({title,body,settings:s,signature:false,hideReference:true,documentClass:'personnel-list-print'});
+      await launchPrint(html);return;
+    }
+    if(moduleKey==='exploitation-forestiere'){
+      const cfg=forestConfig(currentForestType)||{};const nurseryPrintTitle=currentNurseryView==='SITES'?'SITES DE PÉPINIÈRE ET RESPONSABLES':currentNurseryView==='PRODUCTION'?'PRODUCTION DE PÉPINIÈRES':'DISTRIBUTION ET SITUATION DE LA PÉPINIÈRE';const title=`REGISTRE — ${String(currentForestType==='PEPINIERE'?nurseryPrintTitle:(cfg.label||'EXPLOITATION FORESTIÈRE')).toUpperCase()}`;
+      let headers=[],rows='';
+      if(currentForestType==='PEPINIERE'){
+        if(currentNurseryView==='SITES'){
+          headers=['N°','Sous-préfecture','Localité','Coordonnées X / Y','Responsable','Contacts'];
+          rows=lastItems.map((r,i)=>{const d=r.data||{},coord=[d.coord_x,d.coord_y].filter(Boolean).join(' / ')||'—';return `<tr><td>${i+1}</td><td>${esc(displayValue(d.sous_prefecture))}</td><td>${esc(displayValue(d.localite))}</td><td>${esc(coord)}</td><td>${esc(displayValue(d.responsable_nom))}</td><td>${esc(displayValue(d.responsable_contact))}</td></tr>`}).join('');
+        }else if(currentNurseryView==='PRODUCTION'){
+          headers=['N°','Sous-préfecture','Localité','Coordonnées X / Y','Essence','Nbr. de plants produits'];
+          rows=lastItems.map((r,i)=>{const d=r.data||{},coord=[d.coord_x,d.coord_y].filter(Boolean).join(' / ')||'—';return `<tr><td>${i+1}</td><td>${esc(displayValue(d.sous_prefecture))}</td><td>${esc(displayValue(d.localite||d.localisation))}</td><td>${esc(coord)}</td><td>${esc(displayValue(d.essence))}</td><td>${esc(displayValue(d.nbr_plants_produits))}</td></tr>`}).join('');
+        }else{
+          headers=['N°','Essence','Nbr. de plants produits','Nbr. de plants distribués','Plants disponibles'];
+          rows=lastItems.map((r,i)=>{const d=r.data||{};return `<tr><td>${i+1}</td><td>${esc(displayValue(d.essence))}</td><td>${esc(formatNurseryNumber(d.nbr_plants_produits))}</td><td>${esc(formatNurseryNumber(d.nbr_plants_distribues))}</td><td>${esc(formatNurseryNumber(d.nbr_plants_disponibles))}</td></tr>`}).join('');
+        }
+      }else if(currentForestType==='PLANTATION_CREEE'){
+        headers=['N°','Date','Localité','Bénéficiaire','Contact','Superficie','Essence','Densité','Total plants','Coordonnées'];
+        rows=lastItems.map((r,i)=>{const d=r.data||{},coord=[d.coord_x,d.coord_y].filter(Boolean).join(' / ')||'—';return `<tr><td>${i+1}</td><td>${esc(fmtDate(d.date_activite||r.event_date))}</td><td>${esc(displayValue(d.localite))}</td><td>${esc(displayValue(d.beneficiaire))}</td><td>${esc(displayValue(d.contact_beneficiaire))}</td><td>${esc(displayValue(d.superficie))}</td><td>${esc(displayValue(d.essence))}</td><td>${esc(displayValue(d.densite))}</td><td>${esc(displayValue(d.nombre_total_plants))}</td><td>${esc(coord)}</td></tr>`}).join('');
+      }else if(currentForestType==='REBOISEMENT'){
+        headers=['N°','Date','Type','Localité','Bénéficiaire','Contact','Superficie','Essence','Densité','Total plants','Coordonnées','Entreprise responsable'];
+        rows=lastItems.map((r,i)=>{const d=r.data||{},coord=[d.coord_x,d.coord_y].filter(Boolean).join(' / ')||'—';return `<tr><td>${i+1}</td><td>${esc(fmtDate(d.date_activite||r.event_date))}</td><td>${esc(displayValue(d.type_reboisement))}</td><td>${esc(displayValue(d.localite))}</td><td>${esc(displayValue(d.beneficiaire))}</td><td>${esc(displayValue(d.contact_beneficiaire))}</td><td>${esc(displayValue(d.superficie))}</td><td>${esc(displayValue(d.essence))}</td><td>${esc(displayValue(d.densite))}</td><td>${esc(displayValue(d.nombre_total_plants))}</td><td>${esc(coord)}</td><td>${esc(displayValue(d.entreprise_responsable))}</td></tr>`}).join('');
+      }else{
+        headers=['N°','Date','Sous-préfecture','Localité','Essence','Superficie','Coordonnées','Contact propriétaire'];
+        rows=lastItems.map((r,i)=>{const d=r.data||{},coord=[d.coord_x,d.coord_y].filter(Boolean).join(' / ')||'—';return `<tr><td>${i+1}</td><td>${esc(fmtDate(d.date_activite||r.event_date))}</td><td>${esc(displayValue(d.sous_prefecture))}</td><td>${esc(displayValue(d.localite))}</td><td>${esc(displayValue(d.essence))}</td><td>${esc(displayValue(d.superficie_parcelle))}</td><td>${esc(coord)}</td><td>${esc(displayValue(d.contact_proprietaire))}</td></tr>`}).join('');
+      }
+      const body=`<div class="document-title">${esc(title)}</div><div class="official-body wide"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`;
+      const html=buildPrintDocument({title,body,settings:s,signature:false,hideReference:true});await launchPrint(html);return;
+    }
+    if(moduleKey==='transformation-bois'){
+      const cfg=woodConfig(currentWoodType)||{};const title=`REGISTRE — ${String(cfg.label||'TRANSFORMATION DU BOIS').toUpperCase()}`;
+      let headers=[],rows='';
+      if(currentWoodType==='EXPLOITANTS_SECONDAIRES'){
+        headers=['N°','Opérateur','Contact','Produit exploité','N° permis','Date délivrance','Localité','Service de suivi'];
+        rows=lastItems.map((r,i)=>{const d=r.data||{};return `<tr><td>${i+1}</td><td>${esc(displayValue(d.nom_operateur||r.title))}</td><td>${esc(displayValue(d.contact))}</td><td>${esc(displayValue(d.nature_produit))}</td><td>${esc(displayValue(d.numero_permis))}</td><td>${esc(fmtDate(d.date_delivrance||r.event_date))}</td><td>${esc(displayValue(d.localite))}</td><td>${esc(displayValue(d.service_suivi))}</td></tr>`}).join('');
+      }else if(currentWoodType==='PRODUITS_QTE'){
+        headers=['N°','Statut','Charbon','Bois de feu','Mortiers','Kinkeliba','Fruit de karité','Bambou de chine'];
+        rows=lastItems.map((r,i)=>{const d=r.data||{};return `<tr><td>${i+1}</td><td>${esc(displayValue(d.statut_operateur))}</td><td>${esc(woodProductSummary(d.charbon_qte_sacs,d.charbon_nbr_carnet,'sac'))}</td><td>${esc(woodProductSummary(d.bois_feu_qte_t,d.bois_feu_nbr_carnet,'T'))}</td><td>${esc(woodProductSummary(d.mortiers_qte_t,d.mortiers_nbr_carnet,'T'))}</td><td>${esc(woodProductSummary(d.kinkeliba_qte_t,d.kinkeliba_nbr_carnet,'T'))}</td><td>${esc(woodProductSummary(d.karite_qte_t,d.karite_nbr_carnet,'T'))}</td><td>${esc(woodProductSummary(d.bambou_qte_t,d.bambou_nbr_carnet,'T'))}</td></tr>`}).join('');
+      }else{
+        headers=['N°','Type','Région','Département','Localité','Usine / opérateur','Contact','Coordonnées','Permis'];
+        rows=lastItems.map((r,i)=>{const d=r.data||{},coord=[d.coord_x,d.coord_y].filter(Boolean).join(' / ')||'—';const name=d.nom_usine||d.nom_operateur||r.title||'—';const permit=[d.numero_permis,d.date_delivrance?fmtDate(d.date_delivrance):''].filter(Boolean).join(' / ')||'—';return `<tr><td>${i+1}</td><td>${esc(displayValue(d.type_exercant))}</td><td>${esc(displayValue(d.region))}</td><td>${esc(displayValue(d.departement))}</td><td>${esc(displayValue(d.localite))}</td><td>${esc(name)}</td><td>${esc(displayValue(d.contact_operateur))}</td><td>${esc(coord)}</td><td>${esc(permit)}</td></tr>`}).join('');
+      }
+      const body=`<div class="document-title">${esc(title)}</div><div class="official-body wide"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`;
+      const html=buildPrintDocument({title,body,settings:s,signature:false,hideReference:true});await launchPrint(html);return;
+    }
+    if(moduleKey==='feux-brousse'){
+      const cfg=fireConfig(currentFireType)||{};const title=`REGISTRE — ${String(cfg.label||'FEUX DE BROUSSE').toUpperCase()}`;let headers=[],rows='';
+      if(currentFireType==='DEGATS'){
+        headers=['N°','Date constat','Sous-préfecture','Village','Nature des dégâts','Superficie (ha)','Personnes impactées','Observations'];
+        rows=lastItems.map((r,i)=>{const d=r.data||{};return `<tr><td>${i+1}</td><td>${esc(fmtDate(d.date_constat||r.event_date))}</td><td>${esc(displayValue(d.sous_prefecture))}</td><td>${esc(displayValue(d.village))}</td><td>${esc(displayValue(d.nature_degats))}</td><td>${esc(displayValue(d.superficie_detruite))}</td><td>${esc(displayValue(d.personnes_impactees))}</td><td>${esc(displayValue(d.observations))}</td></tr>`}).join('');
+      }else{
+        headers=['N°','Département','Sous-préfecture','Village','Acte de création','Président','Contact'];
+        rows=lastItems.map((r,i)=>{const d=r.data||{};return `<tr><td>${i+1}</td><td>${esc(displayValue(d.departement))}</td><td>${esc(displayValue(d.sous_prefecture))}</td><td>${esc(displayValue(d.village))}</td><td>${esc(displayValue(d.acte_creation))}</td><td>${esc(displayValue(d.president_nom))}</td><td>${esc(displayValue(d.president_contact))}</td></tr>`}).join('');
+      }
+      const body=`<div class="document-title">${esc(title)}</div><div class="official-body wide"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`;await launchPrint(buildPrintDocument({title,body,settings:s,signature:false,hideReference:true}));return;
+    }
+    if(moduleKey==='faune'){
+      const cfg=faunaConfig(currentFaunaType)||{};const title=`REGISTRE — ${String(cfg.label||'FAUNE').toUpperCase()}`;let headers=[],rows='';
+      if(currentFaunaType==='CONFLITS'){
+        headers=['N°','Sous-préfecture','Village','Type de conflit','Animaux impliqués','Dégâts','Hommes impactés','Femmes impactées','Action menée'];
+        rows=lastItems.map((r,i)=>{const d=r.data||{};return `<tr><td>${i+1}</td><td>${esc(displayValue(d.sous_prefecture))}</td><td>${esc(displayValue(d.village))}</td><td>${esc(displayValue(d.type_conflit))}</td><td>${esc(displayValue(d.nombre_animaux))}</td><td>${esc(displayValue(d.degats_recenses))}</td><td>${esc(displayValue(d.hommes_impactes))}</td><td>${esc(displayValue(d.femmes_impactees))}</td><td>${esc(displayValue(d.action_menee))}</td></tr>`}).join('');
+      }else{
+        headers=['N°','Date','Espèces rencontrées','Zone d’observation','Commentaires'];
+        rows=lastItems.map((r,i)=>{const d=r.data||{};return `<tr><td>${i+1}</td><td>${esc(fmtDate(d.date_observation||r.event_date))}</td><td>${esc(displayValue(d.especes_animales))}</td><td>${esc(displayValue(d.zone_observation))}</td><td>${esc(displayValue(d.commentaires_utiles))}</td></tr>`}).join('');
+      }
+      const body=`<div class="document-title">${esc(title)}</div><div class="official-body wide"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`;await launchPrint(buildPrintDocument({title,body,settings:s,signature:false,hideReference:true}));return;
+    }
+    if(moduleKey==='missions'){
+      const cfg=missionConfig(currentMissionType)||{};const title=`REGISTRE — ${String(cfg.label||'MISSIONS').toUpperCase()}`;let headers=[],rows='';
+      if(currentMissionType==='ORDRE_MISSION'){
+        headers=['N°','N° mission','Chef de mission','Agents','Résidence','Objectif','Départ','Retour'];rows=lastItems.map((r,i)=>{const d=r.data||{},agents=[d.agent_mission_1,d.agent_mission_2,d.agent_mission_3,d.agent_mission_4].filter(Boolean).join(' · ');return `<tr><td>${i+1}</td><td>${esc(displayValue(d.numero_mission||r.reference))}</td><td>${esc(displayValue(d.chef_mission))}</td><td>${esc(displayValue(agents))}</td><td>${esc(displayValue(d.residence_affectation))}</td><td>${esc(displayValue(d.objectif_mission))}</td><td>${esc(fmtDate(d.date_depart))}</td><td>${esc(fmtDate(d.date_retour))}</td></tr>`}).join('');
+      }else{
+        headers=['N°','Objet infraction','Personne mise en cause','Contact','Objets saisis','Observations'];rows=lastItems.map((r,i)=>{const d=r.data||{};return `<tr><td>${i+1}</td><td>${esc(displayValue(d.objet_infraction))}</td><td>${esc(displayValue(d.personne_mise_cause))}</td><td>${esc(displayValue(d.contact_mis_cause))}</td><td>${esc(displayValue(d.objets_saisis))}</td><td>${esc(displayValue(d.observations))}</td></tr>`}).join('');
+      }
+      const body=`<div class="document-title">${esc(title)}</div><div class="official-body wide"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`;await launchPrint(buildPrintDocument({title,body,settings:s,signature:false,hideReference:true}));return;
+    }
+    if(moduleKey==='formations'){
+      const title='REGISTRE DES FORMATIONS';const rows=lastItems.map((r,i)=>{const d=r.data||{},theme=normalizeWoodText(d.theme).startsWith('autres')?(d.theme_autre||d.theme):d.theme;return `<tr><td>${i+1}</td><td>${esc(fmtDate(d.date_activite||r.event_date))}</td><td>${esc(displayValue(theme))}</td><td>${esc(displayValue(d.hommes))}</td><td>${esc(displayValue(d.femmes))}</td><td>${esc(displayValue((Number(d.hommes||0)||0)+(Number(d.femmes||0)||0)))}</td><td>${esc(displayValue(d.observations))}</td></tr>`}).join('');
+      const body=`<div class="document-title">${title}</div><div class="official-body wide"><table><thead><tr><th>N°</th><th>Date</th><th>Thème</th><th>Hommes</th><th>Femmes</th><th>Total</th><th>Observations</th></tr></thead><tbody>${rows}</tbody></table></div>`;await launchPrint(buildPrintDocument({title,body,settings:s,signature:false,hideReference:true}));return;
+    }
+    if(moduleKey==='activites-minef'){
+      const title='REGISTRE DES ACTIVITÉS MENÉES';
+      const rows=lastItems.map((r,i)=>{const d=r.data||{};return `<tr><td>${i+1}</td><td>${esc(fmtDate(d.date_activite||r.event_date))}</td><td>${esc(displayValue(d.type_activite))}</td><td>${esc(displayValue(d.categorie_minef))}</td><td>${esc(displayValue(d.intitule_activite||r.title))}</td><td>${esc(displayValue(d.organisateur))}</td><td>${esc(displayValue(d.commentaire))}</td></tr>`}).join('');
+      const body=`<div class="document-title">${title}</div><div class="official-body wide"><table><thead><tr><th>N°</th><th>Date</th><th>Type d’activité</th><th>Cadre MINEF</th><th>Intitulé</th><th>Organisateur</th><th>Commentaire</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      const html=buildPrintDocument({title,body,settings:s,signature:false,hideReference:true});
+      await launchPrint(html);return;
+    }
+    if(moduleKey==='sensibilisations'){
+      const rows=lastItems.map((r,i)=>{const d=r.data||{};const h=Number(d.hommes||0),f=Number(d.femmes||0);return `<tr><td>${i+1}</td><td>${esc(fmtDate(d.date_activite||r.event_date))}</td><td>${esc(d.type_sensibilisation||d.theme||r.title||'—')}</td><td>${esc(displayValue(d.lieu))}</td><td>${esc(displayValue(d.cible))}</td><td>${h}</td><td>${f}</td><td>${h+f}</td><td>${esc(displayValue(d.agent_charge))}</td></tr>`}).join('');
+      const title='REGISTRE DES SENSIBILISATIONS';
+      const body=`<div class="document-title">${title}</div><div class="official-body wide"><table><thead><tr><th>N°</th><th>Date</th><th>Type</th><th>Lieu</th><th>Cible</th><th>Hommes</th><th>Femmes</th><th>Total</th><th>Agent en charge</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      const html=buildPrintDocument({title,body,settings:s,signature:false,hideReference:true});
+      await launchPrint(html);return;
+    }
+    const genericListNoReference=['ressources-naturelles','materiel'].includes(moduleKey);
+    const rows=lastItems.map((r,i)=>genericListNoReference?`<tr><td>${i+1}</td><td>${esc(r.title)}</td><td>${esc(fmtDate(r.event_date))}</td><td>${esc(r.status)}</td></tr>`:`<tr><td>${i+1}</td><td>${esc(r.reference||'—')}</td><td>${esc(r.title)}</td><td>${esc(fmtDate(r.event_date))}</td><td>${esc(r.status)}</td></tr>`).join('');
+    const title=moduleKey==='stages'?(currentStageType==='MISE_STAGE'?'REGISTRE DES MISES EN STAGE':'REGISTRE DES FINS DE STAGE'):moduleKey==='documents'?(currentDocumentType==='CESSATION_SERVICE'?'REGISTRE DES CESSATIONS DE SERVICE / MUTATION':currentDocumentType==='CESSATION_CONGE'?'REGISTRE DES CESSATIONS DE SERVICE / CONGÉ':currentDocumentType==='REPRISE_SERVICE'?'REGISTRE DES REPRISES DE SERVICE / CONGÉ':currentDocumentType==='PRISE_SERVICE_MUTATION'?'REGISTRE DES PRISES DE SERVICE / MUTATION':currentDocumentType==='DEMANDE_EXPLICATION'?'REGISTRE DES DEMANDES D’EXPLICATION':'REGISTRE DES AUTORISATIONS D’ABSENCE'):moduleKey==='convocations'?(currentConvocationView==='PV'?'REGISTRE DES PROCÈS-VERBAUX DE RENCONTRE':'REGISTRE DES CONVOCATIONS'):config.title.toUpperCase();
+    const genericHeaders=genericListNoReference?'<th>N°</th><th>Intitulé</th><th>Date</th><th>Statut</th>':'<th>N°</th><th>Référence</th><th>Intitulé</th><th>Date</th><th>Statut</th>';
+    const body=`<div class="document-title">${esc(title)}</div><div class="official-body wide"><table><thead><tr>${genericHeaders}</tr></thead><tbody>${rows}</tbody></table></div>`;
+    const html=buildPrintDocument({title,body,settings:s,signature:false,hideReference:true});
+    await launchPrint(html);
+  }catch(e){await professionalAlert('Impression impossible',e.message||'La liste n’a pas pu être préparée.');}
+}
+
+document.addEventListener('DOMContentLoaded',boot);
