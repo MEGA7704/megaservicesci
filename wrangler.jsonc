@@ -4,9 +4,50 @@
   "compatibility_date": "2026-08-28",
   "pages_build_output_dir": "./public",
   "kv_namespaces": [
-    { "binding": "SITE_MEGA_KV", "id": "79497d597c514f0192d069ef65054ae8" }
+    {
+      "binding": "SITE_MEGA_KV",
+      "id": "79497d597c514f0192d069ef65054ae8"
+    }
   ],
   "d1_databases": [
-    { "binding": "SITE_MEGA_D1", "database_name": "site-mega-d1", "database_id": "831b511f-acc3-41e6-b404-1cb64e67508b" }
+    {
+      "binding": "SITE_MEGA_D1",
+      "database_name": "site-mega-d1",
+      "database_id": "831b511f-acc3-41e6-b404-1cb64e67508b"
+    }
+  ],
+  "services": [
+    {
+      "binding": "SIGAT_APP",
+      "service": "mega-sigat-worker"
+    },
+    {
+      "binding": "FOREX_APP",
+      "service": "mega-forex-worker"
+    },
+    {
+      "binding": "IMMOBILIER_APP",
+      "service": "mega-immobilier-worker"
+    },
+    {
+      "binding": "EMPLOI_APP",
+      "service": "mega-emploi-worker"
+    },
+    {
+      "binding": "OUKAMI_APP",
+      "service": "mega-oukami-worker"
+    },
+    {
+      "binding": "BANK_APP",
+      "service": "mega-bank-worker"
+    },
+    {
+      "binding": "BT_APP",
+      "service": "mega-bt-worker"
+    },
+    {
+      "binding": "MARKET_APP",
+      "service": "mega-market-worker"
+    }
   ]
 }

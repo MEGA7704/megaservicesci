@@ -1,20 +1,14 @@
 {
-  "name": "global-market-cloudflare",
-  "version": "5.5.1",
+  "name": "mega-services-sarl-u",
   "private": true,
-  "description": "GLOBAL MARKET - panier en 3 sections horizontales, frais d’expédition automatiques par moyen et minimum de 10 000 FCFA sur le total général de chaque commande hors ville.",
-  "type": "module",
-  "engines": {
-    "node": ">=20"
-  },
+  "version": "4.0.0",
   "scripts": {
-    "validate": "node scripts/validate.mjs",
-    "build": "npm run validate && node scripts/build.mjs",
-    "check": "npm run build",
-    "dev": "npm run build && wrangler pages dev public",
-    "deploy": "npm run build && wrangler pages deploy public --project-name=globalmarketci"
+    "dev": "wrangler pages dev public --kv SITE_MEGA_KV --d1 SITE_MEGA_D1",
+    "deploy": "wrangler pages deploy public --project-name mega-services-sarl-u",
+    "db:local": "wrangler d1 migrations apply site-mega-d1 --local",
+    "db:remote": "echo \"V4: aucune migration manuelle requise - le schema D1 est cree automatiquement.\""
   },
   "devDependencies": {
-    "wrangler": "^4.27.0"
+    "wrangler": "^4.0.0"
   }
 }

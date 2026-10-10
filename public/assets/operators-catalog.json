@@ -4,7 +4,7 @@
     "name": "SIGAT",
     "icon": "🌳",
     "category": "Administration forestière",
-    "url": "https://sigatci.pages.dev/",
+    "url": "/operateurs/modules/sigat/",
     "modules": [
       "Tableau de bord",
       "Personnel et agents",
@@ -18,14 +18,15 @@
       "Procès-verbaux",
       "Rapports et impressions",
       "Paramètres et utilisateurs"
-    ]
+    ],
+    "sourceArchive": "SIGATCI-main2.zip"
   },
   {
     "id": "app1",
     "name": "GLOBAL FOREX TRADING",
     "icon": "📈",
     "category": "Analyse de graphiques",
-    "url": "https://globalforextrading.pages.dev/",
+    "url": "/operateurs/modules/forex/",
     "modules": [
       "Tableau de bord",
       "Importer une capture",
@@ -34,14 +35,15 @@
       "Résultats et historique",
       "Outils Trendline / Bands / Limit",
       "Compte et abonnement"
-    ]
+    ],
+    "sourceArchive": "GLOBALFOREXTRADING-main2.zip"
   },
   {
     "id": "app2",
     "name": "GLOBAL IMMOBILIER",
     "icon": "🏠",
     "category": "Gestion locative",
-    "url": "https://globalimmobilier.pages.dev/",
+    "url": "/operateurs/modules/immobilier/",
     "modules": [
       "Tableau de bord",
       "Propriétaires",
@@ -53,14 +55,15 @@
       "Réservations et visites",
       "Catalogue public",
       "Paramètres"
-    ]
+    ],
+    "sourceArchive": "globalimmobilier-main2.zip"
   },
   {
     "id": "app3",
     "name": "GLOBAL EMPLOI",
     "icon": "👥",
     "category": "Emploi et recrutement",
-    "url": "https://globalemploici.pages.dev/",
+    "url": "/operateurs/modules/emploi/",
     "modules": [
       "Offres d’emploi",
       "Espace demandeur",
@@ -72,14 +75,15 @@
       "Messagerie",
       "Notifications",
       "Abonnements"
-    ]
+    ],
+    "sourceArchive": "globalemploici-main2.zip"
   },
   {
     "id": "app4",
     "name": "OUKAMI BANK",
     "icon": "🤝",
     "category": "Épargne et crédit associatifs",
-    "url": "https://oukamibank.pages.dev/",
+    "url": "/operateurs/modules/oukami/",
     "modules": [
       "Tableau de bord",
       "Clients et adhérents",
@@ -91,14 +95,15 @@
       "Rapports",
       "Agents et autorisations",
       "Paramètres"
-    ]
+    ],
+    "sourceArchive": "OUKAMIBANK-main2.zip"
   },
   {
     "id": "app5",
     "name": "GLOBAL BANK",
     "icon": "🏦",
     "category": "Gestion bancaire",
-    "url": "https://globalbankci.pages.dev/",
+    "url": "/operateurs/modules/bank/",
     "modules": [
       "Tableau de bord",
       "Banques et utilisateurs",
@@ -110,14 +115,15 @@
       "Rapports financiers",
       "Abonnements",
       "Paramètres"
-    ]
+    ],
+    "sourceArchive": "globalbankci-main2-.zip"
   },
   {
     "id": "app6",
     "name": "GLOBAL BT",
     "icon": "🏗️",
     "category": "Gestion de chantiers",
-    "url": "https://globalbtci.pages.dev/",
+    "url": "/operateurs/modules/bt/",
     "modules": [
       "Tableau de bord",
       "Projets",
@@ -129,14 +135,15 @@
       "Rapports",
       "Utilisateurs",
       "Paramètres et abonnements"
-    ]
+    ],
+    "sourceArchive": "globalbtci-main2.zip"
   },
   {
     "id": "app7",
     "name": "GLOBAL MARKET",
     "icon": "🛒",
     "category": "Commerce et marketplace",
-    "url": "https://globalmarketci.pages.dev/",
+    "url": "/operateurs/modules/market/",
     "modules": [
       "Tableau de bord",
       "Ventes et caisse",
@@ -151,6 +158,7 @@
       "Livraison",
       "Abonnements",
       "Paramètres"
-    ]
+    ],
+    "sourceArchive": "globalmarketci-main2.zip"
   }
 ]

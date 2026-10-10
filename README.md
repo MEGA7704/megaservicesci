@@ -1,175 +1,183 @@
-# GLOBAL MARKET — Projet Cloudflare Pages + GitHub
+# MEGA SERVICES SARL U — V6 Admin Fix
 
-Projet complet prêt à être placé à la racine du dépôt GitHub puis déployé par Cloudflare Pages.
+Cette version corrige la connexion administrateur :
 
-## Configuration Cloudflare obligatoire  
+- le formulaire utilise explicitement POST ; aucun identifiant ni mot de passe ne peut être placé dans l’URL ;
+- l’adresse administrateur n’est plus préremplie dans la page ;
+- diagnostic clair des bindings D1/KV et du secret Cloudflare ;
+- création automatique du schéma D1 au premier appel ;
+- authentification exclusivement côté serveur dans `public/_worker.js` ;
+- cookie `HttpOnly; Secure; SameSite=Lax` et CSRF sur les écritures ;
+- espace `/admin.html` protégé par session.
 
-| Paramètre | Valeur |
-|---|---|
-| Branche de production | `main` |
-| Commande de version | `npm run build` |
-| Répertoire de sortie | `public` |
-| Répertoire racine | laisser vide |
-| Infrastructure prédéfinie | `Aucun` |
+## Configuration Cloudflare obligatoire
 
-Le fichier `wrangler.json` confirme également :
+Bindings :
+- `SITE_MEGA_D1` → base `site-mega-d1`
+- `SITE_MEGA_KV` → namespace `site-mega-kv`
 
-```json
-"pages_build_output_dir": "public"
-```
+Secret :
+- `ADMIN_BOOTSTRAP_PASSWORD` → mot de passe du compte principal
 
-## Structure importante
+Variable facultative :
+- `ADMIN_EMAIL` → adresse du compte principal. Si absente, le serveur utilise l’adresse d’administration prévue par le projet.
 
-```text
-.github/workflows/verify-build.yml
-cloudflare/schema.sql
-public/
-  assets/
-    app.js
-    style.css
-  _worker.js
-  _routes.json
-  _headers
-  index.html
-scripts/
-  build.mjs
-  validate.mjs
-package.json
-wrangler.json
-README.md
-```
-
-Fichiers principaux :
-
-```text
-Application : public/assets/app.js
-Styles      : public/assets/style.css
-Worker      : public/_worker.js
-```
-
-## Commandes disponibles
-
-```bash
-npm install
-npm run build
-npm run dev
-npm run deploy
-```
-
-`npm run build` vérifie la syntaxe, la sécurité, les bindings KV/D1, puis génère des fichiers CSS et JavaScript versionnés dans `public`.
-
-## Sécurité des comptes
-
-Aucun identifiant de connexion ni mot de passe réel n’est inclus dans le programme, le dépôt GitHub ou les README.
-
-Dans **Cloudflare → Workers & Pages → GLOBAL MARKET → Settings → Variables and Secrets**, créez deux secrets chiffrés :
-
-```text
-SUPER_ADMIN_EMAIL             = <IDENTIFIANT_SECRET À CONFIGURER>
-SUPER_ADMIN_INITIAL_PASSWORD  = <MOT_DE_PASSE_SECRET FORT À CONFIGURER>
-```
-
-Ne remplacez jamais ces valeurs dans `wrangler.json`, `public/_worker.js`, `app.js` ou un README. Les valeurs réelles doivent rester uniquement dans les secrets Cloudflare.
-
-Le mot de passe est transformé côté Worker en empreinte PBKDF2-SHA256 avec sel aléatoire. Il n’est pas transmis au navigateur dans les données de l’application.
-
-## Ressources Cloudflare
-
-Les bindings nécessaires sont :
-
-```text
-GLOBAL_MARKET_KV
-GLOBAL_MARKET_D1
-```
-
-Les identifiants techniques des ressources restent dans `wrangler.json` car ils sont nécessaires au déploiement et ne constituent pas des identifiants de connexion utilisateur.
-
-## Fiche d’inscription des entreprises
-
-La fenêtre d’inscription est compacte et ne possède aucun défilement interne sur ordinateur. Elle est organisée en quatre blocs :
-
-1. **Information de l’entreprise** : raison sociale, forme juridique, RCCM et compte contribuable.
-2. **Spécialité** : type de commerce et activité principale.
-3. **ID du responsable** : gérant, adresse et téléphone.
-4. **Identifiant de connexion** : e-mail et mot de passe administrateur.
-
-Tous les identifiants HTML, la validation, la création de l’entreprise et la route `POST /api/register-company` sont conservés.
-
-## Plans intégrés
-
-- **Free** : gratuit pendant 10 jours, 2 catégories maximum, 5 produits/services par catégorie (10 au total), sans accès Marketplace ni boutique publique.
-- **Standard** : 4 800 FCFA / mois (30 jours), 5 catégories maximum, 10 produits/services par catégorie (50 au total), Marketplace et boutique publique incluses.
-- **Business** : 46 100 FCFA / an (365 jours), accès illimité au programme complet, Marketplace et boutique publique incluses.
-
-Pour une entreprise Free, un rappel professionnel des formules payantes s’affiche au démarrage de la session puis automatiquement toutes les 15 minutes.
-
-## Mise en ligne sur GitHub
-
-1. Décompressez le ZIP.
-2. Envoyez son contenu directement à la racine de la branche `main`.
-3. Vérifiez que `package.json`, `wrangler.json`, `public/` et `scripts/` sont visibles à la racine.
-4. Créez un nouveau commit.
-5. Relancez le déploiement Cloudflare.
-
-Le journal doit afficher :
-
-```text
-Executing user command: npm run build
-[build] Répertoire de sortie : public
-[build] Construction terminée avec succès.
-```
+Après ajout ou modification d’un secret/binding, redéployez le projet.
 
 
-## Correction 2.5 — connexion immédiate et inscription accélérée
-
-- L'écran de connexion est rendu immédiatement, avant la vérification asynchrone de session.
-- Les réponses sécurisées `/api/login`, `/api/session` et `/api/register-company` renvoient directement les données autorisées de l'entreprise.
-- La seconde lecture complète `/api/load` est supprimée lorsque ces données sont déjà disponibles.
-- Les hashes, sels et mots de passe restent exclusivement côté Worker/KV et ne sont jamais renvoyés au navigateur.
-- Le bouton d'inscription affiche son état de chargement avant l'appel réseau et bloque les doubles clics.
-
-
-## Correction 2.7 — Connexion et inscription
-
-- La page de connexion est toujours affichée en premier.
-- La fiche d’inscription reste cachée au chargement.
-- Elle s’ouvre uniquement après clic sur le bouton **INSCRIPTION**.
-- La fenêtre est centrée horizontalement et verticalement.
-- Les champs de chaque ligne utilisent toute la largeur disponible avec un alignement justifié.
-- Les routes API, KV, D1 et les protections de sécurité restent inchangés.
+## V7 — correction connexion administrateur
+- PBKDF2 ramené à 100 000 itérations pour éviter un dépassement de temps CPU au premier bootstrap Cloudflare.
+- Création du compte principal en deux écritures D1 contrôlées.
+- Nettoyage automatique si l'écriture des identifiants échoue.
+- Retour d'un code de diagnostic serveur non sensible en cas d'erreur.
+- Aucun mot de passe ni secret n'est envoyé dans l'URL ou inclus dans le dépôt.
 
 
-## Correction Super Admin 2.8
-
-Voir `README_CORRECTION_SUPER_ADMIN_2_8.md`. Les secrets `SUPER_ADMIN_EMAIL` et `SUPER_ADMIN_INITIAL_PASSWORD` doivent être configurés dans l’environnement Production de Cloudflare.
-
-
-## Version 3.0.0 — Tableau de bord MEGA SERVICES
-
-Correction ciblée de la section **Accueil / Tableau de bord** uniquement :
-
-- en-tête MEGA SERVICES avec plan, profil, notifications, aide et personnalisation ;
-- huit cartes d’accès rapide dynamiques en deux lignes de quatre ;
-- résumé du jour avec commandes, ventes, articles et nouveaux clients ;
-- bloc Performance avec graphique SVG des sept derniers jours ;
-- résumé annuel dynamique ;
-- design SaaS premium, responsive, avec la palette verte, dorée, violette et bleue demandée.
-
-Les autres sections, le système de connexion, l’inscription, le Super Admin, les routes API, Cloudflare KV et D1 ne sont pas modifiés.
-
-### Configuration Cloudflare
-
-```text
-Branche de production : main
-Commande de version : npm run build
-Répertoire de sortie : public
-Répertoire racine : vide
-```
+## V8 — formulaire de candidature en popup
+- La section « CANDIDATURE / Demande d’emploi » n’est plus affichée en permanence dans la page.
+- Un bouton « Déposer ma candidature » ouvre désormais le formulaire dans une fenêtre popup professionnelle.
+- Le bouton « Postuler à cette offre » ouvre le même popup avec l’offre correspondante déjà sélectionnée.
+- Fermeture possible par le bouton ×, clic sur l’arrière-plan ou touche Échap.
 
 
-## Version 3.0.1 — Identité GLOBAL MARKET
+## V9 — informations officielles MEGA SERVICES SARL U
+- Téléphone / WhatsApp : +225 0777041790
+- E-mail : megaservicediabo@gmail.com
+- RCCM : CI-BKE-2020-B-1150
+- Compte contribuable : 2039493 M
+- Siège social : Diabo
+- Footer réduit en hauteur et rendu plus compact.
 
-- le nouveau tableau de bord premium est disponible pour toutes les entreprises inscrites ;
-- le nom du programme affiché reste **GLOBAL MARKET** ;
-- le nom de l’entreprise connectée apparaît comme espace entreprise dynamique ;
-- aucune modification de la connexion, de l’inscription, du Super Admin, de KV, de D1 ou du Worker de sécurité.
+
+## V10 — Nos réalisations
+Galerie de 4 posters professionnels : GLOBAL MARKET, GLOBAL EMPLOI CI, GLOBAL BANK CI et GLOBAL BT CI, avec liens externes.
+
+
+## V11 — Réalisations avec images réelles
+La page Nos réalisations utilise maintenant de véritables captures visuelles des sites publiés.
+Les miniatures sont chargées via un service de capture de page web et se mettent à jour avec les sites en ligne.
+
+
+## V12 — Nos réalisations pleine page
+- Section Nos réalisations en pleine largeur.
+- 4 cartes affichées sur une seule ligne sur desktop.
+- Suppression des entêtes de cartes type navigateur contenant les URLs.
+- Conservation des images réelles des sites, des descriptions et des boutons de visite.
+
+
+## V13 — Accueil
+- Bouton « Demander un devis » ajouté aux cartes Services informatiques, Création de sites vitrines, Impression & reprographie et Intermédiation & services administratifs.
+- Les boutons ouvrent Contact avec le service demandé dans l’URL.
+- Hero remplacé par un nouveau visuel informatique professionnel.
+
+## V14 — Refonte visuelle complète
+- Remplacement de l'ancienne page d'accueil par la nouvelle identité sombre rouge-magenta inspirée de la maquette validée.
+- Utilisation du nouveau hero avec l'équipe professionnelle.
+- Arrière-plan et identité visuelle harmonisés sur Accueil, À propos, Services, Réalisations, Recrutement, Contact, Connexion et Administration.
+- Conservation de toutes les fonctions Cloudflare D1/KV, authentification, recrutement, candidatures, contact et administration.
+- Menu, boutons, cartes, formulaires et footer redessinés dans le même style.
+
+
+## V15 — Nouveau design bleu nuit / or
+- Nouvelle page d'accueil inspirée de la maquette fournie : hero bureau, identité bleu nuit et or, CTA devis/boutique, statistiques et 4 cartes de services.
+- Nouveau header commun avec menu horizontal professionnel et bouton Connexion.
+- Design harmonisé sur Accueil, À propos, Nos services, Nos réalisations, Nous recrutons, Contact, Connexion et Administration.
+- Footer compact bleu nuit / or.
+- Les fonctionnalités existantes D1/KV, authentification, recrutement, contact, candidatures et administration sont conservées.
+
+
+## V16 — Nettoyage visuel
+- Suppression du texte « Un service de qualité pour un meilleur demain ! ».
+- Suppression des arrière-plans décoratifs généraux du site.
+- Conservation d'un fond blanc propre pour les contenus.
+- Hero simplifié : bloc bleu nuit à gauche + photo bureau à droite.
+- Nouvelles icônes plus réalistes pour les 4 cartes de services de l'accueil.
+
+
+## V17 — Refonte de la page À propos
+- Nouvelle bannière premium bleu marine / blanc / doré.
+- Bloc branding MEGA SERVICES SARL U.
+- Cartes Notre mission / Notre vision.
+- Suppression complète de la section « Informations de l’entreprise ».
+- Nouvelle section Nos engagements avec 4 cartes.
+- Bannière finale « Ensemble pour un quotidien plus simple ».
+- Les autres pages, l’administration, D1/KV, recrutement et formulaires restent inchangés.
+
+
+## V18 — Refonte Nos réalisations
+- Page Nos réalisations reconstruite selon la maquette fournie.
+- Hero bleu marine avec bureau professionnel, valeurs et accroche.
+- 4 cartes sur une ligne sur grand écran.
+- Aperçus réels des quatre sites conservés.
+- Badges de secteur, statut En ligne et boutons Visiter le site.
+- Bannière finale Notre engagement.
+- Les fonctions du reste du site et de l'administration sont inchangées.
+
+
+## V19 — Hero Nos réalisations
+- Image du hero affichée entièrement avec `background-size: contain`.
+- Visuel de bureau sans personnage.
+- Suppression du texte décoratif superposé dans la zone image.
+- Aucun changement aux cartes, liens, D1/KV ou fonctions d'administration.
+
+
+## V20 — Nos réalisations fidèle à la maquette
+- Hero bleu marine avec bureau moderne sans personnage.
+- Texte, hiérarchie, valeurs et ambiance visuelle alignés sur la maquette jointe.
+- 4 cartes premium sur une ligne en desktop avec captures réelles des sites.
+- Badges de secteur et statut En ligne.
+- CTA final bleu marine / doré avec Fiabilité, Performance et Accompagnement.
+- Aucune modification des fonctions administrateur, D1/KV, recrutement ou contact.
+
+
+## V21 — Correction de présentation de Nos réalisations
+- Suppression de la duplication visuelle dans le hero.
+- Hero propre : texte à gauche, image bureau locale à droite.
+- Captures des 4 réalisations intégrées localement pour éviter les miniatures vides.
+- 4 cartes équilibrées et alignées sur une ligne sur desktop.
+- Hauteurs, marges, badges et CTA harmonisés.
+- Aucun changement à l'administration, D1/KV, recrutement ou formulaires.
+
+
+## V22 — Correction finale de Nos réalisations
+- Palette strictement bleu marine / blanc / doré.
+- Hero corporate avec bureau premium sans personnage.
+- 3 engagements alignés sous le titre.
+- Introduction centrée avec traits dorés.
+- 4 cartes parfaitement alignées, mêmes hauteurs, fond blanc, ombres douces.
+- Visuels locaux stables pour les 4 projets.
+- Boutons dorés pleine largeur.
+- Bannière finale Notre engagement.
+- Aucun bordeaux, brun ou carte sombre.
+
+
+## V23 — Hero commun sur toutes les pages sauf Accueil
+- Nouveau hero bleu marine / doré commun appliqué à À propos, Nos services, Nos réalisations, Nous recrutons, Contact, Connexion et 404.
+- L’image de bureau premium sans personnage est commune à tous ces heroes.
+- Chaque page conserve son propre titre, sous-titre et ses 3 valeurs.
+- La page d’accueil n’a pas été modifiée.
+- L’espace administrateur interne n’a pas été modifié.
+
+
+## V24 — Hero sans texte sur image
+- Suppression du texte décoratif « Des idées, des solutions durables » sur les images Hero.
+- Aucun autre contenu ou fonctionnement modifié.
+
+## V45 — Rédaction rapide
+- Bulle flottante discrète sur toutes les pages.
+- Formulaires : CV, courrier administratif, demande d'aide, contrat de travail, contrat de loyer, autres.
+- Enregistrement D1 avec numéro unique MEGA-YYMMDD-XXXXX.
+- Nouvelle rubrique « Rédaction rapide » dans l'administration avec suivi de statut.
+- Après enregistrement, bouton WhatsApp vers MEGA SERVICES (+225 07 77 04 17 90) avec la référence préremplie.
+- La bulle est responsive et reste en bas à droite sans bloquer la navigation.
+
+## V46 — Bulle Rédaction rapide mobile
+- La bulle « Rédaction rapide » se déplace automatiquement et lentement dans plusieurs directions sur chaque page.
+- Rebond doux sur les bords de l’écran sans sortir de la zone visible.
+- Le bouton reste cliquable pendant son déplacement et s’adapte au redimensionnement de l’écran.
+
+## V48 — Bulle : vitesse réduite et pause au survol
+- Vitesse de déplacement réduite de 50 % par rapport à V47.
+- Arrêt immédiat du déplacement lorsque le curseur de la souris est posé sur la bulle.
+- Reprise automatique dès que le curseur quitte la bulle.
+- Changement de couleur à chaque impact conservé.

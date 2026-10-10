@@ -411,11 +411,38 @@ async function operatorLoginSuccess(req,env,row){
   return json({ok:true,operator:{id:row.id,email:row.email,displayName:row.display_name,organization:row.organization},csrf},200,{'set-cookie':opSetCookie(token)});
 }
 
+
+// Passerelle des applications sources. Chaque Worker garde SA base de données et ses secrets.
+const OP_APPS=Object.freeze({sigat:'SIGAT_APP',forex:'FOREX_APP',immobilier:'IMMOBILIER_APP',emploi:'EMPLOI_APP',oukami:'OUKAMI_APP',bank:'BANK_APP',bt:'BT_APP',market:'MARKET_APP'});
+async function operatorAppGateway(req,env,url){
+  const match=url.pathname.match(/^\/operateurs\/modules\/([a-z]+)(\/.*)?$/);
+  if(!match||!Object.prototype.hasOwnProperty.call(OP_APPS,match[1]))return json({error:'APP_NOT_FOUND'},404);
+  const auth=await operatorSession(req,env);if(auth.error)return auth.error;
+  const slug=match[1],binding=OP_APPS[slug],service=env[binding];
+  if(!service||typeof service.fetch!=='function')return json({error:'SERVICE_NOT_CONFIGURED',message:'Worker '+binding+' non connecté. Lire DEPLOIEMENT_INTEGRATION.md'},503);
+  // Credentials of the parent site are never forwarded to a business application.
+  const headers=new Headers(req.headers);
+  headers.delete('cookie');headers.delete('authorization');headers.delete('x-mega-operator-id');headers.delete('x-mega-operator-email');
+  headers.delete('cf-access-jwt-assertion');
+  const internal=new URL(req.url);internal.pathname=match[2]||'/';
+  const forwarded=new Request(internal.toString(),{method:req.method,headers,body:['GET','HEAD'].includes(req.method)?undefined:req.body,redirect:'manual'});
+  const response=await service.fetch(forwarded);
+  const outHeaders=new Headers(response.headers);
+  // Prevent cookie collisions: a full per-application auth migration remains necessary.
+  outHeaders.delete('set-cookie');
+  let location=outHeaders.get('location');
+  if(location&&location.startsWith('/'))outHeaders.set('location','/operateurs/modules/'+slug+location);
+  outHeaders.set('cache-control','private, no-store');
+  outHeaders.set('x-content-type-options','nosniff');
+  return new Response(response.body,{status:response.status,headers:outHeaders});
+}
+
 export default {
   async fetch(req, env) {
     const url=new URL(req.url);
     try {
-      if (url.pathname.startsWith('/api/')) await ensureSchema(env);
+      if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/operateurs/modules/')) await ensureSchema(env);
+      if(url.pathname.startsWith('/operateurs/modules/'))return await operatorAppGateway(req,env,url);
       if(url.pathname.startsWith('/api/operators/'))return await operatorApi(req,env,url.pathname);
       if(url.pathname==='/api/setup-status'&&req.method==='GET') return await setupStatus(env);
       if(url.pathname==='/api/login'&&req.method==='POST') return await login(req,env);
