@@ -1,0 +1,33 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "globalmarketci",
+  "compatibility_date": "2026-08-22",
+  "pages_build_output_dir": "public",
+  "kv_namespaces": [
+    {
+      "binding": "GLOBAL_MARKET_KV",
+      "id": "f863a50688bc4dfb89dd302a8a8bec76"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "GLOBAL_MARKET_D1",
+      "database_name": "global_market_d1",
+      "database_id": "92ef9815-eb4e-4b49-9a03-41f8e4bc5c77",
+      "migrations_dir": "cloudflare/migrations"
+    }
+  ],
+  "vars": {
+    "APP_NAME": "GLOBAL MARKET",
+    "SUPER_ADMIN_PASSWORD_VERSION": "2026-07-26-reset-1",
+    "V6_ARCHITECTURE": "D1_RELATIONAL_OPTIONAL_MEDIA_WEBSOCKET",
+    "REALTIME_BINDING_MODE": "OPTIONAL_AFTER_WORKER_DEPLOY",
+    "MEDIA_BINDING_MODE": "OPTIONAL_AFTER_BUCKET_CREATE"
+  },
+  "r2_buckets": [
+    {
+      "binding": "GLOBAL_MARKET_MEDIA",
+      "bucket_name": "global-market-media"
+    }
+  ]
+}
