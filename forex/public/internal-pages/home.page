@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="description" content="GLOBAL FOREX TRADING — plateforme sécurisée d’analyse de captures Forex."/>
+  <title>GLOBAL FOREX TRADING — Forex Capture Analyzer Edition</title>
+  <link rel="stylesheet" href="/assets/home.css?v=2.12.0"/>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="GLOBAL FOREX TRADING — Accueil">
+      <span class="brand-mark" aria-hidden="true">
+        <i class="bar b1"></i><i class="bar b2"></i><i class="bar b3"></i><i class="trend"></i>
+      </span>
+      <span class="brand-copy">
+        <strong>GLOBAL FOREX TRADING</strong>
+        <small>Forex Capture Analyzer Edition</small>
+      </span>
+    </a>
+    <nav class="top-actions" aria-label="Accès au compte">
+      <a class="btn btn-ghost" id="loginLink" data-auth="login" href="/?auth=login&amp;next=%2Fapp">Connexion</a>
+      <a class="btn btn-primary" id="registerLink" data-auth="register" href="/?auth=register&amp;next=%2Fapp"><span class="user-icon">♙</span>S’inscrire</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero page-shell">
+      <div class="hero-copy">
+        <div class="eyebrow">★ &nbsp; PLATEFORME D’ANALYSE FOREX INTELLIGENTE</div>
+        <h1>Analysez vos captures <span>Forex avec précision</span></h1>
+        <p>Détectez les tendances, identifiez les zones clés et facilitez vos prises de décision grâce à des indicateurs visuels professionnels.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary btn-large" id="startAnalysis" data-auth="login" href="/?auth=login&amp;next=%2Fapp">↗ &nbsp; Commencer l’analyse</a>
+          <a class="btn btn-ghost btn-large" data-auth="login" href="/?auth=login&amp;next=%2Fapp">♙ &nbsp; Se connecter</a>
+        </div>
+        <div class="trust-row" aria-label="Avantages">
+          <span>ϟ <b>Rapide &amp; précis</b></span>
+          <span>♢ <b>Sécurisé</b></span>
+          <span>▣ <b>Données confidentielles</b></span>
+        </div>
+      </div>
+
+      <div class="dashboard-card" aria-label="Aperçu de l’interface d’analyse">
+        <div class="dashboard-head">
+          <div><b>Tableau de bord</b><span class="status-dot">● Analyse terminée</span></div>
+          <span class="small-button">↥ &nbsp; Nouvelle analyse</span>
+        </div>
+        <div class="dashboard-body">
+          <div class="chart-panel">
+            <div class="quote-card"><strong>EUR/USD</strong><span>H1⌄</span><small>1.08945 &nbsp; <em>+0.35%</em></small></div>
+            <svg class="chart" viewBox="0 0 760 430" role="img" aria-label="Graphique Forex de démonstration">
+              <defs>
+                <linearGradient id="areaGreen" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#00b967" stop-opacity=".22"/><stop offset="1" stop-color="#00b967" stop-opacity="0"/></linearGradient>
+                <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              </defs>
+              <g class="grid-lines">
+                <path d="M0 55H760M0 110H760M0 165H760M0 220H760M0 275H760M0 330H760"/>
+                <path d="M95 0V350M190 0V350M285 0V350M380 0V350M475 0V350M570 0V350M665 0V350"/>
+              </g>
+              <rect class="resistance" x="355" y="70" width="290" height="34" rx="3"/>
+              <rect class="support" x="95" y="292" width="510" height="33" rx="3"/>
+              <line class="support-line" x1="255" y1="306" x2="626" y2="225"/>
+              <path class="price-line" d="M12 216 L38 227 L62 210 L84 285 L105 308 L132 290 L156 264 L184 245 L208 213 L234 229 L258 187 L284 173 L310 156 L335 171 L360 137 L385 150 L408 194 L432 230 L455 223 L482 233 L505 198 L528 214 L551 187 L575 196 L600 180 L625 154 L650 139 L674 126 L703 171"/>
+              <path class="area" d="M12 216 L38 227 L62 210 L84 285 L105 308 L132 290 L156 264 L184 245 L208 213 L234 229 L258 187 L284 173 L310 156 L335 171 L360 137 L385 150 L408 194 L432 230 L455 223 L482 233 L505 198 L528 214 L551 187 L575 196 L600 180 L625 154 L650 139 L674 126 L703 171 L703 350 L12 350Z"/>
+              <g class="candles">
+                <line x1="84" y1="242" x2="84" y2="330"/><rect x="77" y="263" width="14" height="46" class="red"/>
+                <line x1="105" y1="270" x2="105" y2="325"/><rect x="98" y="284" width="14" height="26" class="green"/>
+                <line x1="135" y1="245" x2="135" y2="307"/><rect x="128" y="257" width="14" height="35" class="green"/>
+                <line x1="163" y1="224" x2="163" y2="282"/><rect x="156" y="235" width="14" height="30" class="green"/>
+                <line x1="203" y1="191" x2="203" y2="246"/><rect x="196" y="205" width="14" height="31" class="green"/>
+                <line x1="242" y1="178" x2="242" y2="232"/><rect x="235" y="189" width="14" height="26" class="green"/>
+                <line x1="286" y1="142" x2="286" y2="207"/><rect x="279" y="157" width="14" height="38" class="green"/>
+                <line x1="315" y1="147" x2="315" y2="216"/><rect x="308" y="162" width="14" height="34" class="red"/>
+                <line x1="355" y1="120" x2="355" y2="198"/><rect x="348" y="133" width="14" height="45" class="red"/>
+                <line x1="401" y1="177" x2="401" y2="250"/><rect x="394" y="190" width="14" height="39" class="red"/>
+                <line x1="455" y1="206" x2="455" y2="270"/><rect x="448" y="217" width="14" height="38" class="green"/>
+                <line x1="502" y1="190" x2="502" y2="252"/><rect x="495" y="204" width="14" height="34" class="green"/>
+                <line x1="548" y1="167" x2="548" y2="232"/><rect x="541" y="182" width="14" height="34" class="green"/>
+                <line x1="595" y1="156" x2="595" y2="220"/><rect x="588" y="171" width="14" height="33" class="green"/>
+                <line x1="644" y1="121" x2="644" y2="189"/><rect x="637" y="137" width="14" height="37" class="green"/>
+                <line x1="674" y1="132" x2="674" y2="205"/><rect x="667" y="149" width="14" height="38" class="red"/>
+              </g>
+              <g class="rsi"><path d="M0 390 L40 380 L76 397 L112 375 L148 385 L185 360 L222 372 L260 348 L295 369 L330 357 L367 385 L405 366 L440 389 L478 371 L515 383 L552 351 L590 370 L628 342 L668 358 L708 346 L760 372"/></g>
+            </svg>
+            <span class="tag tag-resistance">RÉSISTANCE</span>
+            <span class="tag tag-support">SUPPORT</span>
+          </div>
+          <aside class="analysis-panel">
+            <article class="success-card"><span class="check">✓</span><div><b>Analyse terminée</b><small>Votre capture a été analysée avec succès.</small><a data-auth="login" href="/?auth=login&amp;next=%2Fapp">Voir le rapport détaillé →</a></div></article>
+            <article class="score-card"><b>Score de tendance</b><div class="score-wrap"><span class="score-ring">78%</span><div><strong>Tendance haussière</strong><small>Forte probabilité de continuation</small></div></div></article>
+            <article class="key-card"><b>Indicateurs clés</b><dl><dt>Tendance</dt><dd>Haussière ↗</dd><dt>Force</dt><dd>Forte</dd><dt>Volatilité</dt><dd>Modérée</dd><dt>Confiance</dt><dd>Élevée ⊙</dd></dl></article>
+            <article class="last-card"><b>Dernière analyse</b><small>Interface de démonstration</small></article>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="features page-shell" aria-label="Fonctionnalités principales">
+      <article><span class="feature-icon green">▥</span><div><h2>Détection des tendances</h2><p>Algorithmes d’analyse visuelle pour repérer les tendances haussières, baissières ou neutres avec un score de confiance.</p></div></article>
+      <article><span class="feature-icon blue">⌖</span><div><h2>Zones clés</h2><p>Identification automatique des zones de support et de résistance pour mieux anticiper les réactions du marché.</p></div></article>
+      <article><span class="feature-icon purple">◉</span><div><h2>Analyse visuelle professionnelle</h2><p>Indicateurs techniques et visualisations claires pour des analyses structurées et objectives.</p></div></article>
+    </section>
+
+    <section class="pricing page-shell" id="plans">
+      <div class="section-heading"><span>FORMULES D’ACCÈS</span><h2>Choisissez la durée adaptée à votre utilisation</h2><p>Tous les plans donnent accès aux fonctionnalités de l’application pendant leur durée de validité.</p></div>
+      <div class="pricing-grid">
+        <article class="plan-card free"><div class="plan-top"><span>FREE</span><b>0 FCFA</b><small>7 jours</small></div><ul><li>Accès complet à l’application</li><li>Analyse des captures Forex</li><li>Historique et outils graphiques</li></ul><a class="btn btn-ghost" data-auth="register" href="/?auth=register&amp;next=%2Fapp">Commencer gratuitement</a></article>
+        <article class="plan-card standard"><div class="recommended">FORMULE FLEXIBLE</div><div class="plan-top"><span>STANDARD</span><b>20 600 FCFA</b><small>30 jours</small></div><ul><li>Accès complet pendant 30 jours</li><li>Toutes les fonctions d’analyse</li><li>Compte membre sécurisé</li></ul><a class="btn btn-primary" href="https://pay.wave.com/m/M_ci_Enx-2JNAklk-/c/ci/?amount=20600" target="_blank" rel="noopener noreferrer">Choisir Standard</a></article>
+        <article class="plan-card business"><div class="recommended">MEILLEURE DURÉE</div><div class="plan-top"><span>BUSINESS</span><b>100 600 FCFA</b><small>365 jours</small></div><ul><li>Accès complet pendant 365 jours</li><li>Continuité d’utilisation annuelle</li><li>Toutes les fonctions de l’application</li></ul><a class="btn btn-primary" href="https://pay.wave.com/m/M_ci_Enx-2JNAklk-/c/ci/?amount=100600" target="_blank" rel="noopener noreferrer">Choisir Business</a></article>
+      </div>
+    </section>
+
+    <section class="security-strip page-shell" aria-label="Sécurité et accessibilité">
+      <article><span>♢</span><div><b>Espace sécurisé</b><small>Vos données sont isolées par compte et entreprise.</small></div></article>
+      <article><span>▣</span><div><b>Cookie HttpOnly sécurisé</b><small>Protection renforcée des sessions et des accès.</small></div></article>
+      <article><span>🎁</span><div><b>7 jours offerts</b><small>Testez toutes les fonctionnalités avec le plan Free.</small></div></article>
+      <article><span>☁</span><div><b>Accessibilité</b><small>Accédez à vos analyses depuis un ordinateur, une tablette ou un mobile.</small></div></article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-main page-shell">
+      <section class="footer-intro" aria-labelledby="footerBrandTitle">
+        <div class="footer-brand-line">
+          <span class="footer-mini-mark" aria-hidden="true">GF</span>
+          <div>
+            <h2 id="footerBrandTitle">GLOBAL FOREX TRADING</h2>
+            <p>Forex Capture Analyzer Edition</p>
+          </div>
+        </div>
+        <p class="footer-summary">Plateforme sécurisée d’analyse de captures Forex, exploitée par <strong>MEGA SERVICES SARL U</strong> en Côte d’Ivoire.</p>
+      </section>
+
+      <section class="footer-block" aria-labelledby="footerLegalTitle">
+        <h3 id="footerLegalTitle">Informations légales</h3>
+        <dl class="footer-details">
+          <div><dt>Société</dt><dd>MEGA SERVICES SARL U</dd></div>
+          <div><dt>Capital social</dt><dd>1 000 000 FCFA</dd></div>
+          <div><dt>RCCM</dt><dd>CI-BKE-2020-B-1150</dd></div>
+          <div><dt>C.C.</dt><dd>2039493 M</dd></div>
+          <div><dt>Siège social</dt><dd>Diabo, Côte d’Ivoire</dd></div>
+        </dl>
+      </section>
+
+      <section class="footer-block" aria-labelledby="footerContactTitle">
+        <h3 id="footerContactTitle">Contact</h3>
+        <div class="footer-contact-list">
+          <a href="tel:+2250777041790"><span>Tél.</span><strong>+225 07 77 04 17 90</strong></a>
+          <a href="mailto:megaservicediabo@gmail.com"><span>Email</span><strong>megaservicediabo@gmail.com</strong></a>
+        </div>
+      </section>
+
+      <section class="footer-block" aria-labelledby="footerDocsTitle">
+        <h3 id="footerDocsTitle">Documents</h3>
+        <nav class="footer-links" aria-label="Documents juridiques">
+          <button type="button" class="footer-link" data-legal-open="cgu">Conditions Générales d’Utilisation</button>
+          <button type="button" class="footer-link" data-legal-open="privacy">Politique de confidentialité</button>
+        </nav>
+      </section>
+    </div>
+
+    <div class="footer-bottom page-shell">
+      <span>© <span id="homeYear"></span> MEGA SERVICES SARL U. Tous droits réservés.</span>
+      <span>GLOBAL FOREX TRADING · Côte d’Ivoire</span>
+    </div>
+  </footer>
+
+  <dialog id="loginDialog" class="auth-popup" aria-labelledby="loginDialogTitle">
+    <div class="auth-popup__shell">
+      <header class="auth-popup__head">
+        <div>
+          <span class="auth-popup__kicker">ESPACE SÉCURISÉ</span>
+          <h2 id="loginDialogTitle">Connexion</h2>
+          <p>Accédez à votre espace personnel.</p>
+        </div>
+        <button class="auth-popup__close" type="button" data-auth-close="login" aria-label="Fermer">×</button>
+      </header>
+      <div id="authAlert" class="auth-alert" role="alert" hidden></div>
+      <form id="loginForm" class="auth-form" autocomplete="on">
+        <label class="auth-field">Adresse e-mail
+          <input id="loginEmail" name="email" type="email" autocomplete="username" required maxlength="180" placeholder="votre@email.com"/>
+        </label>
+        <label class="auth-field">Mot de passe
+          <span class="auth-password"><input id="loginPassword" name="password" type="password" autocomplete="current-password" required minlength="10" maxlength="128" placeholder="Votre mot de passe"/><button type="button" data-toggle-password="loginPassword" aria-label="Afficher le mot de passe">◉</button></span>
+        </label>
+        <button class="auth-submit" id="loginButton" type="submit"><span>Se connecter</span><i>→</i></button>
+      </form>
+      <div class="auth-popup__links">
+        <button type="button" id="showForgotPasswordButton">Mot de passe oublié ?</button>
+        <span>Pas encore membre ?</span>
+        <button type="button" id="showRegisterFromLogin">S’inscrire</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="registerDialog" class="auth-popup auth-popup--wide" aria-labelledby="registerDialogTitle">
+    <div class="auth-popup__shell">
+      <header class="auth-popup__head">
+        <div>
+          <span class="auth-popup__kicker">ESPACE MEMBRE</span>
+          <h2 id="registerDialogTitle">Créer votre compte</h2>
+          <p>Accès complet offert pendant 7 jours avec le plan Free.</p>
+        </div>
+        <button class="auth-popup__close" type="button" data-auth-close="register" aria-label="Fermer">×</button>
+      </header>
+      <div id="registerAlert" class="auth-alert" role="alert" hidden></div>
+      <form id="registerForm" class="auth-form" autocomplete="off">
+        <div class="auth-grid">
+          <label class="auth-field">Nom et prénoms
+            <input id="registerName" name="name" type="text" autocomplete="name" required minlength="2" maxlength="100" placeholder="Votre nom complet"/>
+          </label>
+          <label class="auth-field">Contact
+            <input id="registerContact" name="companyName" type="tel" autocomplete="tel" required minlength="2" maxlength="140" placeholder="Votre contact"/>
+          </label>
+          <label class="auth-field auth-field--full">Adresse e-mail du membre
+            <input id="registerEmail" name="memberRegistrationEmail" type="email" autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" required maxlength="180" placeholder="membre@email.com"/>
+          </label>
+          <label class="auth-field">Mot de passe
+            <span class="auth-password"><input id="registerPassword" name="password" type="password" autocomplete="new-password" required minlength="12" maxlength="128" placeholder="12 caractères minimum"/><button type="button" data-toggle-password="registerPassword" aria-label="Afficher le mot de passe">◉</button></span>
+          </label>
+          <label class="auth-field">Confirmer le mot de passe
+            <span class="auth-password"><input id="registerPasswordConfirm" name="passwordConfirm" type="password" autocomplete="new-password" required minlength="12" maxlength="128" placeholder="Répétez le mot de passe"/><button type="button" data-toggle-password="registerPasswordConfirm" aria-label="Afficher le mot de passe">◉</button></span>
+          </label>
+        </div>
+        <div class="auth-rule"><b>Exigences de sécurité</b><span>12 caractères minimum, avec une majuscule, une minuscule, un chiffre et un caractère spécial.</span></div>
+        <div class="auth-dialog-actions">
+          <button class="auth-cancel" type="button" data-auth-close="register">Annuler</button>
+          <button class="auth-submit" id="registerButton" type="submit"><span>Créer mon compte</span><i>→</i></button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="forgotPasswordDialog" class="auth-popup" aria-labelledby="forgotPasswordDialogTitle">
+    <div class="auth-popup__shell">
+      <header class="auth-popup__head">
+        <div>
+          <span class="auth-popup__kicker">ASSISTANCE COMPTE</span>
+          <h2 id="forgotPasswordDialogTitle">Demande de réinitialisation</h2>
+          <p>Transmettez une demande sécurisée au Super Admin.</p>
+        </div>
+        <button class="auth-popup__close" type="button" data-auth-close="forgot" aria-label="Fermer">×</button>
+      </header>
+      <div id="forgotPasswordAlert" class="auth-alert" role="alert" hidden></div>
+      <form id="forgotPasswordForm" class="auth-form" autocomplete="off">
+        <label class="auth-field">Nom et prénoms
+          <input id="forgotPasswordName" name="name" type="text" autocomplete="name" maxlength="100" placeholder="Votre nom complet"/>
+        </label>
+        <label class="auth-field">Adresse e-mail du compte
+          <input id="forgotPasswordEmail" name="email" type="email" autocomplete="email" required maxlength="180" placeholder="votre@email.com"/>
+        </label>
+        <label class="auth-field">Précision complémentaire <small>(facultatif)</small>
+          <textarea id="forgotPasswordMessage" name="message" maxlength="500" rows="4" placeholder="Ajoutez une précision utile pour le Super Admin."></textarea>
+        </label>
+        <div class="auth-dialog-actions">
+          <button class="auth-cancel" type="button" data-auth-close="forgot">Annuler</button>
+          <button class="auth-submit" id="forgotPasswordSubmitButton" type="submit"><span>Envoyer la demande</span><i>→</i></button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <div class="legal-modal" id="legalModal" aria-hidden="true">
+    <div class="legal-backdrop" data-legal-close></div>
+    <section class="legal-dialog" role="dialog" aria-modal="true" aria-labelledby="legalModalTitle">
+      <header class="legal-head">
+        <div>
+          <span class="legal-kicker">GLOBAL FOREX TRADING</span>
+          <h2 id="legalModalTitle">Document juridique</h2>
+        </div>
+        <button type="button" class="legal-close" data-legal-close aria-label="Fermer">×</button>
+      </header>
+      <div class="legal-content" id="legalModalContent"></div>
+    </section>
+  </div>
+
+  <template id="legal-cgu">
+    <div class="legal-document">
+      <p class="legal-updated">Conditions Générales d’Utilisation — GLOBAL FOREX TRADING</p>
+      <h3>1. Objet</h3>
+      <p>Les présentes Conditions Générales d’Utilisation définissent les modalités d’accès et d’utilisation de GLOBAL FOREX TRADING, plateforme exploitée par MEGA SERVICES SARL U. Le service met à disposition des outils d’analyse visuelle de captures liées au marché Forex.</p>
+      <h3>2. Acceptation</h3>
+      <p>L’accès au service et son utilisation impliquent l’acceptation des présentes CGU. L’utilisateur s’engage à utiliser la plateforme conformément aux lois applicables et à ne pas porter atteinte à son fonctionnement ou à sa sécurité.</p>
+      <h3>3. Accès et compte</h3>
+      <p>Certaines fonctionnalités nécessitent la création d’un compte. L’utilisateur est responsable de l’exactitude des informations fournies, de la confidentialité de ses identifiants et des opérations réalisées depuis son compte.</p>
+      <h3>4. Services et abonnements</h3>
+      <p>L’accès aux fonctionnalités dépend du plan actif et de sa durée de validité. Les caractéristiques, durées et tarifs applicables sont présentés sur la page d’accueil et dans l’espace membre.</p>
+      <h3>5. Utilisation des analyses</h3>
+      <p>Les résultats produits par la plateforme constituent des outils d’aide à l’analyse. Ils ne constituent pas une garantie de résultat ni un conseil personnalisé en investissement. L’utilisateur reste responsable de ses décisions et de la gestion de ses risques.</p>
+      <h3>6. Propriété intellectuelle</h3>
+      <p>Les éléments graphiques, textes, interfaces, fonctionnalités et contenus de GLOBAL FOREX TRADING sont protégés. Toute reproduction ou exploitation non autorisée est interdite.</p>
+      <h3>7. Disponibilité et responsabilité</h3>
+      <p>MEGA SERVICES SARL U met en œuvre des moyens raisonnables pour assurer la disponibilité et la sécurité du service, sans garantir une disponibilité permanente ni l’absence totale d’erreurs ou d’interruptions.</p>
+      <h3>8. Données personnelles</h3>
+      <p>Le traitement des données personnelles est précisé dans la Politique de confidentialité accessible depuis la page d’accueil.</p>
+      <h3>9. Suspension et résiliation</h3>
+      <p>Un compte peut être suspendu ou désactivé en cas de non-respect des présentes conditions, d’usage frauduleux, d’atteinte à la sécurité du service ou à l’expiration du droit d’accès.</p>
+      <h3>10. Droit applicable</h3>
+      <p>Les présentes CGU sont soumises au droit applicable en Côte d’Ivoire. Tout différend relève des juridictions compétentes conformément à la réglementation en vigueur.</p>
+      <h3>11. Éditeur et contact</h3>
+      <p><strong>MEGA SERVICES SARL U</strong> — Capital social : 1 000 000 FCFA — RCCM : CI-BKE-2020-B-1150 — C.C. : 2039493 M — Siège social : Diabo — Tél. : +225 07 77 04 17 90 — Email : megaservicediabo@gmail.com.</p>
+    </div>
+  </template>
+
+  <template id="legal-privacy">
+    <div class="legal-document">
+      <p class="legal-updated">Politique de confidentialité — GLOBAL FOREX TRADING</p>
+      <h3>1. Responsable du traitement</h3>
+      <p>GLOBAL FOREX TRADING est exploité par <strong>MEGA SERVICES SARL U</strong>, siège social à Diabo, Côte d’Ivoire. Contact : megaservicediabo@gmail.com — +225 07 77 04 17 90.</p>
+      <h3>2. Données susceptibles d’être traitées</h3>
+      <p>Le service peut traiter les informations fournies lors de l’inscription ou de l’utilisation du compte, notamment le nom, le contact, l’adresse e-mail, les informations de compte, les données techniques nécessaires à la sécurité ainsi que les données enregistrées dans l’espace utilisateur.</p>
+      <h3>3. Finalités</h3>
+      <p>Ces données sont utilisées pour créer et administrer les comptes, fournir les fonctionnalités de la plateforme, gérer les abonnements, protéger les accès, prévenir les abus, assurer la traçabilité des actions sensibles et répondre aux demandes d’assistance.</p>
+      <h3>4. Sécurité</h3>
+      <p>Des mesures techniques sont mises en œuvre pour limiter les accès non autorisés, notamment des sessions sécurisées, des contrôles d’accès serveur, l’isolation des données par compte et des mécanismes de protection des opérations sensibles.</p>
+      <h3>5. Conservation</h3>
+      <p>Les données sont conservées pendant la durée nécessaire au fonctionnement du service, à la sécurité, au respect des obligations applicables et à la gestion de la relation avec l’utilisateur.</p>
+      <h3>6. Partage</h3>
+      <p>Les données personnelles ne sont pas destinées à être vendues. Elles peuvent être traitées par les prestataires techniques nécessaires au fonctionnement du service ou communiquées aux autorités lorsque la loi l’exige.</p>
+      <h3>7. Cookies et sessions</h3>
+      <p>GLOBAL FOREX TRADING utilise des mécanismes de session nécessaires à l’authentification et à la sécurité de l’espace utilisateur. Les paramètres du navigateur peuvent également influencer le fonctionnement de ces mécanismes.</p>
+      <h3>8. Droits et demandes</h3>
+      <p>Pour toute demande relative aux données personnelles, à leur rectification ou à leur suppression lorsque cela est applicable, l’utilisateur peut contacter MEGA SERVICES SARL U à l’adresse <strong>megaservicediabo@gmail.com</strong>.</p>
+      <h3>9. Mise à jour</h3>
+      <p>La présente politique peut évoluer afin de tenir compte des modifications du service, des mesures de sécurité ou des obligations applicables. La version accessible depuis le site est la version en vigueur.</p>
+    </div>
+  </template>
+
+  <script src="/assets/home.js?v=2.12.0" defer></script>
+</body>
+</html>

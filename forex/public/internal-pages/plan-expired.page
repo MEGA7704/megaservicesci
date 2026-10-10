@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Abonnement expiré — GLOBAL FOREX TRADING</title>
+  <link rel="stylesheet" href="/assets/login.css?v=2.9.0"/>
+  <style>
+    .expired-actions{display:grid;gap:10px;margin-top:20px}.secondary-btn{width:100%}.plan-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}.plan-summary article{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);border-radius:14px;padding:13px}.plan-summary b{display:block;font-size:19px;color:#e0ca8d}.plan-summary span{font-size:11px;color:#9aa9bc}.expired-note{color:#c9d4e2;line-height:1.55;font-size:13px}.payment-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.payment-grid button{width:100%}@media(max-width:650px){.plan-summary,.payment-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="auth-layout">
+    <section class="auth-visual" aria-label="Abonnement">
+      <div class="grid-glow"></div>
+      <div class="visual-content">
+        <div class="visual-badge">ABONNEMENT ARRIVÉ À ÉCHÉANCE</div>
+        <h1>RENOUVELEZ VOTRE<br/><span>ACCÈS</span></h1>
+        <p>Les données de votre compte restent conservées dans Cloudflare D1. Un nouveau plan réactive l’accès complet à l’application.</p>
+        <div class="plan-summary">
+          <article><b>7 jours</b><span>Free · 0 FCFA</span></article>
+          <article><b>30 jours</b><span>Standard · 20 600 FCFA</span></article>
+          <article><b>365 jours</b><span>Business · 100 600 FCFA</span></article>
+        </div>
+      </div>
+    </section>
+    <section class="auth-panel">
+      <div class="auth-card">
+        <div class="auth-card__top"><div><h2>Accès temporairement suspendu</h2><p id="planDetails">Chargement de votre abonnement…</p></div></div>
+        <p class="expired-note">Choisissez une formule payante puis contactez le Super Admin pour confirmer l’activation sur votre compte.</p>
+        <div class="expired-actions">
+          <div class="payment-grid">
+            <button class="primary-btn" id="buyStandard" type="button"><span>Standard — 20 600 FCFA</span><i>→</i></button>
+            <button class="primary-btn" id="buyBusiness" type="button"><span>Business — 100 600 FCFA</span><i>→</i></button>
+          </div>
+          <button class="secondary-btn" id="logoutButton" type="button">Se déconnecter</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+    (()=>{
+      const standardUrl="https://pay.wave.com/m/M_ci_Enx-2JNAklk-/c/ci/?amount=20600";
+      const businessUrl="https://pay.wave.com/m/M_ci_Enx-2JNAklk-/c/ci/?amount=100600";
+      let csrfToken="";
+      async function csrf(){const r=await fetch('/api/csrf',{credentials:'same-origin'});const d=await r.json();csrfToken=d.csrfToken||'';}
+      async function load(){try{await csrf();const r=await fetch('/api/me',{credentials:'same-origin'});const d=await r.json();if(r.ok&&d.plan){document.getElementById('planDetails').textContent=`Plan ${d.plan.label} · expiration : ${new Intl.DateTimeFormat('fr-FR',{dateStyle:'long'}).format(new Date(d.plan.expiresAt))}`;}}catch{}}
+      document.getElementById('buyStandard').addEventListener('click',()=>window.open(standardUrl,'_blank','noopener,noreferrer'));
+      document.getElementById('buyBusiness').addEventListener('click',()=>window.open(businessUrl,'_blank','noopener,noreferrer'));
+      document.getElementById('logoutButton').addEventListener('click',async()=>{try{if(!csrfToken)await csrf();await fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrfToken},body:'{}',credentials:'same-origin'});}finally{location.replace('/');}});
+      load();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "global-forex-trading-cloudflare",
+  "version": "2.12.0",
+  "private": true,
+  "description": "GLOBAL FOREX TRADING — accueil unique avec connexion, inscription et mot de passe oublié exclusivement en popup.",
+  "scripts": {
+    "build": "npm run check && node scripts/build.mjs",
+    "check": "node scripts/check.mjs && node scripts/test-login-routing.mjs && node --check public/_worker.js && node --check public/assets/home.js && node --check public/assets/cloud-shell.js",
+    "dev": "wrangler pages dev",
+    "deploy": "wrangler pages deploy public --project-name=global-forex-trading",
+    "db:migrate:local": "wrangler d1 migrations apply Forex_d1 --local",
+    "db:migrate:remote": "wrangler d1 migrations apply Forex_d1 --remote",
+    "secret:pepper": "wrangler pages secret put AUTH_PEPPER --project-name=global-forex-trading",
+    "secret:superadmin": "wrangler pages secret put SUPER_ADMIN_INITIAL_PASSWORD --project-name=global-forex-trading"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module"
+}

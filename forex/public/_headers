@@ -1,0 +1,13 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Cross-Origin-Resource-Policy: same-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), display-capture=(self)
+
+/assets/login.css
+  Cache-Control: no-store, max-age=0
+
+
+/assets/*
+  Cache-Control: public, max-age=86400
