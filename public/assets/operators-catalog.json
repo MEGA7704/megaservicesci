@@ -1,0 +1,156 @@
+[
+  {
+    "id": "app0",
+    "name": "SIGAT",
+    "icon": "🌳",
+    "category": "Administration forestière",
+    "url": "https://sigatci.pages.dev/",
+    "modules": [
+      "Tableau de bord",
+      "Personnel et agents",
+      "Documents administratifs",
+      "Exploitation forestière",
+      "Reboisements",
+      "Pépinières",
+      "Sensibilisation",
+      "Ressources naturelles",
+      "Faune et feux de brousse",
+      "Procès-verbaux",
+      "Rapports et impressions",
+      "Paramètres et utilisateurs"
+    ]
+  },
+  {
+    "id": "app1",
+    "name": "GLOBAL FOREX TRADING",
+    "icon": "📈",
+    "category": "Analyse de graphiques",
+    "url": "https://globalforextrading.pages.dev/",
+    "modules": [
+      "Tableau de bord",
+      "Importer une capture",
+      "Analyse graphique",
+      "Tendance et zones",
+      "Résultats et historique",
+      "Outils Trendline / Bands / Limit",
+      "Compte et abonnement"
+    ]
+  },
+  {
+    "id": "app2",
+    "name": "GLOBAL IMMOBILIER",
+    "icon": "🏠",
+    "category": "Gestion locative",
+    "url": "https://globalimmobilier.pages.dev/",
+    "modules": [
+      "Tableau de bord",
+      "Propriétaires",
+      "Biens immobiliers",
+      "Locataires",
+      "Contrats et loyers",
+      "Paiements et quittances",
+      "Comptabilité",
+      "Réservations et visites",
+      "Catalogue public",
+      "Paramètres"
+    ]
+  },
+  {
+    "id": "app3",
+    "name": "GLOBAL EMPLOI",
+    "icon": "👥",
+    "category": "Emploi et recrutement",
+    "url": "https://globalemploici.pages.dev/",
+    "modules": [
+      "Offres d’emploi",
+      "Espace demandeur",
+      "Profil et CV",
+      "Candidatures",
+      "Espace recruteur",
+      "Publier une offre",
+      "Recherche de candidats",
+      "Messagerie",
+      "Notifications",
+      "Abonnements"
+    ]
+  },
+  {
+    "id": "app4",
+    "name": "OUKAMI BANK",
+    "icon": "🤝",
+    "category": "Épargne et crédit associatifs",
+    "url": "https://oukamibank.pages.dev/",
+    "modules": [
+      "Tableau de bord",
+      "Clients et adhérents",
+      "Comptes",
+      "Versements et retraits",
+      "Crédits et échéances",
+      "Caisse et mouvements",
+      "Revenus et charges",
+      "Rapports",
+      "Agents et autorisations",
+      "Paramètres"
+    ]
+  },
+  {
+    "id": "app5",
+    "name": "GLOBAL BANK",
+    "icon": "🏦",
+    "category": "Gestion bancaire",
+    "url": "https://globalbankci.pages.dev/",
+    "modules": [
+      "Tableau de bord",
+      "Banques et utilisateurs",
+      "Clients",
+      "Comptes",
+      "Mouvements et caisse",
+      "Crédits et remboursements",
+      "Charges et obligations",
+      "Rapports financiers",
+      "Abonnements",
+      "Paramètres"
+    ]
+  },
+  {
+    "id": "app6",
+    "name": "GLOBAL BT",
+    "icon": "🏗️",
+    "category": "Gestion de chantiers",
+    "url": "https://globalbtci.pages.dev/",
+    "modules": [
+      "Tableau de bord",
+      "Projets",
+      "Métiers",
+      "Main-d’œuvre",
+      "Fournisseurs",
+      "Achats et dépenses",
+      "Paiements",
+      "Rapports",
+      "Utilisateurs",
+      "Paramètres et abonnements"
+    ]
+  },
+  {
+    "id": "app7",
+    "name": "GLOBAL MARKET",
+    "icon": "🛒",
+    "category": "Commerce et marketplace",
+    "url": "https://globalmarketci.pages.dev/",
+    "modules": [
+      "Tableau de bord",
+      "Ventes et caisse",
+      "Produits et catégories",
+      "Stocks",
+      "Clients",
+      "Paiements",
+      "Rapports",
+      "Marketplace",
+      "Boutique publique",
+      "Panier et commandes",
+      "Livraison",
+      "Abonnements",
+      "Paramètres"
+    ]
+  }
+]

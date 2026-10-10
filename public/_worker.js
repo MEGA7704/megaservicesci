@@ -3,7 +3,7 @@ const PBKDF2_ITERATIONS = 100000;
 const SESSION_COOKIE = '__Host-mega_session';
 const enc = new TextEncoder();
 
-const SCHEMA_VERSION = 'v5-quick-writing-1';
+const SCHEMA_VERSION = 'v6-operators-1';
 let schemaReadyPromise = null;
 
 async function ensureSchema(env) {
@@ -15,6 +15,8 @@ async function ensureSchema(env) {
     const marker = await env.SITE_MEGA_KV.get(markerKey);
     if (marker === 'ready') return;
     const ddl = [
+      `CREATE TABLE IF NOT EXISTS operators (id TEXT PRIMARY KEY,email TEXT NOT NULL UNIQUE COLLATE NOCASE,display_name TEXT NOT NULL,organization TEXT,active INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL)`,
+      `CREATE TABLE IF NOT EXISTS operator_credentials (operator_id TEXT PRIMARY KEY,password_hash TEXT NOT NULL,salt TEXT NOT NULL,iterations INTEGER NOT NULL,updated_at TEXT NOT NULL)`,
       `CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY,email TEXT NOT NULL UNIQUE COLLATE NOCASE,display_name TEXT NOT NULL,role TEXT NOT NULL DEFAULT 'admin' CHECK (role IN ('admin','editor')),active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),created_at TEXT NOT NULL,updated_at TEXT NOT NULL)`,
       `CREATE TABLE IF NOT EXISTS user_credentials (user_id TEXT PRIMARY KEY,password_hash TEXT NOT NULL,salt TEXT NOT NULL,iterations INTEGER NOT NULL DEFAULT 100000,password_version INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE)`,
       `CREATE TABLE IF NOT EXISTS contact_messages (id TEXT PRIMARY KEY,name TEXT NOT NULL,email TEXT,phone TEXT,subject TEXT,message TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new','read','archived')),created_at TEXT NOT NULL)`,
@@ -338,11 +340,83 @@ async function applicationsAdmin(req,env,url){
   return json({error:'METHOD_NOT_ALLOWED'},405);
 }
 
+
+// Comptes opérateurs entièrement distincts de l'administration du site mère.
+const OP_COOKIE='__Host-mega_operator';
+const OP_TTL=SESSION_TTL;
+function opSetCookie(token){return `${OP_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${OP_TTL}`;}
+function opClearCookie(){return `${OP_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;}
+async function operatorSession(req,env,write=false){
+  const token=cookie(req,OP_COOKIE);
+  if(!token)return {error:json({error:'AUTH_REQUIRED'},401)};
+  const raw=await env.SITE_MEGA_KV.get('operator-session:'+token);
+  if(!raw)return {error:json({error:'SESSION_EXPIRED'},401,{'set-cookie':opClearCookie()})};
+  let data;try{data=JSON.parse(raw)}catch{return {error:json({error:'SESSION_INVALID'},401)}}
+  if(data.exp<Date.now())return {error:json({error:'SESSION_EXPIRED'},401,{'set-cookie':opClearCookie()})};
+  const operator=await env.SITE_MEGA_D1.prepare('SELECT id,email,display_name,organization,active FROM operators WHERE id=?').bind(data.id).first();
+  if(!operator||!operator.active)return {error:json({error:'ACCOUNT_DISABLED'},403)};
+  if(write&&(!sameOrigin(req)||!timingSafeStringEqual(req.headers.get('x-csrf-token')||'',data.csrf)))return {error:json({error:'CSRF_INVALID'},403)};
+  return {operator,token,csrf:data.csrf};
+}
+async function operatorApi(req,env,path){
+  if(path==='/api/operators/register'&&req.method==='POST'){
+    if(!sameOrigin(req))return json({error:'ORIGIN_REJECTED'},403);
+    const key='operator-register:'+clientIp(req),count=Number(await env.SITE_MEGA_KV.get(key)||0);
+    if(count>=5)return json({error:'RATE_LIMIT',message:'Trop d’inscriptions. Réessayez plus tard.'},429);
+    await env.SITE_MEGA_KV.put(key,String(count+1),{expirationTtl:3600});
+    const b=await bodyJson(req);const email=String(b.email||'').trim().toLowerCase();
+    const name=String(b.displayName||'').trim().slice(0,120),org=String(b.organization||'').trim().slice(0,160),password=String(b.password||'');
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!name||password.length<10||password.length>256)return json({error:'INVALID_FIELDS',message:'Vérifiez le nom, l’adresse e-mail et le mot de passe (10 caractères minimum).'},400);
+    const existing=await env.SITE_MEGA_D1.prepare('SELECT id FROM operators WHERE email=?').bind(email).first();
+    if(existing)return json({error:'ACCOUNT_EXISTS',message:'Cette adresse possède déjà un compte opérateur.'},409);
+    const id=crypto.randomUUID(),hp=await hashPassword(password),created=now();
+    try{
+      await env.SITE_MEGA_D1.batch([
+        env.SITE_MEGA_D1.prepare('INSERT INTO operators(id,email,display_name,organization,active,created_at) VALUES(?,?,?,?,1,?)').bind(id,email,name,org,created),
+        env.SITE_MEGA_D1.prepare('INSERT INTO operator_credentials(operator_id,password_hash,salt,iterations,updated_at) VALUES(?,?,?,?,?)').bind(id,hp.hash,hp.salt,hp.iterations,created)
+      ]);
+    }catch(e){if(String(e).includes('UNIQUE'))return json({error:'ACCOUNT_EXISTS'},409);throw e;}
+    await audit(env,req,id,'OPERATOR_REGISTERED','operator',id,{});
+    return await operatorLoginSuccess(req,env,{id,email,display_name:name,organization:org});
+  }
+  if(path==='/api/operators/login'&&req.method==='POST'){
+    if(!sameOrigin(req))return json({error:'ORIGIN_REJECTED'},403);
+    const b=await bodyJson(req),email=String(b.email||'').trim().toLowerCase(),password=String(b.password||'');
+    const key='operator-login:'+clientIp(req)+':'+email;
+    const count=Number(await env.SITE_MEGA_KV.get(key)||0);
+    if(count>=8)return json({error:'TOO_MANY_ATTEMPTS',message:'Trop de tentatives. Réessayez dans 15 minutes.'},429);
+    const row=await env.SITE_MEGA_D1.prepare('SELECT o.*,c.password_hash,c.salt,c.iterations FROM operators o JOIN operator_credentials c ON c.operator_id=o.id WHERE o.email=?').bind(email).first();
+    if(!row||!row.active||!password||password.length>256||!await verifyPassword(password,row)){
+      await env.SITE_MEGA_KV.put(key,String(count+1),{expirationTtl:900});
+      return json({error:'INVALID_CREDENTIALS',message:'Identifiants incorrects.'},401);
+    }
+    await env.SITE_MEGA_KV.delete(key);
+    await audit(env,req,row.id,'OPERATOR_LOGIN','operator',row.id,{});
+    return await operatorLoginSuccess(req,env,row);
+  }
+  if(path==='/api/operators/session'&&req.method==='GET'){
+    const a=await operatorSession(req,env);if(a.error)return a.error;
+    return json({authenticated:true,operator:{id:a.operator.id,email:a.operator.email,displayName:a.operator.display_name,organization:a.operator.organization},csrf:a.csrf});
+  }
+  if(path==='/api/operators/logout'&&req.method==='POST'){
+    const a=await operatorSession(req,env,true);if(a.error)return a.error;
+    await env.SITE_MEGA_KV.delete('operator-session:'+a.token);
+    return json({ok:true},200,{'set-cookie':opClearCookie()});
+  }
+  return json({error:'NOT_FOUND'},404);
+}
+async function operatorLoginSuccess(req,env,row){
+  const token=randomToken(32),csrf=randomToken(24);
+  await env.SITE_MEGA_KV.put('operator-session:'+token,JSON.stringify({id:row.id,csrf,exp:Date.now()+OP_TTL*1000}),{expirationTtl:OP_TTL});
+  return json({ok:true,operator:{id:row.id,email:row.email,displayName:row.display_name,organization:row.organization},csrf},200,{'set-cookie':opSetCookie(token)});
+}
+
 export default {
   async fetch(req, env) {
     const url=new URL(req.url);
     try {
       if (url.pathname.startsWith('/api/')) await ensureSchema(env);
+      if(url.pathname.startsWith('/api/operators/'))return await operatorApi(req,env,url.pathname);
       if(url.pathname==='/api/setup-status'&&req.method==='GET') return await setupStatus(env);
       if(url.pathname==='/api/login'&&req.method==='POST') return await login(req,env);
       if(url.pathname==='/api/session'&&req.method==='GET') return await sessionInfo(req,env);

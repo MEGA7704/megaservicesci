@@ -19,6 +19,7 @@ function nav(active=''){
       <a class="${active==='recruit'?'active':''}" href="/recrutement.html">Nous recrutons</a>
       <a href="https://globalmarketci.pages.dev/#boutique/mega-services-sarl-u" target="_blank" rel="noopener">Boutique</a>
       <a class="${active==='contact'?'active':''}" href="/contact.html">Contact</a>
+      <a class="${active==='operators'?'active':''}" href="/operateurs.html">Opérateurs</a>
       <span class="v15-search" aria-hidden="true">⌕</span>
       <a class="v15-login-btn" href="/connexion.html">♙ Connexion</a>
     </div>
