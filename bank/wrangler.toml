@@ -1,0 +1,23 @@
+name = "global-bank"
+pages_build_output_dir = "public"
+compatibility_date = "2026-08-01"
+
+# Variable non sensible, chargée automatiquement dans env.SUPER_ADMIN_SESSION_VERSION.
+# Incrémentez cette valeur après chaque changement du mot de passe Super Admin
+# afin d'invalider toutes les sessions précédentes.
+[vars]
+SUPER_ADMIN_SESSION_VERSION = "1"
+
+# Les valeurs SUPER_ADMIN_LOGIN et SUPER_ADMIN_PASSWORD ne doivent jamais être
+# placées ici. Elles sont ajoutées comme secrets chiffrés dans Cloudflare Pages
+# et sont accessibles uniquement côté serveur via env.SUPER_ADMIN_LOGIN et
+# env.SUPER_ADMIN_PASSWORD.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "bankdb"
+database_id = "692edd7a-98d5-484a-aa75-5a86a9107c16"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "f02b47264a8c411aa61052c45a3bb72a"
